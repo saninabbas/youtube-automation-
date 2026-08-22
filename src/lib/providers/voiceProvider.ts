@@ -2,8 +2,8 @@ import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import path from 'path';
 import fs from 'fs';
 import { execFile } from 'child_process';
-import { inspectMedia } from './videoProvider';
-import { getFfmpegPath } from './ffmpegCompositor';
+import { inspectMedia, getFfmpegPath } from './videoProvider';
+
 
 export interface VoiceProvider {
   generateVoiceover(params: {

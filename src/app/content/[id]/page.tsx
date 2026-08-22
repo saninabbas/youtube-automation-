@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { VisualWorkflowCanvas } from '@/components/VisualWorkflowCanvas';
+
 
 interface StageInfo {
   stage: 'SCRIPT' | 'VOICE' | 'SCENES' | 'VIDEO' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
@@ -289,9 +291,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const { project, stages, scenes, assets, output, thumbnail, metadata, telemetry, youtubeConnection } = data;
   const audioAsset = assets.find((a) => a.asset_type === 'audio');
   const subtitlesAsset = assets.find((a) => a.asset_type === 'subtitles');
+  const scriptAsset = assets.find((a) => a.asset_type === 'script');
+  const finalVideoAsset = assets.find((a) => a.asset_type === 'final_video');
+  const thumbnailAsset = assets.find((a) => a.asset_type === 'thumbnail');
   const failedStage = stages.find((s) => s.status === 'FAILED');
 
+
   const pubStatus = project.publishing_status || 'DRAFT';
+  const completedCount = stages.filter((s) => s.status === 'COMPLETED').length;
+  const progressPct = Math.round((completedCount / (stages.length || 1)) * 100);
+
 
   return (
     <div>
@@ -312,6 +321,31 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </Link>
         </div>
       </div>
+
+      {/* n8n-Style Interactive Visual Workflow Canvas */}
+      <VisualWorkflowCanvas
+        currentStage={project.current_stage || 'SCRIPT'}
+        projectStatus={project.status}
+        stageProgress={progressPct}
+        projectData={{
+          topic: project.topic,
+          channelName: project.channel_name,
+          targetLengthMinutes: project.target_length_minutes,
+          niche: project.channel_niche,
+          script: scriptAsset ? 'Generated script narration available' : null,
+          audioUrl: audioAsset ? (audioAsset.url || `/api/assets/${audioAsset.storage_key}`) : null,
+          videoUrl: finalVideoAsset ? (finalVideoAsset.url || `/api/assets/${finalVideoAsset.storage_key}`) : null,
+          thumbnailUrl: thumbnailAsset ? (thumbnailAsset.url || `/api/assets/${thumbnailAsset.storage_key}`) : null,
+          subtitlesUrl: subtitlesAsset ? (subtitlesAsset.url || `/api/assets/${subtitlesAsset.storage_key}`) : null,
+
+          clipCount: telemetry?.clipCount || 0,
+          videoProvider: telemetry?.providerUsed || 'Local FFmpeg',
+          publishingStatus: pubStatus,
+          publishUrl: project.publish_url,
+          visibility: visibility,
+        }}
+        onRetryStage={handleRetryStage}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px', alignItems: 'start' }}>
         {/* Left Column: Pipeline Execution Stepper, Publishing Controls & Telemetry */}
