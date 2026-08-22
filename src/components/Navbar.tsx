@@ -38,6 +38,13 @@ export function Navbar() {
           >
             Settings
           </Link>
+          <Link
+            href="/admin"
+            className={`nav-link ${pathname.startsWith('/admin') ? 'active' : ''}`}
+            style={{ color: '#fbbf24' }}
+          >
+            Admin
+          </Link>
           <Link href="/content/new" className="btn btn-primary btn-sm" style={{ marginLeft: '8px' }}>
             + Create Video
           </Link>
