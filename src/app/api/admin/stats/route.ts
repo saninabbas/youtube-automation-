@@ -26,11 +26,13 @@ export async function GET() {
     `).all() as Array<{ publishing_status: string; count: number }>;
 
     const projectsList = db.prepare(`
-      SELECT id, channel_name, topic, status, current_stage, publishing_status, publish_url, created_at, target_length_minutes
-      FROM content_projects
-      ORDER BY created_at DESC
+      SELECT p.id, COALESCE(c.name, 'Default Channel') as channel_name, p.topic, p.status, p.current_stage, p.publishing_status, p.publish_url, p.created_at, p.target_length_minutes
+      FROM content_projects p
+      LEFT JOIN channels c ON p.channel_id = c.id
+      ORDER BY p.created_at DESC
       LIMIT 20
     `).all();
+
 
     // 3. YouTube Connections
     const totalConnections = (db.prepare('SELECT COUNT(*) as count FROM oauth_connections').get() as any)?.count || 0;
