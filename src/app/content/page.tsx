@@ -6,29 +6,36 @@ import Link from 'next/link';
 interface Project {
   id: string;
   topic: string;
-  channel_id: string;
-  channel_name: string;
-  channel_niche: string;
   target_length_minutes: number;
+  preset?: string;
   language: string;
+  platform?: string;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   current_stage: string;
+  publishing_status?: string;
+  publish_video_id?: string | null;
+  scheduled_at?: string | null;
+  published_at?: string | null;
+  channel_name: string;
+  channel_niche: string;
   created_at: string;
 }
 
-export default function ContentPage() {
+export default function ContentDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = async () => {
     try {
+      setLoading(true);
       const res = await fetch('/api/projects');
       if (res.ok) {
         const data = await res.json();
         setProjects(data.projects || []);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -36,40 +43,45 @@ export default function ContentPage() {
 
   useEffect(() => {
     fetchProjects();
-    const interval = setInterval(fetchProjects, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
-  const getStatusBadge = (status: Project['status']) => {
-    switch (status) {
+    const interval = setInterval(() => {
+      const hasActive = projects.some((p) => p.status === 'PENDING' || p.status === 'PROCESSING' || p.publishing_status === 'UPLOADING');
+      if (hasActive) {
+        fetchProjects();
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [projects]);
+
+  // KPI Calculations
+  const totalCount = projects.length;
+  const generatingCount = projects.filter((p) => p.status === 'PROCESSING' || p.status === 'PENDING').length;
+  const readyCount = projects.filter((p) => p.status === 'COMPLETED' && (!p.publishing_status || p.publishing_status === 'READY' || p.publishing_status === 'DRAFT')).length;
+  const scheduledCount = projects.filter((p) => p.publishing_status === 'SCHEDULED').length;
+  const publishedCount = projects.filter((p) => p.publishing_status === 'PUBLISHED').length;
+  const failedCount = projects.filter((p) => p.status === 'FAILED' || p.publishing_status === 'FAILED').length;
+
+  const getStatusBadge = (p: Project) => {
+    if (p.publishing_status === 'PUBLISHED') {
+      return <span className="badge badge-completed"><span className="status-dot completed" />PUBLISHED</span>;
+    }
+    if (p.publishing_status === 'SCHEDULED') {
+      return <span className="badge" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}><span className="status-dot processing" />SCHEDULED</span>;
+    }
+    if (p.publishing_status === 'UPLOADING') {
+      return <span className="badge" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)', color: '#facc15', border: '1px solid rgba(250, 204, 21, 0.3)' }}><span className="status-dot processing" />UPLOADING</span>;
+    }
+
+    switch (p.status) {
       case 'COMPLETED':
-        return (
-          <span className="badge badge-completed">
-            <span className="status-dot completed" />
-            COMPLETED
-          </span>
-        );
+        return <span className="badge badge-completed"><span className="status-dot completed" />READY</span>;
       case 'PROCESSING':
-        return (
-          <span className="badge badge-processing">
-            <span className="status-dot processing" />
-            PROCESSING
-          </span>
-        );
+        return <span className="badge badge-processing"><span className="status-dot processing" />{p.current_stage}</span>;
       case 'FAILED':
-        return (
-          <span className="badge badge-failed">
-            <span className="status-dot failed" />
-            FAILED
-          </span>
-        );
+        return <span className="badge badge-failed"><span className="status-dot failed" />FAILED</span>;
       default:
-        return (
-          <span className="badge badge-pending">
-            <span className="status-dot pending" />
-            PENDING
-          </span>
-        );
+        return <span className="badge badge-pending"><span className="status-dot pending" />PENDING</span>;
     }
   };
 
@@ -77,70 +89,128 @@ export default function ContentPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Videos</h1>
-          <p className="page-subtitle">All automated video generation projects across your channels</p>
+          <h1 className="page-title">Video Automation Dashboard</h1>
+          <p className="page-subtitle">End-to-end multi-channel video generation, scheduling, and YouTube publishing pipeline</p>
         </div>
-        <Link href="/content/new" className="btn btn-primary">
-          + Create Video
-        </Link>
-      </div>
-
-      {loading && projects.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-          Loading video projects...
-        </div>
-      ) : projects.length === 0 ? (
-        <div className="card empty-state">
-          <h3 className="empty-state-title">No videos generated yet</h3>
-          <p className="empty-state-text">Select a channel and topic to generate your first AI video.</p>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Link href="/calendar" className="btn btn-secondary">
+            Calendar
+          </Link>
           <Link href="/content/new" className="btn btn-primary">
-            Create First Video
+            + Generate Video
           </Link>
         </div>
-      ) : (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Title / Topic</th>
-                <th>Channel</th>
-                <th>Status</th>
-                <th>Target Length</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((project) => (
-                <tr key={project.id}>
-                  <td>
-                    <Link
-                      href={`/content/${project.id}`}
-                      style={{ fontWeight: 600, color: 'var(--text-primary)' }}
-                    >
-                      {project.topic}
-                    </Link>
-                  </td>
-                  <td>
-                    <span className="badge badge-tag">{project.channel_name}</span>
-                  </td>
-                  <td>{getStatusBadge(project.status)}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>
-                    {project.target_length_minutes} min
-                  </td>
-                  <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                    {new Date(project.created_at).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      </div>
+
+      {error && (
+        <div style={{ padding: '12px 16px', backgroundColor: 'var(--error-bg)', color: '#f87171', borderRadius: '6px', marginBottom: '20px', fontSize: '14px' }}>
+          {error}
         </div>
       )}
+
+      {/* KPI Tiles Bar */}
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-value">{totalCount}</div>
+          <div className="kpi-label">Total Videos</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value" style={{ color: generatingCount > 0 ? '#38bdf8' : 'inherit' }}>
+            {generatingCount}
+          </div>
+          <div className="kpi-label">Generating</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value" style={{ color: readyCount > 0 ? '#34d399' : 'inherit' }}>
+            {readyCount}
+          </div>
+          <div className="kpi-label">Ready</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value" style={{ color: scheduledCount > 0 ? '#38bdf8' : 'inherit' }}>
+            {scheduledCount}
+          </div>
+          <div className="kpi-label">Scheduled</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value" style={{ color: publishedCount > 0 ? '#34d399' : 'inherit' }}>
+            {publishedCount}
+          </div>
+          <div className="kpi-label">Published</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value" style={{ color: failedCount > 0 ? '#f87171' : 'inherit' }}>
+            {failedCount}
+          </div>
+          <div className="kpi-label">Failed</div>
+        </div>
+      </div>
+
+      {/* Video Content Table */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 className="card-title">Production Queue & Projects</h3>
+          <button className="btn btn-secondary btn-sm" onClick={fetchProjects}>
+            Refresh
+          </button>
+        </div>
+
+        {loading && projects.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>Loading videos...</div>
+        ) : projects.length === 0 ? (
+          <div className="empty-state">
+            <h3>No Videos Generated Yet</h3>
+            <p>Select a channel and topic to begin automated end-to-end video synthesis.</p>
+            <Link href="/content/new" className="btn btn-primary" style={{ marginTop: '16px' }}>
+              + Generate First Video
+            </Link>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Topic & Project</th>
+                  <th>Channel</th>
+                  <th>Preset</th>
+                  <th>Created</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((p) => (
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: 500 }}>
+                      <Link href={`/content/${p.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none' }}>
+                        {p.topic}
+                      </Link>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {p.target_length_minutes}m target • {p.platform || 'YouTube'}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="badge badge-tag">{p.channel_name}</span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{p.preset || 'STANDARD'}</span>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                      {new Date(p.created_at).toLocaleDateString()}
+                    </td>
+                    <td>{getStatusBadge(p)}</td>
+                    <td>
+                      <Link href={`/content/${p.id}`} className="btn btn-secondary btn-sm" style={{ fontSize: '12px' }}>
+                        View Pipeline
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

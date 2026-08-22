@@ -21,34 +21,29 @@ class DefaultSubtitleProvider implements SubtitleProvider {
       const sceneDuration = scene.estimatedDurationSec;
       const cleanText = scene.subtitleText.trim();
 
-      // Split longer scene texts into readable subtitle blocks (max ~10-12 words per cue)
-      const words = cleanText.split(/\s+/).filter(Boolean);
-      if (words.length <= 12) {
+      // Break text into natural sentences/phrases
+      const phrases = this.splitIntoPhrases(cleanText);
+      const totalWords = cleanText.split(/\s+/).filter(Boolean).length;
+
+      let phraseOffset = 0;
+      for (const phrase of phrases) {
+        const wordsInPhrase = phrase.split(/\s+/).filter(Boolean).length;
+        // Allocate duration proportional to word count
+        const phraseDuration = totalWords > 0 ? (wordsInPhrase / totalWords) * sceneDuration : sceneDuration / phrases.length;
+        const start = currentTime + phraseOffset;
+        const end = start + phraseDuration;
+
+        // Format phrase into max 2 lines (max ~38 chars per line)
+        const formattedText = this.formatLines(phrase);
+
         cues.push({
           index: cueIndex++,
-          startTimeSec: currentTime,
-          endTimeSec: currentTime + sceneDuration,
-          text: cleanText,
+          startTimeSec: start,
+          endTimeSec: end,
+          text: formattedText,
         });
-      } else {
-        // Break into 2 or 3 smaller timed cues
-        const chunks: string[] = [];
-        const chunkSize = Math.ceil(words.length / Math.ceil(sceneDuration / 4));
-        for (let i = 0; i < words.length; i += chunkSize) {
-          chunks.push(words.slice(i, i + chunkSize).join(' '));
-        }
 
-        const durationPerChunk = sceneDuration / chunks.length;
-        for (let j = 0; j < chunks.length; j++) {
-          const start = currentTime + j * durationPerChunk;
-          const end = start + durationPerChunk;
-          cues.push({
-            index: cueIndex++,
-            startTimeSec: start,
-            endTimeSec: end,
-            text: chunks[j],
-          });
-        }
+        phraseOffset += phraseDuration;
       }
 
       currentTime += sceneDuration;
@@ -77,6 +72,40 @@ class DefaultSubtitleProvider implements SubtitleProvider {
       })
       .join('\n');
     return header + body;
+  }
+
+  private splitIntoPhrases(text: string): string[] {
+    // Break into natural clauses by punctuation or chunks of 6-10 words
+    const rawClauses = text.split(/(?<=[.,!?:;])\s+/).filter(Boolean);
+    const phrases: string[] = [];
+
+    for (const clause of rawClauses) {
+      const words = clause.split(/\s+/).filter(Boolean);
+      if (words.length <= 9) {
+        phrases.push(clause);
+      } else {
+        // Split longer clauses into 5-7 word chunks
+        const chunkSize = 6;
+        for (let i = 0; i < words.length; i += chunkSize) {
+          phrases.push(words.slice(i, i + chunkSize).join(' '));
+        }
+      }
+    }
+
+    return phrases.length > 0 ? phrases : [text];
+  }
+
+  private formatLines(phrase: string): string {
+    const words = phrase.split(/\s+/).filter(Boolean);
+    if (words.length <= 6 || phrase.length <= 38) {
+      return phrase;
+    }
+
+    // Split across 2 balanced lines
+    const mid = Math.ceil(words.length / 2);
+    const line1 = words.slice(0, mid).join(' ');
+    const line2 = words.slice(mid).join(' ');
+    return `${line1}\n${line2}`;
   }
 
   private formatSrtTime(seconds: number): string {

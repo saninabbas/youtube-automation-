@@ -74,6 +74,8 @@ export async function inspectMedia(filePath: string): Promise<MediaMetadata> {
   };
 }
 
+export type VideoProviderType = 'LOCAL_FFMPEG' | 'REAL_AI_VIDEO_PROVIDER';
+
 export interface GeneratedClip {
   clipIndex: number;
   durationSec: number;
@@ -83,6 +85,8 @@ export interface GeneratedClip {
 }
 
 export interface VideoProvider {
+  getProviderType(): VideoProviderType;
+  getProviderName(): string;
   generateVideoClipsForScene(params: {
     projectId: string;
     sceneId: string;
@@ -90,6 +94,12 @@ export interface VideoProvider {
     visualPrompt: string;
     durationSec: number;
     niche: string;
+    visualStyle?: string;
+    environment?: string;
+    cameraMovement?: string;
+    lighting?: string;
+    colorStyle?: string;
+    continuityNotes?: string;
   }): Promise<GeneratedClip[]>;
 
   generateVideoClip(params: {
@@ -99,11 +109,30 @@ export interface VideoProvider {
     sceneIndex: number;
     clipIndex: number;
     niche: string;
+    visualStyle?: string;
+    cameraMovement?: string;
   }): Promise<void>;
 }
 
 class DefaultVideoProvider implements VideoProvider {
   private maxClipDuration = 8; // Max seconds per individual generation clip
+  private providerType: VideoProviderType = 'LOCAL_FFMPEG';
+
+  getProviderType(): VideoProviderType {
+    return this.providerType;
+  }
+
+  getProviderName(): string {
+    if (this.providerType === 'REAL_AI_VIDEO_PROVIDER') {
+      const apiKey = process.env.RUNWAY_API_KEY || process.env.REPLICATE_API_TOKEN || process.env.LUMA_API_KEY;
+      if (apiKey) {
+        return 'AI Video Synthesis Engine (External Neural Provider)';
+      }
+      return 'Local FFmpeg Motion Engine (Real AI Provider API key not configured)';
+    }
+    return 'Local FFmpeg Motion Engine (H.264 / AAC)';
+  }
+
 
   async generateVideoClipsForScene(params: {
     projectId: string;
@@ -112,8 +141,24 @@ class DefaultVideoProvider implements VideoProvider {
     visualPrompt: string;
     durationSec: number;
     niche: string;
+    visualStyle?: string;
+    environment?: string;
+    cameraMovement?: string;
+    lighting?: string;
+    colorStyle?: string;
+    continuityNotes?: string;
   }): Promise<GeneratedClip[]> {
-    const { projectId, sceneIndex, visualPrompt, durationSec, niche } = params;
+    const {
+      projectId,
+      sceneIndex,
+      visualPrompt,
+      durationSec,
+      niche,
+      visualStyle = 'Cinematic High-Contrast',
+      environment,
+      cameraMovement,
+      lighting,
+    } = params;
     const clips: GeneratedClip[] = [];
 
     // Calculate sub-clip intervals (strictly <= 8 seconds each)
@@ -134,12 +179,12 @@ class DefaultVideoProvider implements VideoProvider {
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    const cameraStyles = [
-      'Wide establishing shot with slow cinematic zoom',
-      'Medium tracking perspective with smooth parallax motion',
-      'Detailed macro focal angle with subtle depth-of-field shift',
-      'Elevated dynamic angle with atmospheric lighting sweep',
-      'Centered cinematic focus with subtle linear dolly motion',
+    const subClipAngles = [
+      'Establishing wide angle with steady linear glide',
+      'Medium focal depth tracking subject motion',
+      'Detailed focal angle with subtle depth of field',
+      'Elevated dynamic perspective with atmospheric lighting',
+      'Smooth centering dolly push with stable tracking',
     ];
 
     for (let cIdx = 0; cIdx < clipDurations.length; cIdx++) {
@@ -152,8 +197,8 @@ class DefaultVideoProvider implements VideoProvider {
       }
 
       // Generate distinct visual prompt variation for each sub-clip
-      const cameraStyle = cameraStyles[(sceneIndex + cIdx) % cameraStyles.length];
-      const subPrompt = `${visualPrompt} | Sub-clip ${cIdx + 1} (${cameraStyle})`;
+      const cameraSubStyle = subClipAngles[(sceneIndex + cIdx) % subClipAngles.length];
+      const subPrompt = `${visualPrompt} | Sub-clip ${cIdx + 1} (${cameraSubStyle}) | Environment: ${environment || niche} | Lighting: ${lighting || 'Studio'}`;
 
       await this.generateVideoClip({
         prompt: subPrompt,
@@ -162,6 +207,8 @@ class DefaultVideoProvider implements VideoProvider {
         sceneIndex,
         clipIndex: cIdx + 1,
         niche,
+        visualStyle,
+        cameraMovement,
       });
 
       clips.push({
@@ -183,25 +230,31 @@ class DefaultVideoProvider implements VideoProvider {
     sceneIndex: number;
     clipIndex: number;
     niche: string;
+    visualStyle?: string;
+    cameraMovement?: string;
   }): Promise<void> {
-    const { durationSec, outputPath, sceneIndex, clipIndex, niche } = params;
+    const { durationSec, outputPath, sceneIndex, clipIndex, niche, visualStyle = '' } = params;
     const ffmpegPath = getFfmpegPath();
 
-    // Themed palettes based on niche
+    // Themed palettes based on niche & visualStyle
     let bgColors = ['#0f172a', '#1e293b', '#334155'];
     const lowerNiche = niche.toLowerCase();
+    const lowerStyle = visualStyle.toLowerCase();
 
-    if (lowerNiche.includes('health')) {
+    if (lowerNiche.includes('health') || lowerStyle.includes('emerald')) {
       bgColors = ['#064e3b', '#047857', '#065f46', '#022c22', '#0f766e'];
-    } else if (lowerNiche.includes('tech') || lowerNiche.includes('ai')) {
+    } else if (lowerNiche.includes('tech') || lowerNiche.includes('ai') || lowerStyle.includes('cyber')) {
       bgColors = ['#0f172a', '#1e1b4b', '#172554', '#1e293b', '#312e81'];
-    } else if (lowerNiche.includes('finance')) {
-      bgColors = ['#14532d', '#1e3a8a', '#0f172a', '#166534', '#1e293b'];
-    } else if (lowerNiche.includes('history')) {
+    } else if (lowerNiche.includes('business') || lowerNiche.includes('finance') || lowerStyle.includes('gold')) {
+      bgColors = ['#0a192f', '#14532d', '#1e3a8a', '#172554', '#1f2937'];
+    } else if (lowerNiche.includes('history') || lowerStyle.includes('vintage')) {
       bgColors = ['#451a03', '#78350f', '#292524', '#3e2723', '#5c3a21'];
+    } else {
+      // General dynamic modern studio palette
+      bgColors = ['#111827', '#1f2937', '#374151', '#0f172a', '#1e293b'];
     }
 
-    // Pick distinct background color cycling for each clip
+    // Pick continuous background color progression for each clip
     const c1 = bgColors[(sceneIndex * 3 + clipIndex) % bgColors.length];
     const zoomDirection = (sceneIndex + clipIndex) % 2 === 0 ? 'in' : 'out';
 
@@ -211,7 +264,7 @@ class DefaultVideoProvider implements VideoProvider {
     const filterGraph = [
       `testsrc=size=1920x1080:rate=30:duration=${durationSec}`,
       `drawbox=x=0:y=0:w=1920:h=1080:color=${c1}@1.0:t=fill`,
-      `drawgrid=width=160:height=160:thickness=1:color=white@0.05`,
+      `drawgrid=width=160:height=160:thickness=1:color=white@0.04`,
       `zoompan=z=${zoomExpr}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps=30`,
       `format=yuv420p`,
     ].join(',');

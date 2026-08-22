@@ -22,9 +22,21 @@ export function Navbar() {
           </Link>
           <Link
             href="/content"
-            className={`nav-link ${pathname === '/content' || pathname.startsWith('/content/') ? 'active' : ''}`}
+            className={`nav-link ${pathname === '/content' || (pathname.startsWith('/content/') && pathname !== '/content/new') ? 'active' : ''}`}
           >
             Videos
+          </Link>
+          <Link
+            href="/calendar"
+            className={`nav-link ${pathname.startsWith('/calendar') ? 'active' : ''}`}
+          >
+            Calendar
+          </Link>
+          <Link
+            href="/settings/publishing"
+            className={`nav-link ${pathname.startsWith('/settings') ? 'active' : ''}`}
+          >
+            Settings
           </Link>
           <Link href="/content/new" className="btn btn-primary btn-sm" style={{ marginLeft: '8px' }}>
             + Create Video

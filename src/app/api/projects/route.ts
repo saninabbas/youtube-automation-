@@ -27,7 +27,17 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { channel_id, topic, target_length_minutes = 8, language = 'en' } = body;
+    const {
+      channel_id,
+      topic,
+      preset = 'STANDARD',
+      target_length_minutes = 5,
+      language = 'en',
+      platform = 'YouTube',
+      visibility = 'PRIVATE',
+      scheduled_at = null,
+      auto_publish = 0,
+    } = body;
 
     if (!channel_id) {
       return NextResponse.json({ error: 'Channel is required' }, { status: 400 });
@@ -38,7 +48,6 @@ export async function POST(request: Request) {
 
     const db = getDb();
 
-    // Verify channel exists and belongs to user
     const channel = db
       .prepare('SELECT * FROM channels WHERE id = ? AND user_id = ?')
       .get(channel_id, DEFAULT_USER_ID) as Channel | undefined;
@@ -49,24 +58,35 @@ export async function POST(request: Request) {
 
     const projectId = uuidv4();
     const now = new Date().toISOString();
+    const willAutoPublish = auto_publish || channel.auto_publish ? 1 : 0;
+    const initialPublishStatus = scheduled_at ? 'SCHEDULED' : willAutoPublish ? 'SCHEDULED' : 'DRAFT';
 
     db.prepare(
-      `INSERT INTO content_projects (id, user_id, channel_id, topic, target_length_minutes, language, status, current_stage, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO content_projects (
+        id, user_id, channel_id, topic, target_length_minutes, preset,
+        language, platform, visibility, status, current_stage, publishing_status,
+        scheduled_at, auto_publish, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       projectId,
       DEFAULT_USER_ID,
       channel_id,
       topic.trim(),
-      Number(target_length_minutes) || 8,
+      Number(target_length_minutes) || 5,
+      preset,
       language || channel.language,
+      platform || channel.publishing_platform,
+      visibility || channel.default_visibility || 'PRIVATE',
       'PENDING',
       'SCRIPT',
+      initialPublishStatus,
+      scheduled_at,
+      willAutoPublish,
       now,
       now
     );
 
-    // Trigger asynchronous background worker
+    // Trigger pipeline worker
     videoWorker.startProjectPipeline(projectId);
 
     return NextResponse.json(
@@ -74,6 +94,7 @@ export async function POST(request: Request) {
         message: 'Video project created and generation queued',
         projectId,
         status: 'PENDING',
+        publishingStatus: initialPublishStatus,
       },
       { status: 202 }
     );

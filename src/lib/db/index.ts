@@ -18,13 +18,12 @@ export function getDb(): Database.Database {
     dbInstance.pragma('journal_mode = WAL');
     dbInstance.pragma('foreign_keys = ON');
 
-    // Run migrations
+    // Run schema initialization
     const schemaPath = path.join(__dirname, 'schema.sql');
     let schemaSql: string;
     if (fs.existsSync(schemaPath)) {
       schemaSql = fs.readFileSync(schemaPath, 'utf8');
     } else {
-      // Fallback for bundled runtime
       schemaSql = `
         CREATE TABLE IF NOT EXISTS channels (
           id TEXT PRIMARY KEY,
@@ -33,6 +32,14 @@ export function getDb(): Database.Database {
           niche TEXT NOT NULL,
           language TEXT NOT NULL DEFAULT 'en',
           voice TEXT NOT NULL DEFAULT 'en-US-ChristopherNeural',
+          voice_speed TEXT NOT NULL DEFAULT '1.0x',
+          target_duration_minutes INTEGER NOT NULL DEFAULT 5,
+          visual_style TEXT NOT NULL DEFAULT 'Cinematic High-Contrast',
+          subtitle_style TEXT NOT NULL DEFAULT 'Modern Clean White',
+          intro_style TEXT NOT NULL DEFAULT 'High-Impact Dramatic Question',
+          outro_cta TEXT NOT NULL DEFAULT 'Subscribe to the channel and leave your thoughts below',
+          publishing_platform TEXT NOT NULL DEFAULT 'YouTube',
+          content_rules TEXT NOT NULL DEFAULT 'Engaging, clear, professional tone',
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         );
@@ -42,10 +49,16 @@ export function getDb(): Database.Database {
           channel_id TEXT NOT NULL,
           topic TEXT NOT NULL,
           target_length_minutes INTEGER NOT NULL DEFAULT 8,
+          preset TEXT NOT NULL DEFAULT 'STANDARD',
           language TEXT NOT NULL DEFAULT 'en',
+          platform TEXT NOT NULL DEFAULT 'YouTube',
           status TEXT NOT NULL DEFAULT 'PENDING',
           current_stage TEXT NOT NULL DEFAULT 'SCRIPT',
           error_message TEXT,
+          scheduled_at TEXT,
+          published_at TEXT,
+          metadata_json TEXT,
+          telemetry_json TEXT,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
           FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
@@ -56,6 +69,12 @@ export function getDb(): Database.Database {
           scene_index INTEGER NOT NULL,
           narration TEXT NOT NULL,
           visual_prompt TEXT NOT NULL,
+          visual_subject TEXT,
+          environment TEXT,
+          camera_movement TEXT,
+          lighting TEXT,
+          color_style TEXT,
+          continuity_notes TEXT,
           estimated_duration_sec REAL NOT NULL,
           subtitle_text TEXT NOT NULL,
           created_at TEXT NOT NULL,
@@ -103,6 +122,73 @@ export function getDb(): Database.Database {
       `;
     }
     dbInstance.exec(schemaSql);
+
+    // Apply incremental migrations for existing DB instances safely
+    const safeAddColumn = (table: string, column: string, typeDef: string) => {
+      try {
+        dbInstance?.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${typeDef}`).run();
+      } catch {
+        // column already exists
+      }
+    };
+
+    safeAddColumn('channels', 'voice_speed', "TEXT NOT NULL DEFAULT '1.0x'");
+    safeAddColumn('channels', 'target_duration_minutes', 'INTEGER NOT NULL DEFAULT 5');
+    safeAddColumn('channels', 'visual_style', "TEXT NOT NULL DEFAULT 'Cinematic High-Contrast'");
+    safeAddColumn('channels', 'subtitle_style', "TEXT NOT NULL DEFAULT 'Modern Clean White'");
+    safeAddColumn('channels', 'intro_style', "TEXT NOT NULL DEFAULT 'High-Impact Dramatic Question'");
+    safeAddColumn('channels', 'outro_cta', "TEXT NOT NULL DEFAULT 'Subscribe to the channel and leave your thoughts below'");
+    safeAddColumn('channels', 'publishing_platform', "TEXT NOT NULL DEFAULT 'YouTube'");
+    safeAddColumn('channels', 'content_rules', "TEXT NOT NULL DEFAULT 'Engaging, clear, professional tone'");
+
+    safeAddColumn('channels', 'publishing_days', "TEXT NOT NULL DEFAULT '[\"Monday\",\"Wednesday\",\"Friday\"]'");
+    safeAddColumn('channels', 'publishing_time', "TEXT NOT NULL DEFAULT '14:00'");
+    safeAddColumn('channels', 'timezone', "TEXT NOT NULL DEFAULT 'UTC'");
+    safeAddColumn('channels', 'default_visibility', "TEXT NOT NULL DEFAULT 'PRIVATE'");
+    safeAddColumn('channels', 'auto_publish', 'INTEGER NOT NULL DEFAULT 0');
+
+    safeAddColumn('content_projects', 'preset', "TEXT NOT NULL DEFAULT 'STANDARD'");
+    safeAddColumn('content_projects', 'platform', "TEXT NOT NULL DEFAULT 'YouTube'");
+    safeAddColumn('content_projects', 'visibility', "TEXT NOT NULL DEFAULT 'PRIVATE'");
+    safeAddColumn('content_projects', 'scheduled_at', 'TEXT');
+    safeAddColumn('content_projects', 'published_at', 'TEXT');
+    safeAddColumn('content_projects', 'publishing_status', "TEXT NOT NULL DEFAULT 'DRAFT'");
+    safeAddColumn('content_projects', 'publish_provider', 'TEXT');
+    safeAddColumn('content_projects', 'publish_video_id', 'TEXT');
+    safeAddColumn('content_projects', 'publish_url', 'TEXT');
+    safeAddColumn('content_projects', 'publish_started_at', 'TEXT');
+    safeAddColumn('content_projects', 'publish_completed_at', 'TEXT');
+    safeAddColumn('content_projects', 'publish_error', 'TEXT');
+    safeAddColumn('content_projects', 'auto_publish', 'INTEGER NOT NULL DEFAULT 0');
+    safeAddColumn('content_projects', 'metadata_json', 'TEXT');
+    safeAddColumn('content_projects', 'telemetry_json', 'TEXT');
+
+    safeAddColumn('video_scenes', 'visual_subject', 'TEXT');
+    safeAddColumn('video_scenes', 'environment', 'TEXT');
+    safeAddColumn('video_scenes', 'camera_movement', 'TEXT');
+    safeAddColumn('video_scenes', 'lighting', 'TEXT');
+    safeAddColumn('video_scenes', 'color_style', 'TEXT');
+    safeAddColumn('video_scenes', 'continuity_notes', 'TEXT');
+
+    // Create oauth_connections table if missing
+    dbInstance.exec(`
+      CREATE TABLE IF NOT EXISTS oauth_connections (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        account_email TEXT,
+        channel_id TEXT,
+        channel_title TEXT,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT,
+        token_expiry TEXT,
+        scope TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(user_id, platform)
+      );
+      CREATE INDEX IF NOT EXISTS idx_oauth_user_platform ON oauth_connections(user_id, platform);
+    `);
   }
   return dbInstance;
 }
@@ -114,9 +200,72 @@ export interface Channel {
   niche: string;
   language: string;
   voice: string;
+  voice_speed: string;
+  target_duration_minutes: number;
+  visual_style: string;
+  subtitle_style: string;
+  intro_style: string;
+  outro_cta: string;
+  publishing_platform: string;
+  content_rules: string;
+  publishing_days: string; // JSON array string e.g. '["Monday","Wednesday","Friday"]'
+  publishing_time: string; // e.g. '14:00'
+  timezone: string; // e.g. 'UTC'
+  default_visibility: 'PRIVATE' | 'UNLISTED' | 'PUBLIC';
+  auto_publish: number; // 0 or 1
   created_at: string;
   updated_at: string;
   video_count?: number;
+}
+
+export interface OAuthConnection {
+  id: string;
+  user_id: string;
+  platform: 'YOUTUBE' | 'TIKTOK' | 'INSTAGRAM' | 'FACEBOOK';
+  account_email?: string | null;
+  channel_id?: string | null;
+  channel_title?: string | null;
+  access_token: string;
+  refresh_token?: string | null;
+  token_expiry?: string | null;
+  scope?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectMetadata {
+  youtubeTitle: string;
+  description: string;
+  tags: string[];
+  hashtags: string[];
+  shortDescription: string;
+  suggestedFilename: string;
+}
+
+export interface ProjectTelemetry {
+  generationStartTime?: string;
+  generationEndTime?: string;
+  totalGenerationDurationSec?: number;
+  sceneCount?: number;
+  clipCount?: number;
+  audioDurationSec?: number;
+  finalVideoDurationSec?: number;
+  filesizeBytes?: number;
+  providerUsed?: string;
+  generationStatus?: string;
+  cost?: string; // Always 'UNAVAILABLE'
+  publishingTelemetry?: {
+    provider?: string;
+    uploadStartTime?: string;
+    uploadCompletionTime?: string;
+    providerVideoId?: string;
+    publishUrl?: string;
+    visibility?: string;
+    scheduledTime?: string;
+    actualPublishTime?: string;
+    uploadStatus?: string;
+    errorMessage?: string;
+  };
 }
 
 export interface ContentProject {
@@ -125,12 +274,31 @@ export interface ContentProject {
   channel_id: string;
   channel_name?: string;
   channel_niche?: string;
+  channel_voice?: string;
+  channel_voice_speed?: string;
+  channel_visual_style?: string;
+  channel_subtitle_style?: string;
   topic: string;
   target_length_minutes: number;
+  preset: 'SHORT' | 'STANDARD' | 'LONG' | 'CUSTOM';
   language: string;
+  platform: string;
+  visibility: 'PRIVATE' | 'UNLISTED' | 'PUBLIC';
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-  current_stage: 'SCRIPT' | 'SCENES' | 'VIDEO' | 'VOICE' | 'SUBTITLES' | 'FINAL_VIDEO';
+  current_stage: 'SCRIPT' | 'VOICE' | 'SCENES' | 'VIDEO' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
   error_message?: string | null;
+  scheduled_at?: string | null;
+  published_at?: string | null;
+  publishing_status: 'DRAFT' | 'READY' | 'SCHEDULED' | 'UPLOADING' | 'PUBLISHED' | 'FAILED' | 'NOT_CONNECTED';
+  publish_provider?: string | null;
+  publish_video_id?: string | null;
+  publish_url?: string | null;
+  publish_started_at?: string | null;
+  publish_completed_at?: string | null;
+  publish_error?: string | null;
+  auto_publish: number; // 0 or 1
+  metadata_json?: string | null;
+  telemetry_json?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -141,6 +309,12 @@ export interface VideoScene {
   scene_index: number;
   narration: string;
   visual_prompt: string;
+  visual_subject?: string | null;
+  environment?: string | null;
+  camera_movement?: string | null;
+  lighting?: string | null;
+  color_style?: string | null;
+  continuity_notes?: string | null;
   estimated_duration_sec: number;
   subtitle_text: string;
   created_at: string;
@@ -150,7 +324,7 @@ export interface GeneratedAsset {
   id: string;
   project_id: string;
   scene_id?: string | null;
-  asset_type: 'script' | 'clip' | 'audio' | 'subtitles' | 'final_video';
+  asset_type: 'script' | 'clip' | 'audio' | 'subtitles' | 'final_video' | 'thumbnail';
   storage_key: string;
   url: string;
   duration_sec?: number | null;
@@ -161,7 +335,7 @@ export interface GeneratedAsset {
 export interface VideoJob {
   id: string;
   project_id: string;
-  stage: 'SCRIPT' | 'SCENES' | 'VIDEO' | 'VOICE' | 'SUBTITLES' | 'FINAL_VIDEO';
+  stage: 'SCRIPT' | 'VOICE' | 'SCENES' | 'VIDEO' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   error_message?: string | null;
   started_at?: string | null;
@@ -178,3 +352,4 @@ export interface VideoOutput {
   filesize_bytes: number;
   created_at: string;
 }
+
