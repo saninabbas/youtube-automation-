@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Check if current route is an unauthenticated auth page, dedicated admin portal, or public landing page
-  const isStandalonePage = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/onboarding', '/admin'].some(
+  const isStandalonePage = ['/landing', '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/onboarding', '/admin'].some(
     (p) => pathname === p || pathname?.startsWith(p + '/')
   ) || (pathname === '/' && !currentUser);
 
