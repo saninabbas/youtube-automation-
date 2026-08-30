@@ -32,3 +32,8 @@ next-env.d.ts
 /data/*.db*
 /storage
 /temp
+*.log
+out.txt
+landing.html
+product_page.html
+product_parsed.json

@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb, DEFAULT_USER_ID, Channel } from '@/lib/db';
+import { getDb, Channel } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const user = await getCurrentUser(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const userId = user.id;
+
     const db = getDb();
     const channels = db
       .prepare(
@@ -16,7 +21,7 @@ export async function GET() {
          GROUP BY c.id 
          ORDER BY c.created_at DESC`
       )
-      .all(DEFAULT_USER_ID) as Channel[];
+      .all(userId) as Channel[];
 
     return NextResponse.json({ channels });
   } catch (err: any) {
@@ -26,6 +31,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUser(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const userId = user.id;
+
     const body = await request.json();
     const {
       name,
@@ -69,7 +78,7 @@ export async function POST(request: Request) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       id,
-      DEFAULT_USER_ID,
+      userId,
       name.trim(),
       niche.trim(),
       language.trim(),
@@ -91,7 +100,7 @@ export async function POST(request: Request) {
       now
     );
 
-    const created = db.prepare('SELECT * FROM channels WHERE id = ?').get(id) as Channel;
+    const created = db.prepare('SELECT * FROM channels WHERE id = ? AND user_id = ?').get(id, userId) as Channel;
     return NextResponse.json({ channel: created }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Failed to create channel' }, { status: 500 });

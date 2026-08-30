@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,30 +10,34 @@ interface Channel {
   niche: string;
   language: string;
   voice: string;
+  visual_style?: string;
   target_duration_minutes?: number;
   publishing_platform?: string;
 }
 
-type PresetType = 'SHORT' | 'STANDARD' | 'LONG' | 'CUSTOM';
+type FormatType = 'SHORT_VERTICAL' | 'STANDARD_LANDSCAPE' | 'DOCUMENTARY_EPIC';
+type VisualStyleType = 'CINEMATIC' | 'PHOTOREALISTIC' | 'CYBERPUNK' | 'DOCUMENTARY_BW' | 'ANIME_MOTION';
 
-function NewVideoForm() {
+function CreateVideoWizardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedChannelId = searchParams.get('channel_id');
+  const templateTopic = searchParams.get('topic');
 
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form State
+  // Wizard State
+  const [activeStep, setActiveStep] = useState<number>(1);
   const [channelId, setChannelId] = useState<string>('');
-  const [topic, setTopic] = useState<string>('');
-  const [preset, setPreset] = useState<PresetType>('STANDARD');
-  const [durationMinutes, setDurationMinutes] = useState<number>(5);
+  const [topic, setTopic] = useState<string>(templateTopic || '');
+  const [format, setFormat] = useState<FormatType>('STANDARD_LANDSCAPE');
+  const [durationMinutes, setDurationMinutes] = useState<number>(3);
+  const [visualStyle, setVisualStyle] = useState<VisualStyleType>('CINEMATIC');
+  const [voice, setVoice] = useState<string>('en-US-ChristopherNeural');
   const [language, setLanguage] = useState<string>('en');
-  const [platform, setPlatform] = useState<string>('YouTube');
-  const [visibility, setVisibility] = useState<'PRIVATE' | 'UNLISTED' | 'PUBLIC'>('PRIVATE');
   const [autoPublish, setAutoPublish] = useState<boolean>(false);
 
   useEffect(() => {
@@ -47,27 +51,8 @@ function NewVideoForm() {
           setChannels(list);
           if (preselectedChannelId && list.some((c: Channel) => c.id === preselectedChannelId)) {
             setChannelId(preselectedChannelId);
-            const found = list.find((c: Channel) => c.id === preselectedChannelId);
-            if (found?.target_duration_minutes) {
-              setDurationMinutes(found.target_duration_minutes);
-            }
-            if (found?.default_visibility) {
-              setVisibility(found.default_visibility);
-            }
-            if (found?.auto_publish) {
-              setAutoPublish(!!found.auto_publish);
-            }
           } else if (list.length > 0) {
             setChannelId(list[0].id);
-            if (list[0].target_duration_minutes) {
-              setDurationMinutes(list[0].target_duration_minutes);
-            }
-            if (list[0].default_visibility) {
-              setVisibility(list[0].default_visibility);
-            }
-            if (list[0].auto_publish) {
-              setAutoPublish(!!list[0].auto_publish);
-            }
           }
         }
       } catch (err: any) {
@@ -79,33 +64,39 @@ function NewVideoForm() {
     loadChannels();
   }, [preselectedChannelId]);
 
-  const selectPreset = (p: PresetType) => {
-    setPreset(p);
-    if (p === 'SHORT') {
-      setDurationMinutes(1);
-    } else if (p === 'STANDARD') {
-      setDurationMinutes(5);
-    } else if (p === 'LONG') {
-      setDurationMinutes(8);
-    }
+  const selectFormat = (f: FormatType) => {
+    setFormat(f);
+    if (f === 'SHORT_VERTICAL') setDurationMinutes(1);
+    else if (f === 'STANDARD_LANDSCAPE') setDurationMinutes(3);
+    else if (f === 'DOCUMENTARY_EPIC') setDurationMinutes(8);
   };
 
-  // Calculations based on duration in minutes
+  const selectedChannel = channels.find((c) => c.id === channelId);
+
+  // Real-time calculations
   const totalSeconds = durationMinutes * 60;
   const approxWords = Math.round(totalSeconds * 2.3);
-  let estimatedScenes = 3;
-  if (durationMinutes <= 1) {
-    estimatedScenes = 3;
-  } else if (durationMinutes <= 5) {
-    estimatedScenes = 8;
-  } else {
-    estimatedScenes = 14;
-  }
-  const approx8sClips = Math.ceil(totalSeconds / 8);
+  const estimatedScenes = durationMinutes <= 1 ? 4 : durationMinutes <= 3 ? 8 : 16;
+  const creditCost = 25;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!channelId || !topic.trim()) return;
+    if (!topic.trim() || submitting) return;
+
+    if (!channelId && channels.length === 0) {
+      // Auto-create default channel
+      try {
+        const cRes = await fetch('/api/channels', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'Studio Channel', niche: 'AI & Tech', target_duration_minutes: durationMinutes }),
+        });
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          setChannelId(cData.channel.id);
+        }
+      } catch {}
+    }
 
     try {
       setSubmitting(true);
@@ -115,24 +106,21 @@ function NewVideoForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          channel_id: channelId,
+          channel_id: channelId || channels[0]?.id,
           topic: topic.trim(),
-          preset,
-          target_length_minutes: Number(durationMinutes),
+          target_length_minutes: durationMinutes,
+          preset: format === 'SHORT_VERTICAL' ? 'SHORT' : 'STANDARD',
           language,
-          platform,
-          visibility,
+          platform: 'YouTube',
           auto_publish: autoPublish ? 1 : 0,
         }),
       });
 
-
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to start video generation');
+        throw new Error(data.error || 'Failed to initialize video generation');
       }
 
-      const data = await res.json();
       router.push(`/content/${data.projectId}`);
     } catch (err: any) {
       setError(err.message);
@@ -141,219 +129,282 @@ function NewVideoForm() {
   };
 
   return (
-    <div>
-      <div className="page-header">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Top Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="page-title">Generate Video</h1>
-          <p className="page-subtitle">Select video preset or custom duration to start automated production</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Dashboard</Link>
+            <span style={{ color: 'var(--text-dim)' }}>/</span>
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>Create Video</span>
+          </div>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+            AI Video Generation Studio
+          </h1>
         </div>
-        <Link href="/content" className="btn btn-secondary">
-          Back to Dashboard
+
+        <Link href="/templates" className="btn btn-secondary btn-sm">
+          Browse Templates ➔
         </Link>
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', backgroundColor: 'var(--error-bg)', color: '#f87171', borderRadius: '6px', marginBottom: '20px', fontSize: '14px', maxWidth: '640px' }}>
+        <div style={{ padding: '12px 16px', background: 'var(--status-error-bg)', border: '1px solid var(--status-error-border)', borderRadius: 'var(--radius-md)', color: 'var(--status-error)', fontSize: '13px' }}>
           {error}
         </div>
       )}
 
-      {loading ? (
-        <div style={{ padding: '40px 0', color: 'var(--text-secondary)' }}>Loading channel options...</div>
-      ) : channels.length === 0 ? (
-        <div className="card form-container">
-          <h3 className="card-title" style={{ marginBottom: '8px' }}>No Channels Configured</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
-            You need at least one channel profile to generate videos.
-          </p>
-          <Link href="/channels" className="btn btn-primary">
-            Create Channel Profile
-          </Link>
+      {/* 3-Column Studio Wizard Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 320px', gap: '24px', alignItems: 'start' }}>
+        {/* LEFT: STEP NAVIGATION */}
+        <div className="card" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {[
+            { num: 1, label: 'Topic & Channel' },
+            { num: 2, label: 'Format Archetype' },
+            { num: 3, label: 'Visual Aesthetic' },
+            { num: 4, label: 'Voice & Tone' },
+          ].map((s) => (
+            <button
+              key={s.num}
+              type="button"
+              onClick={() => setActiveStep(s.num)}
+              className={`nav-item ${activeStep === s.num ? 'active' : ''}`}
+              style={{ width: '100%', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <span className="tabular-nums" style={{ fontSize: '11px', fontWeight: 700, opacity: 0.6 }}>
+                0{s.num}
+              </span>
+              <span>{s.label}</span>
+            </button>
+          ))}
         </div>
-      ) : (
-        <div className="form-container" style={{ maxWidth: '640px' }}>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Channel Profile</label>
-              <select
-                className="form-select"
-                value={channelId}
-                onChange={(e) => {
-                  setChannelId(e.target.value);
-                  const ch = channels.find((c) => c.id === e.target.value);
-                  if (ch?.target_duration_minutes) {
-                    setDurationMinutes(ch.target_duration_minutes);
-                  }
-                  if (ch?.publishing_platform) {
-                    setPlatform(ch.publishing_platform);
-                  }
-                }}
-                required
-              >
-                {channels.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} — {c.niche} ({c.publishing_platform || 'YouTube'})
-                  </option>
+
+        {/* CENTER: MAIN CONFIGURATION PANELS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* STEP 1: TOPIC & CHANNEL */}
+          {activeStep === 1 && (
+            <div className="card" style={{ padding: '24px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
+                01. What is this video about?
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Enter a topic, headline, or rough idea. The AI engine will decompose it into cinematic scenes.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    Video Topic / Concept Prompt *
+                  </label>
+                  <textarea
+                    rows={4}
+                    className="topbar-search"
+                    style={{ width: '100%', borderRadius: 'var(--radius-md)', padding: '12px 14px', background: 'var(--bg-primary)', resize: 'vertical' }}
+                    placeholder="e.g. 'The Future of Autonomous AI Coding Agents in 2026: Why Everything is Changing'..."
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    Target Channel Workspace
+                  </label>
+                  <select
+                    className="topbar-search"
+                    style={{ width: '100%', borderRadius: 'var(--radius-md)', padding: '10px 14px', background: 'var(--bg-primary)' }}
+                    value={channelId}
+                    onChange={(e) => setChannelId(e.target.value)}
+                  >
+                    {channels.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.niche})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: FORMAT ARCHETYPE */}
+          {activeStep === 2 && (
+            <div className="card" style={{ padding: '24px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
+                02. Choose Format Archetype
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Select aspect ratio, duration target, and video pacing.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                {[
+                  { id: 'SHORT_VERTICAL', title: 'Vertical Shorts', ratio: '9:16', time: '60 Seconds', icon: '📱', desc: 'Fast hook, viral TikTok/Reels/Shorts' },
+                  { id: 'STANDARD_LANDSCAPE', title: 'YouTube Explainer', ratio: '16:9', time: '3 Minutes', icon: '🎬', desc: 'Standard high-retention structured video' },
+                  { id: 'DOCUMENTARY_EPIC', title: 'Deep Documentary', ratio: '16:9', time: '8 Minutes', icon: '🎙️', desc: 'In-depth storytelling with multiple arcs' },
+                ].map((f) => (
+                  <div
+                    key={f.id}
+                    onClick={() => selectFormat(f.id as FormatType)}
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: format === f.id ? 'var(--bg-elevated)' : 'var(--bg-primary)',
+                      border: format === f.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ fontSize: '24px', marginBottom: '10px' }}>{f.icon}</div>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>{f.title}</h3>
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '11px', fontWeight: 600, color: 'var(--accent-cyan)', marginBottom: '8px' }}>
+                      <span>{f.ratio}</span>
+                      <span>•</span>
+                      <span>{f.time}</span>
+                    </div>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{f.desc}</p>
+                  </div>
                 ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Video Topic / Core Concept</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. 5 Morning Habits That Can Improve Your Health"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Video Generation Preset</label>
-              <div className="preset-grid">
-                <div
-                  className={`preset-card ${preset === 'SHORT' ? 'active' : ''}`}
-                  onClick={() => selectPreset('SHORT')}
-                >
-                  <div className="preset-title">Short</div>
-                  <div className="preset-desc">30–60 seconds</div>
-                </div>
-
-                <div
-                  className={`preset-card ${preset === 'STANDARD' ? 'active' : ''}`}
-                  onClick={() => selectPreset('STANDARD')}
-                >
-                  <div className="preset-title">Standard</div>
-                  <div className="preset-desc">3–5 minutes</div>
-                </div>
-
-                <div
-                  className={`preset-card ${preset === 'LONG' ? 'active' : ''}`}
-                  onClick={() => selectPreset('LONG')}
-                >
-                  <div className="preset-title">Long</div>
-                  <div className="preset-desc">8–10 minutes</div>
-                </div>
-
-                <div
-                  className={`preset-card ${preset === 'CUSTOM' ? 'active' : ''}`}
-                  onClick={() => selectPreset('CUSTOM')}
-                >
-                  <div className="preset-title">Custom</div>
-                  <div className="preset-desc">Manual Length</div>
-                </div>
               </div>
             </div>
+          )}
 
-            {/* Target Duration Override Slider */}
-            <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label className="form-label" style={{ marginBottom: 0 }}>Target Duration (Minutes)</label>
-                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{durationMinutes} min ({totalSeconds}s)</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={15}
-                step={1}
-                value={durationMinutes}
-                onChange={(e) => {
-                  setDurationMinutes(Number(e.target.value));
-                  setPreset('CUSTOM');
-                }}
-                style={{ width: '100%', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
-              />
-            </div>
+          {/* STEP 3: VISUAL STYLE */}
+          {activeStep === 3 && (
+            <div className="card" style={{ padding: '24px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
+                03. Visual Aesthetics & Grading
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Directs the AI visuals engine and stock B-Roll footage matching.
+              </p>
 
-            {/* Live Calculation Readout */}
-            <div className="calculation-readout">
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Production Specs Calculation
-              </div>
-              <div className="calc-grid">
-                <div>
-                  <div className="calc-item-label">Narration Words</div>
-                  <div className="calc-item-val">~{approxWords}</div>
-                </div>
-                <div>
-                  <div className="calc-item-label">Scene Count</div>
-                  <div className="calc-item-val">{estimatedScenes} scenes</div>
-                </div>
-                <div>
-                  <div className="calc-item-label">8s Video Clips</div>
-                  <div className="calc-item-val">~{approx8sClips} clips</div>
-                </div>
-                <div>
-                  <div className="calc-item-label">Target Duration</div>
-                  <div className="calc-item-val">{durationMinutes} min</div>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                {[
+                  { id: 'CINEMATIC', label: 'Cinematic High-Contrast', desc: 'Anamorphic lens, rich blacks, volumetric god rays' },
+                  { id: 'PHOTOREALISTIC', label: 'Photorealistic 8K', desc: 'Hyper-detailed textures, macro focus, natural sunlight' },
+                  { id: 'CYBERPUNK', label: 'Cyberpunk Neo-Tokyo', desc: 'Neon magenta & cyan reflections, holographic HUDs' },
+                  { id: 'DOCUMENTARY_BW', label: 'Historical Archival', desc: 'Grain texture, monochrome tones, historic archival feel' },
+                ].map((v) => (
+                  <div
+                    key={v.id}
+                    onClick={() => setVisualStyle(v.id as VisualStyleType)}
+                    style={{
+                      padding: '14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: visualStyle === v.id ? 'var(--bg-elevated)' : 'var(--bg-primary)',
+                      border: visualStyle === v.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>{v.label}</h3>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{v.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
+          )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <div className="form-group">
-                <label className="form-label">Platform</label>
-                <select
-                  className="form-select"
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value)}
-                >
-                  <option value="YouTube">YouTube</option>
-                  <option value="TikTok">TikTok</option>
-                  <option value="Instagram">Instagram</option>
-                  <option value="Facebook">Facebook</option>
-                </select>
+          {/* STEP 4: VOICE & TONE */}
+          {activeStep === 4 && (
+            <div className="card" style={{ padding: '24px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
+                04. Voiceover & Narration Tone
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Select neural voice synthesizer model.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { id: 'en-US-ChristopherNeural', name: 'Christopher (Neural)', tone: 'Authoritative, Deep, Cinematic', lang: 'English (US)' },
+                  { id: 'en-US-JennyNeural', name: 'Jenny (Neural)', tone: 'Energetic, Friendly, Clear', lang: 'English (US)' },
+                  { id: 'en-GB-RyanNeural', name: 'Ryan (British BBC)', tone: 'Sophisticated, Documentary, Calm', lang: 'English (UK)' },
+                ].map((voc) => (
+                  <div
+                    key={voc.id}
+                    onClick={() => setVoice(voc.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: voice === voc.id ? 'var(--bg-elevated)' : 'var(--bg-primary)',
+                      border: voice === voc.id ? '1px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div>
+                      <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{voc.name}</h3>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{voc.tone} • {voc.lang}</p>
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                      {voice === voc.id ? '✓ Selected' : 'Select'}
+                    </span>
+                  </div>
+                ))}
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Visibility</label>
-                <select
-                  className="form-select"
-                  value={visibility}
-                  onChange={(e: any) => setVisibility(e.target.value)}
-                >
-                  <option value="PRIVATE">PRIVATE</option>
-                  <option value="UNLISTED">UNLISTED</option>
-                  <option value="PUBLIC">PUBLIC</option>
-                </select>
-              </div>
             </div>
-
-            <div style={{ background: 'var(--bg-secondary)', padding: '12px 14px', borderRadius: '6px', border: '1px solid var(--border-subtle)', margin: '14px 0' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
-                <input
-                  type="checkbox"
-                  checked={autoPublish}
-                  onChange={(e) => setAutoPublish(e.target.checked)}
-                />
-                <span><strong>Auto-Publish on Completion:</strong> Automatically upload & schedule to YouTube upon generation completion</span>
-              </label>
-            </div>
-
-            <div style={{ marginTop: '24px' }}>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ width: '100%', padding: '14px', fontSize: '15px' }}
-                disabled={submitting}
-              >
-                {submitting ? 'Initiating Pipeline...' : 'START VIDEO GENERATION'}
-              </button>
-            </div>
-          </form>
+          )}
         </div>
-      )}
+
+        {/* RIGHT: LIVE BLUEPRINT & COST CARD */}
+        <div className="card card-elevated" style={{ padding: '24px', position: 'sticky', top: '88px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Live Blueprint
+            </span>
+            <span className="badge badge-ready">1080p CFR</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', fontSize: '13px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Duration Target:</span>
+              <span className="tabular-nums" style={{ color: '#fff', fontWeight: 600 }}>{durationMinutes} Minutes ({totalSeconds}s)</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Estimated Scenes:</span>
+              <span className="tabular-nums" style={{ color: '#fff', fontWeight: 600 }}>~{estimatedScenes} Sub-clips</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Script Target:</span>
+              <span className="tabular-nums" style={{ color: '#fff', fontWeight: 600 }}>~{approxWords} Words</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Resolution:</span>
+              <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>1920x1080 Full HD</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Generation Cost:</span>
+              <span className="tabular-nums" style={{ color: 'var(--accent-emerald)', fontWeight: 700 }}>⚡ {creditCost} Credits</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || !topic.trim()}
+            className="btn btn-primary btn-lg"
+            style={{ width: '100%', marginBottom: '12px' }}
+          >
+            {submitting ? 'Queuing Pipeline...' : '⚡ Generate Video'}
+          </button>
+
+          <p style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.4 }}>
+            Directs the 10-stage autonomous engine: Script $\to$ Voice $\to$ Visuals $\to$ 1080p MP4.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-
-export default function NewVideoPage() {
+export default function CreateVideoPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '40px 0', color: 'var(--text-secondary)' }}>Loading...</div>}>
-      <NewVideoForm />
+    <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Loading Video Wizard...</div>}>
+      <CreateVideoWizardContent />
     </Suspense>
   );
 }

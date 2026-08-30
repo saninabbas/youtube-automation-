@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb, DEFAULT_USER_ID, ContentProject, Channel } from '@/lib/db';
+import { getDb, DEFAULT_USER_ID, ContentProject, Channel, deductUserCredits } from '@/lib/db';
 import { videoWorker } from '@/lib/queue/worker';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const db = getDb();
     const projects = db
       .prepare(
@@ -16,7 +22,7 @@ export async function GET() {
          WHERE p.user_id = ? 
          ORDER BY p.created_at DESC`
       )
-      .all(DEFAULT_USER_ID) as ContentProject[];
+      .all(user.id) as ContentProject[];
 
     return NextResponse.json({ projects });
   } catch (err: any) {
@@ -26,6 +32,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       channel_id,
@@ -48,18 +59,22 @@ export async function POST(request: Request) {
 
     const db = getDb();
 
+    // Verify channel belongs strictly to this authenticated user
     const channel = db
       .prepare('SELECT * FROM channels WHERE id = ? AND user_id = ?')
-      .get(channel_id, DEFAULT_USER_ID) as Channel | undefined;
+      .get(channel_id, user.id) as Channel | undefined;
 
     if (!channel) {
-      return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Channel not found or not owned by user' }, { status: 404 });
     }
 
     const projectId = uuidv4();
     const now = new Date().toISOString();
     const willAutoPublish = auto_publish || channel.auto_publish ? 1 : 0;
     const initialPublishStatus = scheduled_at ? 'SCHEDULED' : willAutoPublish ? 'SCHEDULED' : 'DRAFT';
+
+    // Deduct 25 credits for automated generation
+    deductUserCredits(user.id, 25, 'GENERATE_VIDEO', `Generated video: ${topic.trim().substring(0, 40)}`, projectId);
 
     db.prepare(
       `INSERT INTO content_projects (
@@ -69,7 +84,7 @@ export async function POST(request: Request) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       projectId,
-      DEFAULT_USER_ID,
+      user.id,
       channel_id,
       topic.trim(),
       Number(target_length_minutes) || 5,

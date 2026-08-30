@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getDb } from '@/lib/db';
 import fs from 'fs';
 import path from 'path';
+import { verifyAdminToken } from '../auth/route';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const cookieStore = cookies();
+    const token = cookieStore.get('admin_session_token')?.value;
+    if (!token || !verifyAdminToken(token)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin authentication required.' }, { status: 401 });
+    }
     const db = getDb();
 
     // 1. Channel stats

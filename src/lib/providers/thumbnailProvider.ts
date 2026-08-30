@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { getFfmpegPath } from './videoProvider';
 import { storage } from '../storage';
+import { getApiKey } from '../db';
 
 const execFileAsync = util.promisify(execFile);
 
@@ -100,103 +101,130 @@ class DefaultThumbnailProvider implements ThumbnailProvider {
       line3 = words.slice(third * 2).join(' ').toUpperCase();
     }
 
-    // Escape XML entities
-    const escapeXml = (str: string) =>
-      str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    const fontBold = 'C\\:/Windows/Fonts/arialbd.ttf';
+    const fontRegular = 'C\\:/Windows/Fonts/arial.ttf';
 
-    const safeTitle1 = escapeXml(line1);
-    const safeTitle2 = escapeXml(line2);
-    const safeTitle3 = escapeXml(line3);
-    const safeChannel = escapeXml(channelName.toUpperCase());
-    const safeNiche = escapeXml(niche.toUpperCase());
+    const sanitize = (str: string) =>
+      str.replace(/[:\\'%]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    const svgContent = `
-<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${bg1}" />
-      <stop offset="50%" stop-color="${bg2}" />
-      <stop offset="100%" stop-color="#050608" />
-    </linearGradient>
-    <radialGradient id="glow" cx="80%" cy="20%" r="60%">
-      <stop offset="0%" stop-color="${accent}" stop-opacity="0.25" />
-      <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
-    </radialGradient>
-  </defs>
+    const safeTitle1 = sanitize(line1);
+    const safeTitle2 = sanitize(line2);
+    const safeTitle3 = sanitize(line3);
+    const safeChannel = sanitize(channelName.toUpperCase());
+    const safeNiche = sanitize(niche.toUpperCase());
 
-  <!-- Background -->
-  <rect width="1280" height="720" fill="url(#bgGrad)" />
-  <rect width="1280" height="720" fill="url(#glow)" />
+    // 1. Try Generating Real AI Image via Cloudflare Workers AI for Thumbnail
+    const cfToken = getApiKey('cloudflare_api_token') || process.env.CLOUDFLARE_API_TOKEN;
+    const cfAccountId = getApiKey('cloudflare_account_id') || process.env.CLOUDFLARE_ACCOUNT_ID;
 
-  <!-- Subtle Geometric Frame & Grid -->
-  <line x1="80" y1="80" x2="1200" y2="80" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
-  <line x1="80" y1="640" x2="1200" y2="640" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
-  <line x1="80" y1="80" x2="80" y2="640" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
-  <line x1="1200" y1="80" x2="1200" y2="640" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+    let generatedAiThumb = false;
+    const rand = Math.random().toString(36).substring(2, 7);
+    const tempAiThumbPath = path.join(tempDir, `cf_thumb_${rand}.jpg`);
 
-  <!-- Category & Channel Badge -->
-  <g transform="translate(110, 130)">
-    <rect width="200" height="38" rx="6" fill="${tagBg}" stroke="${tagBorder}" stroke-width="1.5" />
-    <text x="100" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700" fill="${accent}" letter-spacing="1.5" text-anchor="middle">
-      ${safeNiche}
-    </text>
-  </g>
+    if (cfToken && cfAccountId) {
+      try {
+        const thumbPrompt = `cinematic YouTube thumbnail for ${title}, ${niche}, ultra high definition photo, dramatic lighting, 8k resolution, award winning`;
+        const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${cfToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt: thumbPrompt }),
+        });
 
-  <!-- Channel Name Header -->
-  <text x="330" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#9ca3af" letter-spacing="1">
-    ${safeChannel}
-  </text>
-
-  <!-- Main Thumbnail Headlines (Bold, High-Contrast Typography) -->
-  <g transform="translate(110, 260)">
-    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="58" font-weight="900" fill="#ffffff" letter-spacing="-1">
-      ${safeTitle1}
-    </text>
-    ${
-      safeTitle2
-        ? `<text x="0" y="72" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="58" font-weight="900" fill="${accent}" letter-spacing="-1">
-      ${safeTitle2}
-    </text>`
-        : ''
+        if (res.ok) {
+          const data: any = await res.json();
+          if (data.result?.image) {
+            const imgBuf = Buffer.from(data.result.image, 'base64');
+            await fs.promises.writeFile(tempAiThumbPath, imgBuf);
+            generatedAiThumb = true;
+          }
+        }
+      } catch (cfErr: any) {
+        console.warn(`[ThumbnailProvider] Cloudflare AI Image generation error (${cfErr.message}).`);
+      }
     }
-    ${
-      safeTitle3
-        ? `<text x="0" y="144" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="54" font-weight="900" fill="#ffffff" letter-spacing="-1">
-      ${safeTitle3}
-    </text>`
-        : ''
-    }
-  </g>
 
-  <!-- Bottom Accent Bar -->
-  <rect x="110" y="580" width="160" height="6" rx="3" fill="${accent}" />
-  <text x="290" y="588" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700" fill="#ffffff" letter-spacing="2">
-    4K MASTERCLASS
-  </text>
-</svg>
-`;
+    if (generatedAiThumb && fs.existsSync(tempAiThumbPath)) {
+      try {
+        const thumbFilter = [
+          `scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720`,
+          `drawbox=x=60:y=60:w=1160:h=600:color=#090d16@0.75:t=fill`,
+          `drawbox=x=60:y=60:w=1160:h=600:color=${accent}@0.85:t=3`,
+          `drawbox=x=110:y=110:w=260:h=42:color=${accent}@0.2:t=fill`,
+          `drawbox=x=110:y=110:w=260:h=42:color=${accent}@0.9:t=2`,
+          `drawtext=fontfile='${fontBold}':text='${safeNiche}':fontcolor=${accent}:fontsize=18:x=130:y=122`,
+          `drawtext=fontfile='${fontBold}':text='${safeChannel}':fontcolor=#9ca3af:fontsize=18:x=390:y=122`,
+          `drawtext=fontfile='${fontBold}':text='${safeTitle1}':fontcolor=white:fontsize=56:x=110:y=240`,
+          safeTitle2 ? `drawtext=fontfile='${fontBold}':text='${safeTitle2}':fontcolor=${accent}:fontsize=56:x=110:y=330` : '',
+          safeTitle3 ? `drawtext=fontfile='${fontBold}':text='${safeTitle3}':fontcolor=white:fontsize=50:x=110:y=420` : '',
+          `drawbox=x=110:y=560:w=220:h=6:color=${accent}:t=fill`,
+          `drawtext=fontfile='${fontBold}':text='4K MASTERCLASS':fontcolor=white:fontsize=16:x=350:y=554`,
+        ].filter(Boolean).join(',');
 
-    const svgPath = path.join(tempDir, 'thumbnail.svg');
-    await fs.promises.writeFile(svgPath, svgContent, 'utf8');
+        await execFileAsync(ffmpegPath, [
+          '-y',
+          '-i',
+          tempAiThumbPath,
+          '-vf',
+          thumbFilter,
+          '-vframes',
+          '1',
+          outputPath,
+        ]);
+      } catch {
+        // fallback
+      } finally {
+        if (fs.existsSync(tempAiThumbPath)) {
+          await fs.promises.unlink(tempAiThumbPath).catch(() => {});
+        }
+      }
+    } else {
+      const filterGraph = [
+        `drawbox=x=60:y=60:w=1160:h=600:color=#101420@0.94:t=fill`,
+        `drawbox=x=60:y=60:w=1160:h=600:color=${accent}@0.85:t=3`,
+        `drawgrid=width=100:height=100:thickness=1:color=white@0.03`,
+        `drawbox=x=110:y=110:w=260:h=42:color=${accent}@0.2:t=fill`,
+        `drawbox=x=110:y=110:w=260:h=42:color=${accent}@0.9:t=2`,
+        `drawtext=fontfile='${fontBold}':text='${safeNiche}':fontcolor=${accent}:fontsize=18:x=130:y=122`,
+        `drawtext=fontfile='${fontBold}':text='${safeChannel}':fontcolor=#9ca3af:fontsize=18:x=390:y=122`,
+        `drawtext=fontfile='${fontBold}':text='${safeTitle1}':fontcolor=white:fontsize=56:x=110:y=240`,
+        safeTitle2 ? `drawtext=fontfile='${fontBold}':text='${safeTitle2}':fontcolor=${accent}:fontsize=56:x=110:y=330` : '',
+        safeTitle3 ? `drawtext=fontfile='${fontBold}':text='${safeTitle3}':fontcolor=white:fontsize=50:x=110:y=420` : '',
+        `drawbox=x=110:y=560:w=220:h=6:color=${accent}:t=fill`,
+        `drawtext=fontfile='${fontBold}':text='4K MASTERCLASS':fontcolor=white:fontsize=16:x=350:y=554`,
+      ].filter(Boolean).join(',');
 
-    // Use FFmpeg to rasterize SVG into crisp 1280x720 PNG
-    const args = ['-y', '-i', svgPath, '-pix_fmt', 'rgba', outputPath];
-
-    try {
-      await execFileAsync(ffmpegPath, args);
-    } catch (err) {
-      // Fallback direct copy or pure color generation if svg rasterizer in FFmpeg needs simple lavfi
-      const fallbackArgs = [
+      const args = [
         '-y',
         '-f',
         'lavfi',
         '-i',
-        `color=c=${bg2}:s=1280x720:d=1`,
+        `color=c=${bg1}:s=1280x720:d=1`,
+        '-vf',
+        filterGraph,
         '-vframes',
         '1',
         outputPath,
       ];
-      await execFileAsync(ffmpegPath, fallbackArgs);
+
+      try {
+        await execFileAsync(ffmpegPath, args);
+      } catch (err) {
+        // Fallback
+        const fallbackArgs = [
+          '-y',
+          '-f',
+          'lavfi',
+          '-i',
+          `color=c=${bg2}:s=1280x720:d=1`,
+          '-vframes',
+          '1',
+          outputPath,
+        ];
+        await execFileAsync(ffmpegPath, fallbackArgs);
+      }
     }
 
     const stat = await fs.promises.stat(outputPath);

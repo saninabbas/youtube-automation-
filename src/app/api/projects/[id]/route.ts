@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getDb, DEFAULT_USER_ID, ContentProject, Channel, VideoScene, GeneratedAsset, VideoJob, VideoOutput, OAuthConnection } from '@/lib/db';
+import { getDb, DEFAULT_USER_ID, ContentProject, VideoScene, GeneratedAsset, VideoJob, VideoOutput, OAuthConnection } from '@/lib/db';
 import { PIPELINE_STAGES } from '@/lib/queue/worker';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
+    const user = await getCurrentUser(request);
+    const userId = user ? user.id : DEFAULT_USER_ID;
+
     const db = getDb();
 
+    // Multi-tenant check: project must belong strictly to the authenticated user
     const project = db
       .prepare(
         `SELECT p.*, c.name as channel_name, c.niche as channel_niche, c.voice as channel_voice,
@@ -19,7 +24,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
          JOIN channels c ON p.channel_id = c.id 
          WHERE p.id = ? AND p.user_id = ?`
       )
-      .get(id, DEFAULT_USER_ID) as (ContentProject & {
+      .get(id, userId) as (ContentProject & {
         channel_name: string;
         channel_niche: string;
         channel_voice: string;
@@ -31,7 +36,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       }) | undefined;
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found or access denied.' }, { status: 404 });
     }
 
     const rawJobs = db
@@ -73,7 +78,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     // Check YouTube connection status for current user
     const ytConn = db
       .prepare('SELECT id, channel_id, channel_title, account_email FROM oauth_connections WHERE user_id = ? AND platform = ?')
-      .get(DEFAULT_USER_ID, 'YOUTUBE') as OAuthConnection | undefined;
+      .get(userId, 'YOUTUBE') as OAuthConnection | undefined;
 
     let parsedMetadata = null;
     if (project.metadata_json) {

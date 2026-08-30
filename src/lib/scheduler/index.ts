@@ -35,7 +35,7 @@ class BackgroundPublishingScheduler {
     }
   }
 
-  public async checkAndPublishDueVideos(userId: string = DEFAULT_USER_ID): Promise<SchedulerRunResult> {
+  public async checkAndPublishDueVideos(userId?: string): Promise<SchedulerRunResult> {
     if (this.isRunning) {
       return { processedCount: 0, publishedCount: 0, failedCount: 0, details: [] };
     }
@@ -52,34 +52,64 @@ class BackgroundPublishingScheduler {
     };
 
     try {
-      // Find all completed projects that are scheduled and ready to publish
-      const dueProjects = db
-        .prepare(
-          `SELECT p.*, c.name as channel_name, c.publishing_platform as channel_platform, c.default_visibility 
-           FROM content_projects p 
-           JOIN channels c ON p.channel_id = c.id 
-           WHERE p.status = 'COMPLETED' 
-             AND p.publishing_status = 'SCHEDULED' 
-             AND p.scheduled_at IS NOT NULL 
-             AND p.scheduled_at <= ? 
-           ORDER BY p.scheduled_at ASC`
-        )
-        .all(nowIso) as (ContentProject & { channel_name: string; channel_platform: string; default_visibility: string })[];
+      // 1. Recover stuck jobs (>15 mins in UPLOADING without completion)
+      const stuckThresholdIso = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      db.prepare(
+        `UPDATE content_projects SET 
+          publishing_status = 'SCHEDULED', 
+          publish_error = 'Previous upload process lease expired. Automatically recovered.' 
+         WHERE publishing_status = 'UPLOADING' AND publish_started_at < ?`
+      ).run(stuckThresholdIso);
+
+      // 2. Find all completed projects that are scheduled and ready to publish
+      let dueQuery = `
+        SELECT p.*, c.name as channel_name, c.publishing_platform as channel_platform, c.default_visibility 
+        FROM content_projects p 
+        JOIN channels c ON p.channel_id = c.id 
+        WHERE p.status = 'COMPLETED' 
+          AND p.publishing_status = 'SCHEDULED' 
+          AND p.scheduled_at IS NOT NULL 
+          AND p.scheduled_at <= ? 
+      `;
+      const queryParams: any[] = [nowIso];
+
+      if (userId) {
+        dueQuery += ' AND p.user_id = ?';
+        queryParams.push(userId);
+      }
+
+      dueQuery += ' ORDER BY p.scheduled_at ASC';
+
+      const dueProjects = db.prepare(dueQuery).all(...queryParams) as (ContentProject & {
+        channel_name: string;
+        channel_platform: string;
+        default_visibility: string;
+      })[];
 
       result.processedCount = dueProjects.length;
 
       for (const proj of dueProjects) {
+        // Prevent Duplicate Uploads: If already published with valid video ID, mark published
+        if (proj.publish_video_id && proj.publishing_status === 'PUBLISHED') {
+          continue;
+        }
+
         const publishStartTime = new Date().toISOString();
 
-        // Mark project as UPLOADING
-        db.prepare(
+        // Mark project as UPLOADING (atomic state transition)
+        const updateRes = db.prepare(
           `UPDATE content_projects SET 
             publishing_status = 'UPLOADING', 
             publish_started_at = ?, 
             publish_error = NULL, 
             updated_at = ? 
-           WHERE id = ?`
+           WHERE id = ? AND publishing_status = 'SCHEDULED'`
         ).run(publishStartTime, publishStartTime, proj.id);
+
+        if (updateRes.changes === 0) {
+          // Another worker claimed this job
+          continue;
+        }
 
         const output = db.prepare('SELECT * FROM video_outputs WHERE project_id = ?').get(proj.id) as VideoOutput | undefined;
         const thumbnail = db.prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'thumbnail' ORDER BY created_at DESC LIMIT 1").get(proj.id) as GeneratedAsset | undefined;
@@ -114,7 +144,7 @@ class BackgroundPublishingScheduler {
           tags: parsedMeta.tags || [],
           thumbnailFilePath,
           visibility: proj.visibility || (proj.default_visibility as any) || 'PRIVATE',
-          userId: proj.user_id || userId,
+          userId: proj.user_id,
         });
 
         const publishEndTime = new Date().toISOString();

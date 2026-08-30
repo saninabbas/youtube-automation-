@@ -3,11 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb, DEFAULT_USER_ID, ContentProject, Channel } from '@/lib/db';
 import { thumbnailProvider } from '@/lib/providers/thumbnailProvider';
 
+import { getCurrentUser } from '@/lib/auth';
+
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const db = getDb();
 
     const project = db
@@ -17,10 +24,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
          JOIN channels c ON p.channel_id = c.id 
          WHERE p.id = ? AND p.user_id = ?`
       )
-      .get(id, DEFAULT_USER_ID) as (ContentProject & { channel_name: string; channel_niche: string; channel_visual_style: string }) | undefined;
+      .get(id, user.id) as (ContentProject & { channel_name: string; channel_niche: string; channel_visual_style: string }) | undefined;
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found or access denied.' }, { status: 404 });
     }
 
     const thumbRes = await thumbnailProvider.generateThumbnail({

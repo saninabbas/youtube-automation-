@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getDb, DEFAULT_USER_ID, Channel } from '@/lib/db';
+import { getDb, Channel } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const db = getDb();
+    const user = await getCurrentUser(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
+    const db = getDb();
     const channel = db
       .prepare('SELECT * FROM channels WHERE id = ? AND user_id = ?')
-      .get(id, DEFAULT_USER_ID) as Channel | undefined;
+      .get(id, user.id) as Channel | undefined;
 
     if (!channel) {
-      return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Channel not found or access denied.' }, { status: 404 });
     }
 
     return NextResponse.json({ channel });
@@ -25,15 +28,18 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
+    const user = await getCurrentUser(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
     const body = await request.json();
     const db = getDb();
 
     const existing = db
       .prepare('SELECT * FROM channels WHERE id = ? AND user_id = ?')
-      .get(id, DEFAULT_USER_ID) as Channel | undefined;
+      .get(id, user.id) as Channel | undefined;
 
     if (!existing) {
-      return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Channel not found or access denied.' }, { status: 404 });
     }
 
     const {
@@ -87,10 +93,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       auto_publish ? 1 : 0,
       now,
       id,
-      DEFAULT_USER_ID
+      user.id
     );
 
-    const updated = db.prepare('SELECT * FROM channels WHERE id = ?').get(id) as Channel;
+    const updated = db.prepare('SELECT * FROM channels WHERE id = ? AND user_id = ?').get(id, user.id) as Channel;
     return NextResponse.json({ channel: updated });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Failed to update channel' }, { status: 500 });
@@ -100,9 +106,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const db = getDb();
+    const user = await getCurrentUser(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
-    db.prepare('DELETE FROM channels WHERE id = ? AND user_id = ?').run(id, DEFAULT_USER_ID);
+    const db = getDb();
+    const existing = db
+      .prepare('SELECT * FROM channels WHERE id = ? AND user_id = ?')
+      .get(id, user.id) as Channel | undefined;
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Channel not found or access denied.' }, { status: 404 });
+    }
+
+    db.prepare('DELETE FROM channels WHERE id = ? AND user_id = ?').run(id, user.id);
     return NextResponse.json({ message: 'Channel deleted successfully' });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Failed to delete channel' }, { status: 500 });

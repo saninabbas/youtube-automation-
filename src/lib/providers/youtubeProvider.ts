@@ -43,9 +43,17 @@ export interface YouTubeProvider {
 }
 
 class DefaultYouTubeProvider implements YouTubeProvider {
-  private clientId = process.env.GOOGLE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID || '';
-  private clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET || '';
-  private redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3000/api/auth/youtube/callback';
+  private get clientId(): string {
+    return process.env.GOOGLE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID || '';
+  }
+
+  private get clientSecret(): string {
+    return process.env.GOOGLE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET || '';
+  }
+
+  private get redirectUri(): string {
+    return process.env.GOOGLE_REDIRECT_URI || process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3000/api/auth/youtube/callback';
+  }
 
   getAuthUrl(userId: string = DEFAULT_USER_ID): string | null {
     if (!this.clientId) {

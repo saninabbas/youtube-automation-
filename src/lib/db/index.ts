@@ -169,6 +169,9 @@ export function getDb(): Database.Database {
     safeAddColumn('video_scenes', 'lighting', 'TEXT');
     safeAddColumn('video_scenes', 'color_style', 'TEXT');
     safeAddColumn('video_scenes', 'continuity_notes', 'TEXT');
+    safeAddColumn('user_sessions', 'session_token', 'TEXT');
+    safeAddColumn('user_sessions', 'user_agent', 'TEXT');
+    safeAddColumn('user_sessions', 'ip_address', 'TEXT');
 
     // Create oauth_connections table if missing
     dbInstance.exec(`
@@ -188,7 +191,194 @@ export function getDb(): Database.Database {
         UNIQUE(user_id, platform)
       );
       CREATE INDEX IF NOT EXISTS idx_oauth_user_platform ON oauth_connections(user_id, platform);
+
+      CREATE TABLE IF NOT EXISTS api_credentials (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        api_key TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(user_id, provider)
+      );
+      CREATE INDEX IF NOT EXISTS idx_api_credentials_user ON api_credentials(user_id, provider);
+
+      CREATE TABLE IF NOT EXISTS user_credits (
+        user_id TEXT PRIMARY KEY,
+        balance INTEGER NOT NULL DEFAULT 500,
+        tier TEXT NOT NULL DEFAULT 'CREATOR',
+        subscription_status TEXT NOT NULL DEFAULT 'ACTIVE',
+        monthly_allowance INTEGER NOT NULL DEFAULT 500,
+        renews_at TEXT,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS credit_transactions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        balance_after INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        project_id TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id, created_at);
+
+      CREATE TABLE IF NOT EXISTS billing_plans (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        price_monthly INTEGER NOT NULL,
+        credits_monthly INTEGER NOT NULL,
+        max_channels INTEGER NOT NULL,
+        resolution TEXT NOT NULL,
+        features_json TEXT NOT NULL,
+        is_popular INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS automation_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        format TEXT NOT NULL,
+        duration_minutes INTEGER NOT NULL,
+        visual_style TEXT NOT NULL,
+        voice TEXT NOT NULL,
+        niche TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        prompt_starter TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        name TEXT NOT NULL,
+        avatar TEXT,
+        email_verified INTEGER NOT NULL DEFAULT 0,
+        verification_token TEXT,
+        verification_token_expires TEXT,
+        reset_token TEXT,
+        reset_token_expires TEXT,
+        role TEXT NOT NULL DEFAULT 'CUSTOMER',
+        status TEXT NOT NULL DEFAULT 'ACTIVE',
+        onboarding_completed INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        session_token TEXT UNIQUE NOT NULL,
+        expires_at TEXT NOT NULL,
+        user_agent TEXT,
+        ip_address TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
     `);
+
+    // Ensure default demo user exists for smooth local development & onboarding
+    try {
+      const defaultUser = dbInstance.prepare('SELECT id FROM users WHERE id = ?').get(DEFAULT_USER_ID);
+      if (!defaultUser) {
+        dbInstance.prepare(`
+          INSERT INTO users (id, email, password_hash, salt, name, email_verified, role, status, onboarding_completed, created_at, updated_at)
+          VALUES (?, 'creator@autovideo.ai', 'demo_hash_seeded', 'demo_salt', 'Creative Director', 1, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
+        `).run(DEFAULT_USER_ID, new Date().toISOString(), new Date().toISOString());
+      }
+    } catch {}
+
+    // Ensure default user has credits initialized
+    try {
+      const existingCredits = dbInstance.prepare('SELECT balance FROM user_credits WHERE user_id = ?').get(DEFAULT_USER_ID);
+      if (!existingCredits) {
+        dbInstance.prepare(`
+          INSERT INTO user_credits (user_id, balance, tier, subscription_status, monthly_allowance, renews_at, updated_at)
+          VALUES (?, 500, 'CREATOR', 'ACTIVE', 500, ?, ?)
+        `).run(DEFAULT_USER_ID, new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(), new Date().toISOString());
+      }
+    } catch {}
+
+    // Customer auth tables (multi-tenant SaaS)
+    dbInstance.exec(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        avatar_url TEXT,
+        email_verified INTEGER NOT NULL DEFAULT 0,
+        deleted_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(email)
+      );
+      CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+
+      CREATE TABLE IF NOT EXISTS customer_sessions (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        ip TEXT,
+        user_agent TEXT,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        revoked_at TEXT,
+        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_sessions_customer ON customer_sessions(customer_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_token ON customer_sessions(token_hash);
+
+      CREATE TABLE IF NOT EXISTS email_verifications (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        expires_at TEXT NOT NULL,
+        used_at TEXT,
+        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        expires_at TEXT NOT NULL,
+        used_at TEXT,
+        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        plan TEXT NOT NULL DEFAULT 'FREE',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_workspaces_customer ON workspaces(customer_id);
+
+      CREATE TABLE IF NOT EXISTS workspace_members (
+        workspace_id TEXT NOT NULL,
+        customer_id TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'OWNER',
+        joined_at TEXT NOT NULL,
+        PRIMARY KEY (workspace_id, customer_id),
+        FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+        FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `);
+
   }
   return dbInstance;
 }
@@ -353,3 +543,353 @@ export interface VideoOutput {
   created_at: string;
 }
 
+export interface ApiCredential {
+  id: string;
+  user_id: string;
+  provider: 'gemini' | 'openai' | 'runway' | 'replicate' | 'fal' | string;
+  api_key: string;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function maskApiKey(key?: string | null): string {
+  if (!key || typeof key !== 'string') return '';
+  const trimmed = key.trim();
+  if (trimmed.length <= 8) {
+    return '********';
+  }
+  const prefix = trimmed.slice(0, 4);
+  const suffix = trimmed.slice(-4);
+  return `${prefix}********${suffix}`;
+}
+
+export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): string | null {
+  try {
+    const db = getDb();
+    const row = db.prepare('SELECT api_key FROM api_credentials WHERE user_id = ? AND provider = ? AND is_active = 1').get(userId, provider.toLowerCase()) as { api_key: string } | undefined;
+    if (row && row.api_key && row.api_key.trim()) {
+      return row.api_key.trim();
+    }
+  } catch (err) {
+    console.warn(`Error reading API key for provider ${provider}:`, err);
+  }
+
+  // Fallback to environment variables
+  if (provider.toLowerCase() === 'gemini') {
+    return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
+  }
+  if (provider.toLowerCase() === 'openai') {
+    return process.env.OPENAI_API_KEY || null;
+  }
+  if (provider.toLowerCase() === 'runway') {
+    return process.env.RUNWAY_API_KEY || null;
+  }
+  if (provider.toLowerCase() === 'replicate') {
+    return process.env.REPLICATE_API_TOKEN || null;
+  }
+  if (provider.toLowerCase() === 'fal') {
+    return process.env.FAL_KEY || process.env.FAL_AI_KEY || null;
+  }
+  return null;
+}
+
+export function saveApiKey(provider: string, apiKey: string, userId: string = DEFAULT_USER_ID): boolean {
+  try {
+    const db = getDb();
+    const now = new Date().toISOString();
+    const normalizedProvider = provider.toLowerCase().trim();
+    const normalizedKey = apiKey.trim();
+
+    if (!normalizedKey) {
+      db.prepare('DELETE FROM api_credentials WHERE user_id = ? AND provider = ?').run(userId, normalizedProvider);
+      return true;
+    }
+
+    db.prepare(`
+      INSERT INTO api_credentials (id, user_id, provider, api_key, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, ?, ?)
+      ON CONFLICT(user_id, provider) DO UPDATE SET
+        api_key = excluded.api_key,
+        is_active = 1,
+        updated_at = excluded.updated_at
+    `).run(
+      `cred_${userId}_${normalizedProvider}`,
+      userId,
+      normalizedProvider,
+      normalizedKey,
+      now,
+      now
+    );
+    return true;
+  } catch (err) {
+    console.error(`Failed to save API key for provider ${provider}:`, err);
+    return false;
+  }
+}
+
+export function getAllApiCredentials(userId: string = DEFAULT_USER_ID): Record<string, { configured: boolean; maskedKey: string; source: 'database' | 'env' | 'none' }> {
+  const providers = [
+    'gemini',
+    'openai',
+    'cloudflare_account_id',
+    'cloudflare_api_token',
+    'pexels',
+    'pixabay',
+    'elevenlabs',
+    'runway',
+    'replicate',
+    'fal'
+  ];
+  const result: Record<string, { configured: boolean; maskedKey: string; source: 'database' | 'env' | 'none' }> = {};
+
+  const db = getDb();
+  const dbRows = db.prepare('SELECT provider, api_key FROM api_credentials WHERE user_id = ? AND is_active = 1').all(userId) as Array<{ provider: string; api_key: string }>;
+  const dbMap = new Map(dbRows.map((r) => [r.provider.toLowerCase(), r.api_key]));
+
+  for (const p of providers) {
+    const dbKey = dbMap.get(p);
+    if (dbKey) {
+      result[p] = {
+        configured: true,
+        maskedKey: maskApiKey(dbKey),
+        source: 'database',
+      };
+      continue;
+    }
+
+    let envKey: string | undefined;
+    if (p === 'gemini') envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    else if (p === 'openai') envKey = process.env.OPENAI_API_KEY;
+    else if (p === 'cloudflare_account_id') envKey = process.env.CLOUDFLARE_ACCOUNT_ID;
+    else if (p === 'cloudflare_api_token') envKey = process.env.CLOUDFLARE_API_TOKEN;
+    else if (p === 'pexels') envKey = process.env.PEXELS_API_KEY;
+    else if (p === 'pixabay') envKey = process.env.PIXABAY_API_KEY;
+    else if (p === 'elevenlabs') envKey = process.env.ELEVENLABS_API_KEY;
+    else if (p === 'runway') envKey = process.env.RUNWAY_API_KEY;
+    else if (p === 'replicate') envKey = process.env.REPLICATE_API_TOKEN;
+    else if (p === 'fal') envKey = process.env.FAL_KEY || process.env.FAL_AI_KEY;
+
+    if (envKey && envKey.trim()) {
+      result[p] = {
+        configured: true,
+        maskedKey: maskApiKey(envKey),
+        source: 'env',
+      };
+    } else {
+      result[p] = {
+        configured: false,
+        maskedKey: '',
+        source: 'none',
+      };
+    }
+  }
+
+  return result;
+}
+
+export function getUserCredits(userId: string = DEFAULT_USER_ID): { balance: number; tier: string; subscription_status: string; monthly_allowance: number } {
+  const db = getDb();
+  const row = db.prepare('SELECT balance, tier, subscription_status, monthly_allowance FROM user_credits WHERE user_id = ?').get(userId) as any;
+  if (!row) {
+    return { balance: 500, tier: 'CREATOR', subscription_status: 'ACTIVE', monthly_allowance: 500 };
+  }
+  return row;
+}
+
+export function deductUserCredits(userId: string = DEFAULT_USER_ID, amount: number, type: string, description: string, projectId?: string): boolean {
+  const db = getDb();
+  const current = getUserCredits(userId);
+  if (current.balance < amount) return false;
+
+  const newBalance = current.balance - amount;
+  db.prepare('UPDATE user_credits SET balance = ?, updated_at = ? WHERE user_id = ?').run(newBalance, new Date().toISOString(), userId);
+  db.prepare(`
+    INSERT INTO credit_transactions (id, user_id, amount, balance_after, type, description, project_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(Math.random().toString(36).substring(2), userId, -amount, newBalance, type, description, projectId || null, new Date().toISOString());
+
+  return true;
+}
+
+// ============================================================
+// CUSTOMER AUTH INTERFACES & HELPERS
+// ============================================================
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  password_hash: string;
+  avatar_url?: string | null;
+  email_verified: number; // 0 | 1
+  deleted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerSession {
+  id: string;
+  customer_id: string;
+  token_hash: string;
+  ip?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+  expires_at: string;
+  revoked_at?: string | null;
+}
+
+export interface Workspace {
+  id: string;
+  customer_id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getCustomerByEmail(email: string): Customer | null {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM customers WHERE email = ? AND deleted_at IS NULL').get(email.toLowerCase().trim()) as Customer | undefined;
+  return row || null;
+}
+
+export function getCustomerById(id: string): Customer | null {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM customers WHERE id = ? AND deleted_at IS NULL').get(id) as Customer | undefined;
+  return row || null;
+}
+
+export function createCustomer(data: { id: string; name: string; email: string; password_hash: string }): Customer {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO customers (id, name, email, password_hash, email_verified, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 0, ?, ?)
+  `).run(data.id, data.name, data.email.toLowerCase().trim(), data.password_hash, now, now);
+  return getCustomerById(data.id) as Customer;
+}
+
+export function updateCustomer(id: string, updates: Partial<Pick<Customer, 'name' | 'avatar_url' | 'email_verified' | 'password_hash'>>): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const fields = Object.entries(updates).map(([k]) => `${k} = ?`).join(', ');
+  const values = Object.values(updates);
+  db.prepare(`UPDATE customers SET ${fields}, updated_at = ? WHERE id = ?`).run(...values, now, id);
+}
+
+export function softDeleteCustomer(id: string): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('UPDATE customers SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, id);
+  db.prepare('UPDATE customer_sessions SET revoked_at = ? WHERE customer_id = ? AND revoked_at IS NULL').run(now, id);
+}
+
+export function createSession(data: { id: string; customer_id: string; token_hash: string; ip?: string; user_agent?: string }): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(); // 30 days
+  db.prepare(`
+    INSERT INTO customer_sessions (id, customer_id, token_hash, ip, user_agent, created_at, expires_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(data.id, data.customer_id, data.token_hash, data.ip || null, data.user_agent || null, now, expiresAt);
+}
+
+export function validateSession(tokenHash: string): Customer | null {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const session = db.prepare(`
+    SELECT s.customer_id FROM customer_sessions s
+    WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > ?
+  `).get(tokenHash, now) as { customer_id: string } | undefined;
+  if (!session) return null;
+  return getCustomerById(session.customer_id);
+}
+
+export function invalidateSession(tokenHash: string): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('UPDATE customer_sessions SET revoked_at = ? WHERE token_hash = ?').run(now, tokenHash);
+}
+
+export function invalidateAllSessions(customerId: string): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('UPDATE customer_sessions SET revoked_at = ? WHERE customer_id = ? AND revoked_at IS NULL').run(now, customerId);
+}
+
+export function listActiveSessions(customerId: string): CustomerSession[] {
+  const db = getDb();
+  const now = new Date().toISOString();
+  return db.prepare(`
+    SELECT id, customer_id, ip, user_agent, created_at, expires_at
+    FROM customer_sessions
+    WHERE customer_id = ? AND revoked_at IS NULL AND expires_at > ?
+    ORDER BY created_at DESC
+  `).all(customerId, now) as CustomerSession[];
+}
+
+export function createEmailVerification(data: { id: string; customer_id: string; token_hash: string }): void {
+  const db = getDb();
+  const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString(); // 24 hours
+  db.prepare(`
+    INSERT INTO email_verifications (id, customer_id, token_hash, expires_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(token_hash) DO NOTHING
+  `).run(data.id, data.customer_id, data.token_hash, expiresAt);
+}
+
+export function consumeEmailVerification(tokenHash: string): string | null {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const row = db.prepare(`
+    SELECT id, customer_id FROM email_verifications
+    WHERE token_hash = ? AND expires_at > ? AND used_at IS NULL
+  `).get(tokenHash, now) as { id: string; customer_id: string } | undefined;
+  if (!row) return null;
+  db.prepare('UPDATE email_verifications SET used_at = ? WHERE id = ?').run(now, row.id);
+  return row.customer_id;
+}
+
+export function createPasswordReset(data: { id: string; customer_id: string; token_hash: string }): void {
+  const db = getDb();
+  const expiresAt = new Date(Date.now() + 1 * 3600 * 1000).toISOString(); // 1 hour
+  // Invalidate prior resets for this customer
+  db.prepare('UPDATE password_resets SET used_at = ? WHERE customer_id = ? AND used_at IS NULL').run(new Date().toISOString(), data.customer_id);
+  db.prepare(`
+    INSERT INTO password_resets (id, customer_id, token_hash, expires_at)
+    VALUES (?, ?, ?, ?)
+  `).run(data.id, data.customer_id, data.token_hash, expiresAt);
+}
+
+export function consumePasswordReset(tokenHash: string): string | null {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const row = db.prepare(`
+    SELECT id, customer_id FROM password_resets
+    WHERE token_hash = ? AND expires_at > ? AND used_at IS NULL
+  `).get(tokenHash, now) as { id: string; customer_id: string } | undefined;
+  if (!row) return null;
+  db.prepare('UPDATE password_resets SET used_at = ? WHERE id = ?').run(now, row.id);
+  return row.customer_id;
+}
+
+export function createWorkspace(data: { id: string; customer_id: string; name: string; slug: string }): Workspace {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO workspaces (id, customer_id, name, slug, plan, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 'FREE', ?, ?)
+  `).run(data.id, data.customer_id, data.name, data.slug, now, now);
+  db.prepare(`
+    INSERT INTO workspace_members (workspace_id, customer_id, role, joined_at)
+    VALUES (?, ?, 'OWNER', ?)
+  `).run(data.id, data.customer_id, now);
+  return db.prepare('SELECT * FROM workspaces WHERE id = ?').get(data.id) as Workspace;
+}
+
+export function getWorkspacesByCustomer(customerId: string): Workspace[] {
+  const db = getDb();
+  return db.prepare('SELECT * FROM workspaces WHERE customer_id = ? ORDER BY created_at ASC').all(customerId) as Workspace[];
+}

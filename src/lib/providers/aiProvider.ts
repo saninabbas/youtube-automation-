@@ -1,4 +1,4 @@
-import { ProjectMetadata } from '../db';
+import { ProjectMetadata, getApiKey } from '../db';
 
 export interface ScriptStructure {
   title: string;
@@ -82,15 +82,27 @@ class DefaultAiProvider implements AiProvider {
   }): Promise<{ script: ScriptStructure; fullNarration: string }> {
     const { channelName, niche, topic, targetLengthMinutes, introStyle, outroCta, visualStyle } = params;
 
-    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    // 1. Try Google Gemini if configured in DB or ENV
+    const geminiKey = getApiKey('gemini');
     if (geminiKey) {
       try {
         return await this.generateScriptWithGemini(params, geminiKey);
-      } catch (err) {
-        console.warn('Gemini script generation fallback to calibrated engine:', err);
+      } catch (err: any) {
+        console.warn(`[AiProvider] Gemini generation failed (${err.message}). Trying fallback...`);
       }
     }
 
+    // 2. Try OpenAI if configured in DB or ENV
+    const openAiKey = getApiKey('openai');
+    if (openAiKey) {
+      try {
+        return await this.generateScriptWithOpenAI(params, openAiKey);
+      } catch (err: any) {
+        console.warn(`[AiProvider] OpenAI generation failed (${err.message}). Trying fallback...`);
+      }
+    }
+
+    // 3. Built-in Calibrated Multi-Niche Offline Script Engine
     const script = this.buildCalibratedScript(channelName, niche, topic, targetLengthMinutes, introStyle, outroCta, visualStyle);
     const narrationParts: string[] = [script.hook, script.introduction];
 
@@ -721,6 +733,100 @@ Respond strictly with valid JSON with this schema:
     const data = await res.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     const parsed: ScriptStructure = JSON.parse(rawText);
+
+    const narrationParts: string[] = [parsed.hook, parsed.introduction];
+    for (const sec of parsed.sections) {
+      for (const sub of sec.subsections) {
+        narrationParts.push(sub.narration);
+      }
+    }
+    narrationParts.push(parsed.conclusion);
+    narrationParts.push(parsed.callToAction);
+
+    const fullNarration = narrationParts.join('\n\n');
+    return { script: parsed, fullNarration };
+  }
+
+  private async generateScriptWithOpenAI(
+    params: {
+      channelName: string;
+      niche: string;
+      language: string;
+      topic: string;
+      targetLengthMinutes: number;
+      visualStyle?: string;
+      introStyle?: string;
+      outroCta?: string;
+      contentRules?: string;
+    },
+    apiKey: string
+  ): Promise<{ script: ScriptStructure; fullNarration: string }> {
+    const targetWordCount = Math.round(params.targetLengthMinutes * 138);
+
+    const systemPrompt = `You are a professional video script writer and director for channel "${params.channelName}" (Niche: ${params.niche}, Language: ${params.language}, Visual Style: ${params.visualStyle || 'Cinematic'}).
+Write an engaging, deep video script for the topic: "${params.topic}".
+TARGET DURATION: Exactly ${params.targetLengthMinutes} minutes (Spoken narration MUST contain approximately ${targetWordCount} total words to fill this duration at 138 words per minute).
+Adhere to editorial rules: ${params.contentRules || 'Engaging, clear, professional delivery'}.
+Intro Hook Style: ${params.introStyle || 'High-Impact Dramatic Question'}.
+Outro CTA: ${params.outroCta || 'Subscribe and hit the bell'}.
+
+You must return valid JSON strictly conforming to this schema:
+{
+  "title": "${params.topic}",
+  "hook": "Compelling hook (~30-50 words)",
+  "introduction": "Engaging introduction (~40-60 words)",
+  "sections": [
+    {
+      "heading": "Section Title",
+      "subsections": [
+        {
+          "subheading": "Point Title",
+          "narration": "Detailed spoken narration (~60-100 words)...",
+          "visualPrompt": "Cinematic visual description for point",
+          "visualSubject": "Core subject",
+          "environment": "Physical setting",
+          "cameraMovement": "Camera motion vector",
+          "lighting": "Lighting description",
+          "colorStyle": "Color palette",
+          "continuityNotes": "Continuity notes from previous scene",
+          "durationSec": 35
+        }
+      ]
+    }
+  ],
+  "conclusion": "Insightful summary conclusion (~40-60 words)",
+  "callToAction": "Call to action subscribing to ${params.channelName} (~30-50 words)"
+}`;
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Generate video script for: "${params.topic}"` },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`OpenAI API error (${res.status}): ${errText}`);
+    }
+
+    const data = await res.json();
+    const rawContent = data?.choices?.[0]?.message?.content;
+    if (!rawContent) {
+      throw new Error('OpenAI returned empty response');
+    }
+
+    const parsed: ScriptStructure = JSON.parse(rawContent);
 
     const narrationParts: string[] = [parsed.hook, parsed.introduction];
     for (const sec of parsed.sections) {

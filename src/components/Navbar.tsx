@@ -6,6 +6,11 @@ import { usePathname } from 'next/navigation';
 export function Navbar() {
   const pathname = usePathname();
 
+  // If on admin routes, do not render creator navbar
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <nav className="navbar">
       <div className="navbar-inner">
@@ -36,14 +41,7 @@ export function Navbar() {
             href="/settings/publishing"
             className={`nav-link ${pathname.startsWith('/settings') ? 'active' : ''}`}
           >
-            Settings
-          </Link>
-          <Link
-            href="/admin"
-            className={`nav-link ${pathname.startsWith('/admin') ? 'active' : ''}`}
-            style={{ color: '#fbbf24' }}
-          >
-            Admin
+            YouTube Setup
           </Link>
           <Link href="/content/new" className="btn btn-primary btn-sm" style={{ marginLeft: '8px' }}>
             + Create Video

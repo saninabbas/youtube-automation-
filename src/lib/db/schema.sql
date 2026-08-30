@@ -122,6 +122,17 @@ CREATE TABLE IF NOT EXISTS oauth_connections (
   UNIQUE(user_id, platform)
 );
 
+CREATE TABLE IF NOT EXISTS api_credentials (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  provider TEXT NOT NULL, -- 'gemini', 'openai', 'runway', 'replicate', 'fal'
+  api_key TEXT NOT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(user_id, provider)
+);
+
 CREATE INDEX IF NOT EXISTS idx_channels_user ON channels(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_user ON content_projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_channel ON content_projects(channel_id);
@@ -129,5 +140,78 @@ CREATE INDEX IF NOT EXISTS idx_scenes_project ON video_scenes(project_id, scene_
 CREATE INDEX IF NOT EXISTS idx_assets_project ON generated_assets(project_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_project ON video_jobs(project_id, stage);
 CREATE INDEX IF NOT EXISTS idx_oauth_user_platform ON oauth_connections(user_id, platform);
+CREATE INDEX IF NOT EXISTS idx_api_credentials_user ON api_credentials(user_id, provider);
+
+-- ============================================================
+-- CUSTOMER AUTH TABLES (multi-tenant SaaS)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS customers (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  avatar_url TEXT,
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(email)
+);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+
+CREATE TABLE IF NOT EXISTS customer_sessions (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  ip TEXT,
+  user_agent TEXT,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_customer ON customer_sessions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON customer_sessions(token_hash);
+
+CREATE TABLE IF NOT EXISTS email_verifications (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS workspaces (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  plan TEXT NOT NULL DEFAULT 'FREE',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_workspaces_customer ON workspaces(customer_id);
+
+CREATE TABLE IF NOT EXISTS workspace_members (
+  workspace_id TEXT NOT NULL,
+  customer_id TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'OWNER',
+  joined_at TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, customer_id),
+  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+  FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
 

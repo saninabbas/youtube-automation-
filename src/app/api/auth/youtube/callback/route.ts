@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { youtubeProvider } from '@/lib/providers/youtubeProvider';
-import { DEFAULT_USER_ID } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
-    const state = searchParams.get('state') || DEFAULT_USER_ID;
+    let state = searchParams.get('state');
     const error = searchParams.get('error');
 
     if (error) {
@@ -17,6 +17,15 @@ export async function GET(request: Request) {
 
     if (!code) {
       return NextResponse.redirect(new URL('/settings/publishing?error=Missing+authorization+code', request.url));
+    }
+
+    if (!state) {
+      const user = await getCurrentUser(request);
+      state = user ? user.id : null;
+    }
+
+    if (!state) {
+      return NextResponse.redirect(new URL('/settings/publishing?error=Authentication+required', request.url));
     }
 
     const result = await youtubeProvider.handleOAuthCallback(code, state);

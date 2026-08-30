@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { getDb, DEFAULT_USER_ID, ContentProject, Channel, VideoOutput, GeneratedAsset } from '@/lib/db';
 import { publishingProvider, SupportedPlatform } from '@/lib/providers/publishingProvider';
 import { storage } from '@/lib/storage';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const body = await request.json().catch(() => ({}));
     const { visibility = 'PRIVATE', scheduleTime = null, platform = 'YouTube' } = body;
 
@@ -19,10 +25,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
          JOIN channels c ON p.channel_id = c.id 
          WHERE p.id = ? AND p.user_id = ?`
       )
-      .get(id, DEFAULT_USER_ID) as (ContentProject & { channel_name: string; channel_platform: string }) | undefined;
+      .get(id, user.id) as (ContentProject & { channel_name: string; channel_platform: string }) | undefined;
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found or access denied.' }, { status: 404 });
     }
 
     if (project.status !== 'COMPLETED') {
@@ -86,7 +92,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       tags: parsedMeta.tags || [],
       thumbnailFilePath,
       visibility: visibility as any,
-      userId: DEFAULT_USER_ID,
+      userId: user.id,
     });
 
     const publishEndTime = new Date().toISOString();

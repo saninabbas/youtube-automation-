@@ -88,6 +88,8 @@ export class FfmpegCompositor {
       concatListPath,
       '-i',
       audioFilePath,
+      '-r',
+      '30',
       '-c:v',
       'libx264',
       '-c:a',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 interface Channel {
@@ -64,7 +64,7 @@ export default function ChannelsPage() {
         setChannels(data.channels || []);
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to fetch channels');
     } finally {
       setLoading(false);
     }
@@ -100,35 +100,28 @@ export default function ChannelsPage() {
     setEditingChannel(ch);
     setName(ch.name);
     setNiche(ch.niche);
-    setLanguage(ch.language || 'en');
-    setVoice(ch.voice || 'en-US-ChristopherNeural');
+    setLanguage(ch.language);
+    setVoice(ch.voice);
     setVoiceSpeed(ch.voice_speed || '1.0x');
     setTargetDuration(ch.target_duration_minutes || 5);
     setVisualStyle(ch.visual_style || 'Cinematic High-Contrast');
     setSubtitleStyle(ch.subtitle_style || 'Modern Clean White');
     setIntroStyle(ch.intro_style || 'High-Impact Dramatic Question');
-    setOutroCta(ch.outro_cta || 'Subscribe to the channel and leave your thoughts below');
+    setOutroCta(ch.outro_cta || 'Subscribe to the channel');
     setPublishingPlatform(ch.publishing_platform || 'YouTube');
     setContentRules(ch.content_rules || 'Engaging, clear, professional delivery');
 
-    let parsedDays = ['Monday', 'Wednesday', 'Friday'];
     try {
-      if (ch.publishing_days) parsedDays = JSON.parse(ch.publishing_days);
-    } catch {}
-    setSelectedDays(parsedDays);
+      setSelectedDays(ch.publishing_days ? JSON.parse(ch.publishing_days) : ['Monday', 'Wednesday', 'Friday']);
+    } catch {
+      setSelectedDays(['Monday', 'Wednesday', 'Friday']);
+    }
+
     setPublishingTime(ch.publishing_time || '14:00');
     setTimezone(ch.timezone || 'UTC');
     setDefaultVisibility(ch.default_visibility || 'PRIVATE');
     setAutoPublish(!!ch.auto_publish);
     setShowModal(true);
-  };
-
-  const toggleDay = (day: string) => {
-    if (selectedDays.includes(day)) {
-      setSelectedDays(selectedDays.filter((d) => d !== day));
-    } else {
-      setSelectedDays([...selectedDays, day]);
-    }
   };
 
   const handleSaveChannel = async (e: React.FormEvent) => {
@@ -137,11 +130,9 @@ export default function ChannelsPage() {
 
     try {
       setSubmitting(true);
-      setError(null);
-
       const payload = {
-        name,
-        niche,
+        name: name.trim(),
+        niche: niche.trim(),
         language,
         voice,
         voice_speed: voiceSpeed,
@@ -168,255 +159,258 @@ export default function ChannelsPage() {
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
-        setShowModal(false);
-        await fetchChannels();
-      } else {
-        const d = await res.json();
-        setError(d.error || 'Failed to save channel');
-      }
+      if (!res.ok) throw new Error('Failed to save channel');
+
+      setShowModal(false);
+      await fetchChannels();
     } catch (err: any) {
-      setError(err.message);
+      alert(err.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeleteChannel = async (id: string, channelName: string) => {
-    if (!confirm(`Are you sure you want to delete "${channelName}"? All associated videos will be permanently removed.`)) return;
-
+  const handleDeleteChannel = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete channel "${name}"? All associated videos will be retained.`)) return;
     try {
       const res = await fetch(`/api/channels/${id}`, { method: 'DELETE' });
       if (res.ok) {
         await fetchChannels();
       }
-    } catch (err: any) {
-      alert(`Delete failed: ${err.message}`);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   return (
-    <div>
-      <div className="page-header">
+    <div className="content-container" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 className="page-title">Channel Profiles</h1>
-          <p className="page-subtitle">Manage persistent niche styles, voice parameters, and automated release schedules</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
+            Channel Management
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Configure niche personas, voiceover profiles, and automated publishing calendars for each channel.
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          + Create Channel
+
+        <button onClick={openCreateModal} className="btn btn-primary btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span>New Channel</span>
         </button>
       </div>
 
-      {error && (
-        <div style={{ padding: '12px 16px', backgroundColor: 'var(--error-bg)', color: '#f87171', borderRadius: '6px', marginBottom: '20px', fontSize: '14px' }}>
-          {error}
-        </div>
-      )}
-
+      {/* Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-secondary)' }}>Loading channels...</div>
+        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading channels...</div>
       ) : channels.length === 0 ? (
-        <div className="empty-state card">
-          <h3>No Channels Created</h3>
-          <p>Create your first channel profile to define custom branding, voice, and publishing cadence.</p>
-          <button className="btn btn-primary" onClick={openCreateModal} style={{ marginTop: '16px' }}>
-            + Create First Channel
+        <div
+          style={{
+            padding: '64px',
+            textAlign: 'center',
+            background: 'var(--bg-secondary)',
+            border: '1px dashed var(--border-medium)',
+            borderRadius: 'var(--radius-xl)',
+          }}
+        >
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📺</div>
+          <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '6px' }}>No channels created yet</h3>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+            Set up your first channel profile to define your visual aesthetic and voiceover persona.
+          </p>
+          <button onClick={openCreateModal} className="btn btn-primary btn-sm">
+            + Create Your First Channel
           </button>
         </div>
       ) : (
-        <div className="card-grid">
-          {channels.map((ch) => {
-            let days: string[] = ['Monday', 'Wednesday', 'Friday'];
-            try {
-              if (ch.publishing_days) days = JSON.parse(ch.publishing_days);
-            } catch {}
-
-            return (
-              <div key={ch.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <h3 className="card-title" style={{ fontSize: '17px' }}>{ch.name}</h3>
-                    <span className="badge badge-tag">{ch.niche}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '22px' }}>
+          {channels.map((ch) => (
+            <div key={ch.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px' }}>
+              {/* Card Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: 'var(--gradient-brand)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      color: '#fff',
+                      fontSize: '14px',
+                    }}
+                  >
+                    {ch.name.substring(0, 2).toUpperCase()}
                   </div>
-
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px', margin: '14px 0' }}>
-                    <div>🎙️ <strong>Voice:</strong> {ch.voice} ({ch.voice_speed || '1.0x'})</div>
-                    <div>⏱️ <strong>Target Duration:</strong> {ch.target_duration_minutes} minutes</div>
-                    <div>🎨 <strong>Visual Style:</strong> {ch.visual_style || 'Cinematic'}</div>
-                    <div>📝 <strong>Subtitle Style:</strong> {ch.subtitle_style || 'Modern Clean White'}</div>
-                    <div>📅 <strong>Schedule:</strong> {days.join(', ')} @ {ch.publishing_time || '14:00'} ({ch.timezone || 'UTC'})</div>
-                    <div>📡 <strong>Platform / Vis:</strong> {ch.publishing_platform || 'YouTube'} ({ch.default_visibility || 'PRIVATE'})</div>
-                    <div>⚡ <strong>Auto-Publish:</strong> <span style={{ color: ch.auto_publish ? '#34d399' : 'var(--text-muted)' }}>{ch.auto_publish ? 'ENABLED' : 'DISABLED'}</span></div>
+                  <div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>{ch.name}</h3>
+                    <span style={{ fontSize: '11px', color: 'var(--accent-cyan)', fontWeight: 600 }}>{ch.niche}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px', marginTop: '10px' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{ch.video_count || 0} Videos</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => openEditModal(ch)} style={{ fontSize: '12px', padding: '4px 10px' }}>
-                      Edit
-                    </button>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDeleteChannel(ch.id, ch.name)} style={{ fontSize: '12px', padding: '4px 8px' }}>
-                      ✕
-                    </button>
+                <span className="status-pill READY">{ch.publishing_platform}</span>
+              </div>
+
+              {/* Specs Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Target Duration</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff' }}>{ch.target_duration_minutes} Minutes</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Spoken Voice</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    {ch.voice.split('-')[2] || ch.voice}
                   </div>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Schedule Info */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
+                <span>Auto-Publish: <strong style={{ color: ch.auto_publish ? 'var(--status-live)' : 'var(--text-muted)' }}>{ch.auto_publish ? 'Enabled' : 'Disabled'}</strong></span>
+                <span>{ch.video_count || 0} Videos</span>
+              </div>
+
+              {/* Card Footer Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', marginTop: 'auto' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => openEditModal(ch)} className="btn btn-ghost btn-sm" style={{ padding: '4px 8px' }}>
+                    Edit
+                  </button>
+                  <button onClick={() => handleDeleteChannel(ch.id, ch.name)} className="btn btn-ghost btn-sm" style={{ color: 'var(--status-error)', padding: '4px 8px' }}>
+                    Delete
+                  </button>
+                </div>
+
+                <Link href={`/content/new?channel_id=${ch.id}`} className="btn btn-primary btn-sm">
+                  + Create Video
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Modal for Creating / Editing Channel */}
+      {/* Modal */}
       {showModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '640px' }}>
-            <div className="modal-header">
-              <h3 className="modal-title">{editingChannel ? 'Edit Channel Profile' : 'Create Channel Profile'}</h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '20px',
+          }}
+        >
+          <div
+            className="card card-glow"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>
+                {editingChannel ? 'Edit Channel Profile' : 'Create New Channel Profile'}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="btn btn-ghost btn-sm">✕</button>
             </div>
 
-            <form onSubmit={handleSaveChannel}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Channel Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Healthy Years"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Niche Category *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Health & Longevity, Tech, Finance"
-                    value={niche}
-                    onChange={(e) => setNiche(e.target.value)}
-                    required
-                  />
-                </div>
+            <form onSubmit={handleSaveChannel} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Channel Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Apex Health & Vitality"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Default Voice</label>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Niche / Topic Domain</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Health & Longevity, AI Tech, Personal Finance"
+                  value={niche}
+                  onChange={(e) => setNiche(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Default Duration</label>
+                  <select
+                    className="form-select"
+                    value={targetDuration}
+                    onChange={(e) => setTargetDuration(Number(e.target.value))}
+                  >
+                    <option value="1">1 Minute (Shorts)</option>
+                    <option value="3">3 Minutes</option>
+                    <option value="5">5 Minutes</option>
+                    <option value="8">8 Minutes (Masterclass)</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Neural Voice</label>
                   <select className="form-select" value={voice} onChange={(e) => setVoice(e.target.value)}>
-                    <option value="en-US-ChristopherNeural">en-US-ChristopherNeural (Authoritative Male)</option>
-                    <option value="en-US-JennyNeural">en-US-JennyNeural (Engaging Female)</option>
-                    <option value="en-US-GuyNeural">en-US-GuyNeural (Direct Executive Male)</option>
-                    <option value="en-US-AriaNeural">en-US-AriaNeural (Expressive Female)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Voice Speed Multiplier</label>
-                  <select className="form-select" value={voiceSpeed} onChange={(e) => setVoiceSpeed(e.target.value)}>
-                    <option value="0.95x">0.95x (Deliberate / Documented)</option>
-                    <option value="1.0x">1.0x (Natural Pace)</option>
-                    <option value="1.05x">1.05x (Brisk / High-Energy)</option>
-                    <option value="1.1x">1.1x (Fast-Paced)</option>
+                    <option value="en-US-ChristopherNeural">Christopher (Male)</option>
+                    <option value="en-US-JennyNeural">Jenny (Female)</option>
+                    <option value="en-US-GuyNeural">Guy (Deep)</option>
+                    <option value="en-GB-SoniaNeural">Sonia (British)</option>
                   </select>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Target Duration</label>
-                  <select className="form-select" value={targetDuration} onChange={(e) => setTargetDuration(Number(e.target.value))}>
-                    <option value={1}>1 Minute (Shorts / Teaser)</option>
-                    <option value={3}>3 Minutes (Standard Short Form)</option>
-                    <option value={5}>5 Minutes (Standard Video)</option>
-                    <option value={8}>8 Minutes (Long-Form Masterclass)</option>
-                    <option value={10}>10 Minutes (Comprehensive In-Depth)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Visual Style Theme</label>
-                  <select className="form-select" value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)}>
-                    <option value="Cinematic High-Contrast">Cinematic High-Contrast</option>
-                    <option value="Clean Emerald Wellness">Clean Emerald Wellness</option>
-                    <option value="Tech Matrix / Cyber Sleek">Tech Matrix / Cyber Sleek</option>
-                    <option value="Executive Gold & Navy">Executive Gold & Navy</option>
-                    <option value="Warm Documentary Vintage">Warm Documentary Vintage</option>
-                    <option value="Minimalist Modern Studio">Minimalist Modern Studio</option>
-                  </select>
-                </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Visual Style</label>
+                <select className="form-select" value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)}>
+                  <option value="Cinematic High-Contrast">Cinematic High-Contrast</option>
+                  <option value="Documentary Minimalist">Documentary Minimalist</option>
+                  <option value="Cyber Cyberpunk Tech">Cyber Cyberpunk Tech</option>
+                  <option value="Emerald Nature Vitality">Emerald Nature Vitality</option>
+                  <option value="Gold Luxury Business">Gold Luxury Business</option>
+                </select>
               </div>
 
-              {/* Automated Release Schedule Section */}
-              <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: '6px', border: '1px solid var(--border-subtle)', margin: '14px 0' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>
-                  📅 Automated Release Schedule & Cadence
-                </div>
-
-                <div style={{ marginBottom: '10px' }}>
-                  <label className="form-label" style={{ fontSize: '12px' }}>Publishing Days</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {DAYS_OF_WEEK.map((day) => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => toggleDay(day)}
-                        className={`btn btn-sm ${selectedDays.includes(day) ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ fontSize: '11px', padding: '3px 8px' }}
-                      >
-                        {day.slice(0, 3)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label className="form-label" style={{ fontSize: '11px' }}>Release Time</label>
-                    <input
-                      type="time"
-                      className="form-input"
-                      value={publishingTime}
-                      onChange={(e) => setPublishingTime(e.target.value)}
-                      style={{ fontSize: '12px', padding: '4px 8px' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label" style={{ fontSize: '11px' }}>Default Visibility</label>
-                    <select
-                      className="form-select"
-                      value={defaultVisibility}
-                      onChange={(e: any) => setDefaultVisibility(e.target.value)}
-                      style={{ fontSize: '12px', padding: '4px 8px' }}
-                    >
-                      <option value="PRIVATE">PRIVATE</option>
-                      <option value="UNLISTED">UNLISTED</option>
-                      <option value="PUBLIC">PUBLIC</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label" style={{ fontSize: '11px' }}>Auto-Publish</label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginTop: '6px', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={autoPublish}
-                        onChange={(e) => setAutoPublish(e.target.checked)}
-                      />
-                      <span>Enable</span>
-                    </label>
-                  </div>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                <input
+                  type="checkbox"
+                  id="chAutoPub"
+                  checked={autoPublish}
+                  onChange={(e) => setAutoPublish(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                />
+                <label htmlFor="chAutoPub" style={{ fontSize: '13px', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  Enable auto-publishing on schedule
+                </label>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary btn-sm">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving...' : editingChannel ? 'Update Channel' : 'Create Channel'}
+                <button type="submit" disabled={submitting} className="btn btn-primary btn-sm">
+                  {submitting ? 'Saving...' : 'Save Channel Profile'}
                 </button>
               </div>
             </form>
