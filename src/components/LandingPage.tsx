@@ -5,15 +5,113 @@ import Link from 'next/link';
 
 export function LandingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const [activeStudioTab, setActiveStudioTab] = useState<'script' | 'preview' | 'publish'>('preview');
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [selectedScene, setSelectedScene] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [playbackProgress, setPlaybackProgress] = useState<number>(24);
+  const [activeVoice, setActiveVoice] = useState<string>('Adam (Neural 48kHz)');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+
+  // Topic Simulator state
+  const [activeTopicIndex, setActiveTopicIndex] = useState<number>(0);
+
+  // Savings Calculator state
+  const [videosPerMonth, setVideosPerMonth] = useState<number>(24);
+
+  const scenes = [
+    {
+      id: 0,
+      title: '01. The Efficiency Wall',
+      time: '00:00 - 00:20',
+      duration: '20s',
+      caption: '"Traditional silicon chips waste 90% of their power moving memory between compute cores..."',
+      tag: 'B-Roll: Microchip Macro 1080p',
+    },
+    {
+      id: 1,
+      title: '02. Synaptic Architecture',
+      time: '00:20 - 00:44',
+      duration: '24s',
+      caption: '"Neuromorphic chips mimic biological neurons, computing and storing data at the exact same physical location."',
+      tag: 'B-Roll: Biological Brain Synapse 3D',
+    },
+    {
+      id: 2,
+      title: '03. Real-World Benchmarks',
+      time: '00:44 - 01:05',
+      duration: '21s',
+      caption: '"In real-world LLM workloads, these processors deliver a 100x reduction in latency at 1/50th the energy cost."',
+      tag: 'B-Roll: Server Rack Telemetry',
+    },
+    {
+      id: 3,
+      title: '04. Summary & YouTube Outro',
+      time: '01:05 - 01:24',
+      duration: '19s',
+      caption: '"Subscribe for our weekly deep dive into the next computing frontier. See you in the next breakdown."',
+      tag: 'B-Roll: High-CTR Endscreen & Cards',
+    },
+  ];
+
+  const simulatedTopics = [
+    {
+      topic: 'The 2026 Neuromorphic AI Chip Revolution',
+      niche: 'AI Tech & Hardware',
+      scenes: [
+        '01. Hook: Silicon computing hitting the memory wall (00:00 - 00:18)',
+        '02. Core: How synaptic architecture mimics biological brain (00:18 - 00:42)',
+        '03. Proof: 100x energy efficiency in autonomous robotics (00:42 - 01:05)',
+        '04. CTA: Which tech giant will dominate the architecture war? (01:05 - 01:25)',
+      ],
+      suggestedTitle: 'Why Neuromorphic AI Chips Will Replace GPUs by 2027 (Full Breakdown)',
+      estDuration: '01:25 (1080p CFR)',
+      credits: '58 Credits',
+    },
+    {
+      topic: 'How Quantitative Hedge Funds Exploit Microstructure',
+      niche: 'Finance & Trading Systems',
+      scenes: [
+        '01. Hook: The 1-nanosecond difference between profit and liquidation (00:00 - 00:16)',
+        '02. Core: Limit order book dynamics and latency arbitrage (00:16 - 00:45)',
+        '03. Proof: Machine learning predictive fill rates in dark pools (00:45 - 01:10)',
+        '04. CTA: Subscribe for institutional finance algorithms decoded (01:10 - 01:30)',
+      ],
+      suggestedTitle: 'The Secret Algorithms Behind Wall Street Top High-Frequency Desks',
+      estDuration: '01:30 (1080p CFR)',
+      credits: '62 Credits',
+    },
+    {
+      topic: 'What Actually Happens Inside an Event Horizon',
+      niche: 'Deep Science & Astronomy',
+      scenes: [
+        '01. Hook: Time dilation makes falling matter appear frozen forever (00:00 - 00:22)',
+        '02. Core: Spaghettification and gravitational tidal forces (00:22 - 00:50)',
+        '03. Proof: Hawking radiation and the quantum information paradox (00:50 - 01:15)',
+        '04. CTA: Leave a comment: Does information truly escape? (01:15 - 01:35)',
+      ],
+      suggestedTitle: 'What You Would Actually See Inside a Supermassive Black Hole',
+      estDuration: '01:35 (1080p CFR)',
+      credits: '65 Credits',
+    },
+    {
+      topic: '5 Psychological Habits of Elite Engineers',
+      niche: 'Productivity & Tech Career',
+      scenes: [
+        '01. Hook: Top 1% engineers write fewer lines of code, not more (00:00 - 00:18)',
+        '02. Core: Deep work scheduling and asynchronous communication protocols (00:18 - 00:44)',
+        '03. Proof: The compound leverage of idempotent automation (00:44 - 01:08)',
+        '04. CTA: Download our free system architecture cheat sheet below (01:08 - 01:28)',
+      ],
+      suggestedTitle: 'How 10x Engineers Think: 5 Rules for Extreme Technical Leverage',
+      estDuration: '01:28 (1080p CFR)',
+      credits: '60 Credits',
+    },
+  ];
 
   const faqs = [
     {
       q: 'How does the 30-day YouTube auto-publishing work?',
-      a: 'You connect your YouTube channel once using official Google OAuth 2.0. In your Content Calendar, you schedule release dates across the month. AutoVideo generates, renders in 1080p, and automatically uploads each video to your channel with custom thumbnails and tags right on schedule.',
+      a: 'You connect your YouTube channel once using official Google OAuth 2.0. In your Content Calendar, you schedule release dates across the month. AutoVideo generates, renders in 1080p, and automatically uploads each video to your channel with custom thumbnails, tags, and titles right on schedule.',
     },
     {
       q: 'Do I need my own video editing software or external API keys?',
@@ -37,20 +135,26 @@ export function LandingPage() {
     },
   ];
 
+  // Calculate Savings
+  const traditionalCost = videosPerMonth * 125 + 180;
+  const autoVideoCost = videosPerMonth <= 8 ? 19 : videosPerMonth <= 24 ? 49 : videosPerMonth <= 60 ? 99 : 199;
+  const netSavings = traditionalCost - autoVideoCost;
+  const hoursSaved = Math.round(videosPerMonth * 4.5);
+
   return (
-    <div style={{ background: '#08090d', color: '#f8fafc', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
+    <div style={{ background: '#07080b', color: '#f8fafc', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
       {/* ───────────────────────────────────────────────────────────
-          1. CLEAN RESTRAINED NAVBAR
+          1. RESTRAINED EDITORIAL NAVBAR
       ─────────────────────────────────────────────────────────── */}
       <header
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          background: 'rgba(8, 9, 13, 0.92)',
-          backdropFilter: 'blur(12px)',
+          background: 'rgba(7, 8, 11, 0.94)',
+          backdropFilter: 'blur(16px)',
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '0 28px',
+          padding: '0 32px',
           height: '64px',
           display: 'flex',
           alignItems: 'center',
@@ -64,7 +168,7 @@ export function LandingPage() {
                 width: '28px',
                 height: '28px',
                 borderRadius: '6px',
-                background: '#6366f1',
+                background: '#4f46e5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -83,11 +187,14 @@ export function LandingPage() {
             <a href="#workflow" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
               Workflow
             </a>
+            <a href="#simulator" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
+              Live Simulator
+            </a>
             <a href="#capabilities" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
               Capabilities
             </a>
-            <a href="#use-cases" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
-              Use Cases
+            <a href="#calculator" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
+              ROI Calculator
             </a>
             <a href="#pricing" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
               Pricing
@@ -120,7 +227,6 @@ export function LandingPage() {
             Start Creating Free
           </Link>
 
-          {/* Mobile Menu Toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -139,17 +245,19 @@ export function LandingPage() {
           </button>
         </div>
 
-        {/* Mobile Dropdown Drawer */}
         {mobileMenuOpen && (
           <div className="landing-mobile-drawer">
             <a href="#workflow" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
               Workflow
             </a>
+            <a href="#simulator" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
+              Live Simulator
+            </a>
             <a href="#capabilities" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
               Capabilities
             </a>
-            <a href="#use-cases" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-              Use Cases
+            <a href="#calculator" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
+              ROI Calculator
             </a>
             <a href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
               Pricing
@@ -172,14 +280,15 @@ export function LandingPage() {
       {/* ───────────────────────────────────────────────────────────
           2. EDITORIAL HERO SECTION
       ─────────────────────────────────────────────────────────── */}
-      <section style={{ maxWidth: '1180px', margin: '0 auto', padding: '80px 24px 48px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '80px 24px 40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '9999px', marginBottom: '24px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f46e5' }} />
           <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            AI Video Automation
+            AI Video Automation & YouTube Autopilot
           </span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(2.4rem, 5.5vw, 4.4rem)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.035em', lineHeight: 1.12, maxWidth: '880px', margin: '0 auto 20px' }}>
+        <h1 style={{ fontSize: 'clamp(2.4rem, 5.5vw, 4.4rem)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.035em', lineHeight: 1.12, maxWidth: '900px', margin: '0 auto 20px' }}>
           Turn an idea into a<br />finished YouTube video.
         </h1>
 
@@ -192,24 +301,25 @@ export function LandingPage() {
           <Link
             href="/signup"
             style={{
-              padding: '13px 26px',
+              padding: '13px 28px',
               fontSize: '14px',
               fontWeight: 600,
               color: '#fff',
               background: '#4f46e5',
               borderRadius: '6px',
               textDecoration: 'none',
-              transition: 'background 0.15s',
+              boxShadow: '0 4px 20px rgba(79, 70, 229, 0.3)',
+              transition: 'background 0.15s, transform 0.15s',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#4338ca'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#4f46e5'}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#4338ca'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#4f46e5'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
-            Start Creating Free
+            Start Creating Free ➔
           </Link>
           <a
-            href="#workflow"
+            href="#simulator"
             style={{
-              padding: '13px 22px',
+              padding: '13px 24px',
               fontSize: '14px',
               fontWeight: 500,
               color: '#cbd5e1',
@@ -222,32 +332,38 @@ export function LandingPage() {
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
           >
-            See How It Works ➔
+            ⚡ Test Live Topic Simulator
           </a>
         </div>
 
         {/* Quiet Trust Proof */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', flexWrap: 'wrap', fontSize: '12px', color: '#64748b' }}>
-          <span>500 Free AI Credits</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#10b981' }}>✓</span> 500 Free AI Credits
+          </span>
           <span>•</span>
-          <span>1080p 30fps CFR Output</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#10b981' }}>✓</span> 1080p 30fps CFR Output
+          </span>
           <span>•</span>
-          <span>Official YouTube Data API v3</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#10b981' }}>✓</span> Official YouTube Data API v3
+          </span>
         </div>
 
         {/* ───────────────────────────────────────────────────────────
-            3. REAL PRODUCT WORKSPACE VISUALIZATION (Centerpiece)
+            3. INTERACTIVE 3-PANE STUDIO WORKSPACE (Centerpiece)
         ─────────────────────────────────────────────────────────── */}
         <div
           style={{
             width: '100%',
-            maxWidth: '1120px',
+            maxWidth: '1140px',
             marginTop: '44px',
             background: '#0d0f17',
             border: '1px solid rgba(255, 255, 255, 0.12)',
             borderRadius: '12px',
             overflow: 'hidden',
-            boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.7)',
+            boxShadow: '0 24px 70px -12px rgba(0, 0, 0, 0.8)',
             textAlign: 'left',
           }}
         >
@@ -265,38 +381,48 @@ export function LandingPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                ● 1080p Rendered
+              <span style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 600 }}>
+                ● 1080p FFmpeg CFR Ready
               </span>
               <span style={{ fontSize: '11px', color: '#64748b' }}>Duration: 01:24</span>
             </div>
           </div>
 
           {/* 3-Pane Realistic Studio Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 280px', minHeight: '380px' }} className="studio-responsive-grid">
-            {/* Left Pane: Scene Breakdown */}
+          <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr 280px', minHeight: '400px' }} className="studio-responsive-grid">
+            {/* Left Pane: Interactive Scene Breakdown */}
             <div style={{ padding: '14px', background: '#0f121a', borderRight: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-                Scene Sequence
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Storyboard ({scenes.length} Scenes)
+                </span>
+                <span style={{ fontSize: '10px', color: '#4f46e5', fontWeight: 600 }}>Click scene</span>
               </div>
 
-              {[
-                { id: 1, title: '01. The Efficiency Wall', time: '00:00 - 00:20', active: true },
-                { id: 2, title: '02. Synaptic Architecture', time: '00:20 - 00:44' },
-                { id: 3, title: '03. Real-World Benchmarks', time: '00:44 - 01:05' },
-                { id: 4, title: '04. Summary & Outro', time: '01:05 - 01:24' },
-              ].map((s) => (
+              {scenes.map((s, idx) => (
                 <div
                   key={s.id}
+                  onClick={() => { setSelectedScene(idx); setPlaybackProgress((idx + 1) * 24); }}
                   style={{
                     padding: '10px 12px',
                     borderRadius: '6px',
-                    background: s.active ? '#1c2233' : 'transparent',
-                    border: `1px solid ${s.active ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255, 255, 255, 0.06)'}`,
+                    background: selectedScene === idx ? '#1c2233' : 'transparent',
+                    border: `1px solid ${selectedScene === idx ? 'rgba(79, 70, 229, 0.6)' : 'rgba(255, 255, 255, 0.06)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff' }}>{s.title}</div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>{s.time}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: selectedScene === idx ? '#fff' : '#cbd5e1' }}>
+                      {s.title}
+                    </div>
+                    <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', color: '#94a3b8' }}>
+                      {s.duration}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+                    {s.time}
+                  </div>
                 </div>
               ))}
             </div>
@@ -317,11 +443,15 @@ export function LandingPage() {
                   overflow: 'hidden',
                 }}
               >
-                <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', color: '#cbd5e1', background: 'rgba(0,0,0,0.75)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
+                <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', color: '#cbd5e1', background: 'rgba(0,0,0,0.75)', padding: '3px 8px', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
                   1920 × 1080 • 30fps CFR
                 </div>
 
-                {/* Subtitle Caption Preview */}
+                <div style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '10px', color: '#10b981', background: 'rgba(0,0,0,0.75)', padding: '3px 8px', borderRadius: '4px' }}>
+                  {scenes[selectedScene].tag}
+                </div>
+
+                {/* Subtitle Caption Overlay */}
                 <div
                   style={{
                     position: 'absolute',
@@ -329,48 +459,84 @@ export function LandingPage() {
                     left: '20px',
                     right: '20px',
                     textAlign: 'center',
-                    padding: '8px 12px',
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    borderRadius: '4px',
+                    padding: '10px 14px',
+                    background: 'rgba(0, 0, 0, 0.82)',
+                    backdropFilter: 'blur(8px)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                   }}
                 >
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#facc15' }}>
-                    "Traditional silicon chips waste 90% of their power moving memory..."
+                    {scenes[selectedScene].caption}
                   </span>
                 </div>
               </div>
 
-              {/* Scrubber Bar */}
+              {/* Scrubber Bar & Controls */}
               <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'var(--font-mono)' }}>00:18</span>
+                <button
+                  type="button"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isPlaying ? '⏸ Pause' : '▶ Play'}
+                </button>
+                <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+                  00:{(selectedScene + 1) * 18}
+                </span>
                 <div style={{ flex: 1, height: '4px', background: '#1c2233', borderRadius: '2px', position: 'relative' }}>
-                  <div style={{ width: '22%', height: '100%', background: '#6366f1', borderRadius: '2px' }} />
+                  <div style={{ width: `${playbackProgress}%`, height: '100%', background: '#4f46e5', borderRadius: '2px', transition: 'width 0.3s' }} />
                 </div>
                 <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'var(--font-mono)' }}>01:24</span>
               </div>
             </div>
 
-            {/* Right Pane: Automation Inspector */}
-            <div style={{ padding: '14px', background: '#0f121a', borderLeft: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Right Pane: Automation & Controls */}
+            <div style={{ padding: '14px', background: '#0f121a', borderLeft: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Publishing Inspector
+                Studio Controls
               </div>
 
               <div style={{ padding: '10px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Voice Synthesizer</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', marginTop: '2px' }}>Adam (Neural 48kHz)</div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Neural Voiceover</div>
+                <select
+                  value={activeVoice}
+                  onChange={(e) => setActiveVoice(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: '#0a0d14',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '4px',
+                    padding: '4px 6px',
+                    fontSize: '11px',
+                  }}
+                >
+                  <option>Adam (Neural 48kHz)</option>
+                  <option>Rachel (Conversational)</option>
+                  <option>Nova (Deep Documentary)</option>
+                  <option>Marcus (Fast Paced Tech)</option>
+                </select>
               </div>
 
               <div style={{ padding: '10px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                 <div style={{ fontSize: '11px', color: '#94a3b8' }}>Target Channel</div>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', marginTop: '2px' }}>Tech Pulse Daily</div>
-                <div style={{ fontSize: '10px', color: '#10b981', marginTop: '4px' }}>✓ Google OAuth 2.0 Active</div>
+                <div style={{ fontSize: '10px', color: '#10b981', marginTop: '4px' }}>✓ Google OAuth 2.0 Connected</div>
               </div>
 
               <div style={{ padding: '10px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                 <div style={{ fontSize: '11px', color: '#94a3b8' }}>Release Schedule</div>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', marginTop: '2px' }}>Aug 31 at 8:00 PM UTC</div>
-                <div style={{ fontSize: '10px', color: '#6366f1', marginTop: '4px' }}>Status: Scheduled on YouTube</div>
+                <div style={{ fontSize: '10px', color: '#6366f1', marginTop: '4px' }}>Status: YouTube Autopilot Queued</div>
               </div>
             </div>
           </div>
@@ -378,60 +544,174 @@ export function LandingPage() {
       </section>
 
       {/* ───────────────────────────────────────────────────────────
-          4. PRODUCT STORYTELLING (How AutoVideo Works)
+          4. INTERACTIVE LIVE TOPIC-TO-VIDEO SIMULATOR
       ─────────────────────────────────────────────────────────── */}
-      <section id="workflow" style={{ maxWidth: '1180px', margin: '0 auto', padding: '96px 24px' }}>
-        <div style={{ maxWidth: '640px', marginBottom: '56px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-            Workflow
+      <section id="simulator" style={{ maxWidth: '1180px', margin: '0 auto', padding: '80px 24px' }}>
+        <div style={{ maxWidth: '640px', marginBottom: '36px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+            Interactive Demo
           </div>
           <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em', lineHeight: 1.2 }}>
-            From a single prompt to a published video on your channel.
+            See how AutoVideo structures your video in seconds.
           </h2>
+          <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '8px' }}>
+            Click any niche prompt below to see the live AI multi-scene breakdown and suggested metadata.
+          </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px' }}>
-          {[
-            {
-              step: '01',
-              title: 'Start with a topic',
-              desc: 'Enter a topic prompt or select from channel archetypes. AutoVideo outlines the hook, key arguments, and outro beats.',
-            },
-            {
-              step: '02',
-              title: 'AI builds the story',
-              desc: 'The engine creates a multi-scene storyboard, generates neural voice narration, and matches relevant 1080p B-roll clips.',
-            },
-            {
-              step: '03',
-              title: 'Render in 1080p FFmpeg',
-              desc: 'Native server-side compositing stitches B-roll, synchronizes audio, burns dynamic subtitles, and outputs a 30fps CFR MP4.',
-            },
-            {
-              step: '04',
-              title: 'Publish on schedule',
-              desc: 'Connect your YouTube channel once. AutoVideo uploads, adds tags, sets custom thumbnails, and publishes on your calendar.',
-            },
-          ].map((s) => (
-            <div key={s.step} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <span style={{ fontSize: '20px', fontWeight: 700, color: '#6366f1', fontFamily: 'var(--font-mono)' }}>
-                {s.step}
-              </span>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{s.title}</h3>
-              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.6 }}>{s.desc}</p>
-            </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '24px' }}>
+          {simulatedTopics.map((t, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setActiveTopicIndex(idx)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: activeTopicIndex === idx ? '#4f46e5' : 'rgba(255, 255, 255, 0.05)',
+                color: activeTopicIndex === idx ? '#fff' : '#94a3b8',
+                border: `1px solid ${activeTopicIndex === idx ? '#4f46e5' : 'rgba(255, 255, 255, 0.1)'}`,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {t.niche}
+            </button>
           ))}
+        </div>
+
+        <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '16px', marginBottom: '20px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Selected Topic</div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                "{simulatedTopics[activeTopicIndex].topic}"
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#1c2233', color: '#10b981', fontFamily: 'var(--font-mono)' }}>
+                {simulatedTopics[activeTopicIndex].estDuration}
+              </span>
+              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#1c2233', color: '#94a3b8' }}>
+                Cost: {simulatedTopics[activeTopicIndex].credits}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            {simulatedTopics[activeTopicIndex].scenes.map((sceneText, sIdx) => (
+              <div key={sIdx} style={{ padding: '14px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '11px', color: '#4f46e5', fontWeight: 700, marginBottom: '4px' }}>Scene Beat 0{sIdx + 1}</div>
+                <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5 }}>{sceneText}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ padding: '12px 16px', background: '#08090d', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>High-CTR YouTube Title: </span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+                {simulatedTopics[activeTopicIndex].suggestedTitle}
+              </span>
+            </div>
+            <Link href="/signup" style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}>
+              Create This Video Free ➔
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* ───────────────────────────────────────────────────────────
-          5. CORE PRODUCT CAPABILITIES (Editorial Split Sections)
+          5. ROI & SAVINGS CALCULATOR
+      ─────────────────────────────────────────────────────────── */}
+      <section id="calculator" style={{ maxWidth: '1180px', margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div style={{ background: '#0d0f17', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '36px 32px' }}>
+          <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 32px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+              ROI Calculator
+            </div>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em' }}>
+              Calculate your monthly production savings.
+            </h2>
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
+              See how much you save compared to hiring video editors and subscribing to 6 fragmented SaaS tools.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginBottom: '36px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 600, color: '#cbd5e1' }}>
+              How many videos do you publish per month?
+            </label>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {[4, 8, 16, 24, 30, 60].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setVideosPerMonth(count)}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: videosPerMonth === count ? '#4f46e5' : '#141824',
+                    color: videosPerMonth === count ? '#fff' : '#94a3b8',
+                    border: `1px solid ${videosPerMonth === count ? '#4f46e5' : 'rgba(255, 255, 255, 0.1)'}`,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {count} Videos {count === 30 ? '(Daily)' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+            <div style={{ padding: '20px', background: '#121520', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ fontSize: '12px', color: '#f43f5e', fontWeight: 600 }}>Traditional Freelancers + Tool Sprawl</div>
+              <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', margin: '8px 0 4px' }}>
+                ${traditionalCost.toLocaleString()}
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>/mo</span>
+              </div>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+                $125/video editing fees + ElevenLabs, Midjourney, Canva, Buffer subscriptions.
+              </p>
+            </div>
+
+            <div style={{ padding: '20px', background: '#121520', borderRadius: '8px', border: '1px solid rgba(79, 70, 229, 0.4)' }}>
+              <div style={{ fontSize: '12px', color: '#4f46e5', fontWeight: 600 }}>AutoVideo.ai All-In-One Studio</div>
+              <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', margin: '8px 0 4px' }}>
+                ${autoVideoCost}
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>/mo</span>
+              </div>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+                Unlimited rendering, neural voices, 1080p FFmpeg export, and YouTube scheduling included.
+              </p>
+            </div>
+
+            <div style={{ padding: '20px', background: '#121520', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+              <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 600 }}>Net Monthly Savings</div>
+              <div style={{ fontSize: '28px', fontWeight: 800, color: '#10b981', margin: '8px 0 4px' }}>
+                +${netSavings.toLocaleString()}
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>/mo</span>
+              </div>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+                Plus approximately <strong>{hoursSaved} hours</strong> of manual editing time saved every month!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────
+          6. CAPABILITIES & EDITORIAL SECTIONS
       ─────────────────────────────────────────────────────────── */}
       <section id="capabilities" style={{ maxWidth: '1180px', margin: '0 auto', padding: '48px 24px 96px', display: 'flex', flexDirection: 'column', gap: '96px' }}>
-        {/* Capability 1: Create */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '48px', alignItems: 'center' }} className="studio-responsive-grid">
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
               01 • CREATE
             </div>
             <h3 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '16px' }}>
@@ -453,7 +733,6 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Script UI Simulation */}
           <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '24px' }}>
             <div style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '8px' }}>
               Script Editor • Scene 1 Hook (00:00 - 00:18)
@@ -468,9 +747,7 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Capability 2: Edit & Render */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '48px', alignItems: 'center' }} className="studio-responsive-grid">
-          {/* FFmpeg Video UI Simulation */}
           <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '8px' }}>
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1' }}>1080p FFmpeg Engine</span>
@@ -488,7 +765,7 @@ export function LandingPage() {
           </div>
 
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
               02 • EDIT & COMPOSE
             </div>
             <h3 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '16px' }}>
@@ -511,10 +788,9 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Capability 3: Publish */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '48px', alignItems: 'center' }} className="studio-responsive-grid">
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
               03 • PUBLISH
             </div>
             <h3 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '16px' }}>
@@ -536,11 +812,10 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Calendar Release Matrix Simulation */}
           <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '8px' }}>
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1' }}>Release Calendar</span>
-              <span style={{ fontSize: '11px', color: '#6366f1' }}>30-Day Autopilot</span>
+              <span style={{ fontSize: '11px', color: '#4f46e5' }}>30-Day Autopilot</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ padding: '10px 12px', background: '#141824', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -549,7 +824,7 @@ export function LandingPage() {
               </div>
               <div style={{ padding: '10px 12px', background: '#141824', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: '#fff' }}>Wed: Neuromorphic AI Breakthroughs</span>
-                <span style={{ fontSize: '10px', color: '#6366f1', background: 'rgba(99, 102, 241, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>Scheduled (8 PM)</span>
+                <span style={{ fontSize: '10px', color: '#4f46e5', background: 'rgba(79, 70, 229, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>Scheduled (8 PM)</span>
               </div>
               <div style={{ padding: '10px 12px', background: '#141824', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: '#fff' }}>Fri: Top 5 AI Robotics Startups</span>
@@ -557,59 +832,6 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ───────────────────────────────────────────────────────────
-          6. REAL-WORLD USE CASES
-      ─────────────────────────────────────────────────────────── */}
-      <section id="use-cases" style={{ maxWidth: '1180px', margin: '0 auto', padding: '48px 24px 96px' }}>
-        <div style={{ maxWidth: '640px', marginBottom: '48px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-            Use Cases
-          </div>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em', lineHeight: 1.2 }}>
-            Built for modern video publishers.
-          </h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-          {[
-            {
-              title: 'Faceless YouTube Channels',
-              desc: 'Publish consistent tech, finance, documentary, and educational videos on daily autopilot without camera equipment.',
-              badge: 'Channel Automation',
-            },
-            {
-              title: 'Short-Form Content Producers',
-              desc: 'Produce high-retention Shorts and Reels with burned subtitles and fast-paced B-roll cuts.',
-              badge: 'Viral Formats',
-            },
-            {
-              title: 'Media & Marketing Agencies',
-              desc: 'Manage multiple client channels, isolate brand assets, and automate release calendars from one unified dashboard.',
-              badge: 'Multi-Tenant Studio',
-            },
-          ].map((u) => (
-            <div
-              key={u.title}
-              style={{
-                padding: '28px',
-                background: '#0d0f17',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '8px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-              }}
-            >
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {u.badge}
-              </span>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#fff' }}>{u.title}</h3>
-              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.6 }}>{u.desc}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -625,7 +847,6 @@ export function LandingPage() {
             Every plan includes 1080p video rendering, neural voiceovers, and YouTube auto-publishing.
           </p>
 
-          {/* Toggle */}
           <div style={{ display: 'inline-flex', alignItems: 'center', background: '#121520', padding: '4px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <button
               type="button"
@@ -659,7 +880,7 @@ export function LandingPage() {
                 padding: '24px',
                 borderRadius: '8px',
                 background: p.popular ? '#121522' : '#0d0f17',
-                border: `1px solid ${p.popular ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.08)'}`,
+                border: `1px solid ${p.popular ? 'rgba(79, 70, 229, 0.6)' : 'rgba(255, 255, 255, 0.08)'}`,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
@@ -669,7 +890,7 @@ export function LandingPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{p.name}</h3>
                   {p.popular && (
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', background: 'rgba(99, 102, 241, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#4f46e5', background: 'rgba(79, 70, 229, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
                       POPULAR
                     </span>
                   )}
@@ -677,7 +898,7 @@ export function LandingPage() {
                 <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', margin: '12px 0 2px', letterSpacing: '-0.02em' }}>
                   {p.price}<span style={{ fontSize: '13px', color: '#64748b', fontWeight: 400 }}>/mo</span>
                 </div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#6366f1', marginBottom: '8px' }}>{p.vids}</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5', marginBottom: '8px' }}>{p.vids}</div>
                 <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '16px' }}>{p.desc}</p>
                 <div style={{ fontSize: '11px', color: '#64748b', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '12px' }}>
                   Includes: {p.credits} • 1080p Export • YouTube Publishing
@@ -737,7 +958,7 @@ export function LandingPage() {
                 }}
               >
                 <span>{f.q}</span>
-                <span style={{ fontSize: '16px', color: '#6366f1', marginLeft: '12px' }}>
+                <span style={{ fontSize: '16px', color: '#4f46e5', marginLeft: '12px' }}>
                   {openFaq === i ? '−' : '+'}
                 </span>
               </button>

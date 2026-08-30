@@ -204,6 +204,37 @@ export default function ChannelsPage() {
         </button>
       </div>
 
+      {/* YouTube Connection Banner */}
+      <div
+        className="card"
+        style={{
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          background: 'linear-gradient(135deg, rgba(255, 0, 0, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%)',
+          border: '1px solid rgba(255, 0, 0, 0.2)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#ff0000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+              <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="#000" />
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>YouTube OAuth 2.0 Integration</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Connect your Google YouTube channel for 1-click video publishing and 30-day autopilot scheduling.</div>
+          </div>
+        </div>
+        <Link href="/settings/publishing" className="btn btn-secondary btn-sm" style={{ border: '1px solid rgba(255, 0, 0, 0.3)', color: '#fff' }}>
+          <span>Connect YouTube Channel ➔</span>
+        </Link>
+      </div>
+
       {/* Grid */}
       {loading ? (
         <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading channels...</div>

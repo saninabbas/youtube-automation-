@@ -223,6 +223,12 @@ function CreateVideoWizardContent() {
                       </option>
                     ))}
                   </select>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', flexWrap: 'wrap', gap: '4px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Channel profile determines voice, language, and styling.</span>
+                    <Link href="/settings/publishing" style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                      🔗 Connect / Manage YouTube OAuth ➔
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
