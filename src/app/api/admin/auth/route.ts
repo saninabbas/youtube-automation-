@@ -67,8 +67,9 @@ export async function POST(request: Request) {
     const providedPassword = (password || '').trim();
     const providedUser = (username || '').trim();
 
-    const isUserMatch = !providedUser || providedUser.toLowerCase() === configuredUser.toLowerCase() || providedUser.toLowerCase() === 'admin';
-    const isPassMatch = (configuredPassword && providedPassword === configuredPassword) || providedPassword === 'AutoVideoAdmin2026!#' || providedPassword === 'admin';
+    const isUserMatch = !providedUser || providedUser.toLowerCase() === configuredUser.toLowerCase();
+    const effectiveAdminPassword = configuredPassword || 'AutoVideoAdmin2026!#';
+    const isPassMatch = providedPassword === effectiveAdminPassword;
 
     if (isUserMatch && isPassMatch) {
       const activeUser = configuredUser || 'admin';
