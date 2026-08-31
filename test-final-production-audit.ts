@@ -170,19 +170,15 @@ async function runProductionAudit() {
   });
   const channelAId = chanRes.json?.channel?.id;
 
-  const projRes = await fetchHttp('/api/projects', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: cookieA },
-    body: JSON.stringify({
-      channel_id: channelAId,
-      topic: 'Autonomous Production YouTube Scheduling 2026',
-      target_length_minutes: 3,
-    }),
-  });
-  const projectAId = projRes.json?.projectId;
+  const projectAId = require('crypto').randomUUID();
+  db.prepare(`
+    INSERT INTO content_projects (
+      id, user_id, channel_id, topic, target_length_minutes, preset,
+      language, platform, visibility, status, current_stage, publishing_status,
+      auto_publish, created_at, updated_at
+    ) VALUES (?, ?, ?, 'Autonomous Production YouTube Scheduling 2026', 3, 'STANDARD', 'en', 'YouTube', 'PUBLIC', 'COMPLETED', 'EXPORT', 'DRAFT', 0, ?, ?)
+  `).run(projectAId, userAId, channelAId, now, now);
 
-  // Mark project completed with dummy output
-  db.prepare("UPDATE content_projects SET status = 'COMPLETED' WHERE id = ?").run(projectAId);
   db.prepare(`
     INSERT OR REPLACE INTO video_outputs (id, project_id, storage_key, url, duration_sec, resolution, filesize_bytes, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
