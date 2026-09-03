@@ -32,7 +32,8 @@ class R2StorageProvider implements StorageProvider {
       },
     });
 
-    this.localCacheDir = path.join(process.cwd(), 'storage');
+    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    this.localCacheDir = isServerless ? path.join('/tmp', 'storage') : path.join(process.cwd(), 'storage');
     if (!fs.existsSync(this.localCacheDir)) {
       fs.mkdirSync(this.localCacheDir, { recursive: true });
     }
@@ -140,7 +141,8 @@ class LocalStorageProvider implements StorageProvider {
   private baseDir: string;
 
   constructor() {
-    this.baseDir = path.join(process.cwd(), 'storage');
+    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    this.baseDir = isServerless ? path.join('/tmp', 'storage') : path.join(process.cwd(), 'storage');
     if (!fs.existsSync(this.baseDir)) {
       fs.mkdirSync(this.baseDir, { recursive: true });
     }

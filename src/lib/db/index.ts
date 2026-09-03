@@ -8,14 +8,17 @@ let dbInstance: Database.Database | null = null;
 
 export function getDb(): Database.Database {
   if (!dbInstance) {
-    const dataDir = path.join(process.cwd(), 'data');
+    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const dataDir = isServerless ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
     const dbPath = path.join(dataDir, 'app.db');
     dbInstance = new Database(dbPath);
-    dbInstance.pragma('journal_mode = WAL');
+    if (!isServerless) {
+      dbInstance.pragma('journal_mode = WAL');
+    }
     dbInstance.pragma('foreign_keys = ON');
 
     // Run schema initialization
