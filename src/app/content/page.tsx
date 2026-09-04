@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useToast } from '@/components/Toast';
 
 interface Project {
   id: string;
@@ -24,12 +25,12 @@ interface Project {
 }
 
 function ContentLibraryList() {
+  const toast = useToast();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ALL' | 'GENERATING' | 'READY' | 'PUBLISHED' | 'FAILED'>('ALL');
   const [search, setSearch] = useState(initialQuery);
   const [sortBy, setSortBy] = useState<'newest' | 'duration' | 'title'>('newest');
@@ -44,7 +45,7 @@ function ContentLibraryList() {
         setProjects(data.projects || []);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch projects');
+      toast.error(err.message || 'Failed to fetch projects');
     } finally {
       setLoading(false);
     }
