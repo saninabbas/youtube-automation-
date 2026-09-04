@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 
 interface StageInfo {
   stage: string;
@@ -86,6 +87,7 @@ interface ProjectData {
 export default function VideoStudioPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const toast = useToast();
 
   const [data, setData] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,16 +140,20 @@ export default function VideoStudioPage({ params }: { params: { id: string } }) 
 
   const handleRetry = async (stage?: string) => {
     try {
+      toast.info('Restarting rendering pipeline... ⚡');
       const res = await fetch(`/api/projects/${id}/retry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage }),
       });
       if (res.ok) {
+        toast.success('Pipeline queued for retry');
         await fetchProject();
+      } else {
+        toast.error('Failed to trigger retry');
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      toast.error(err.message || 'Retry failed');
     }
   };
 
@@ -173,11 +179,14 @@ export default function VideoStudioPage({ params }: { params: { id: string } }) 
       const resJson = await res.json();
       if (res.ok) {
         setCopilotResult(resJson.result);
+        toast.success('Copilot response generated ✨');
       } else {
         setCopilotResult(`Error: ${resJson.error}`);
+        toast.error(resJson.error || 'Copilot generation failed');
       }
     } catch (err: any) {
       setCopilotResult(`Error: ${err.message}`);
+      toast.error(err.message);
     } finally {
       setCopilotLoading(false);
     }
@@ -188,6 +197,7 @@ export default function VideoStudioPage({ params }: { params: { id: string } }) 
     try {
       setPublishing(true);
       setPublishMsg(null);
+      toast.info('Uploading 1080p video to YouTube channel... 🚀');
 
       const res = await fetch(`/api/projects/${id}/publish`, {
         method: 'POST',
@@ -201,9 +211,11 @@ export default function VideoStudioPage({ params }: { params: { id: string } }) 
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || 'Publishing failed');
 
+      toast.success('Successfully uploaded & published to YouTube! 🎉');
       setPublishMsg(resData.message || 'Published successfully to YouTube!');
       await fetchProject();
     } catch (err: any) {
+      toast.error(err.message || 'Publishing failed');
       setPublishMsg(`Error: ${err.message}`);
     } finally {
       setPublishing(false);

@@ -658,21 +658,12 @@ a {
   background: var(--status-ready-bg);
   border-color: var(--status-ready);
   color: var(--status-ready);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
 }
 
 .pipeline-node.active .pipeline-icon-circle {
-  background: var(--status-proc-bg);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
-  animation: pulse-glow 2s infinite;
-}
-
-@keyframes pulse-glow {
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+  background: var(--bg-tertiary);
+  border-color: #ffffff;
+  color: #ffffff;
 }
 
 .pipeline-label {
@@ -691,31 +682,181 @@ a {
 /* ───────────────────────────────────────────────────────────
    3-PANE VIDEO STUDIO (HERO WORKSPACE)
 ─────────────────────────────────────────────────────────── */
+.studio-workspace,
 .studio-grid {
   display: grid;
   grid-template-columns: 280px 1fr 340px;
-  gap: 20px;
-  height: calc(100vh - var(--topbar-height) - 48px);
+  gap: 16px;
+  min-height: calc(100vh - var(--topbar-height) - 120px);
 }
 
 .studio-pane {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
+.pane-header {
+  padding: 12px 16px;
+  background: #09090b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scene-list-container {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.scene-cut-item {
+  padding: 10px 12px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scene-cut-item:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: #27272a;
+}
+
+.scene-cut-item.active {
+  background: #18181b;
+  border-color: #ffffff;
+}
+
+.scene-cut-index {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: var(--font-mono);
+}
+
+.scene-cut-duration {
+  font-size: 10px;
+  color: #a1a1aa;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.scene-cut-text {
+  font-size: 12px;
+  color: #a1a1aa;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.studio-theater-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.theater-screen,
 .studio-theater {
-  background: #000;
-  border-radius: var(--radius-md);
+  background: #09090b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 9;
+  width: 100%;
+}
+
+.theater-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.theater-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.time-display {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #a1a1aa;
+}
+
+.studio-timeline-container {
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #71717a;
+}
+
+.timeline-scrubber-track {
+  width: 100%;
+  accent-color: #ffffff;
+  cursor: pointer;
+}
+
+.timeline-scenes-track {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.timeline-scene-block {
+  padding: 6px 4px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: #a1a1aa;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeline-scene-block:hover {
+  background: #27272a;
+  color: #ffffff;
+}
+
+.timeline-scene-block.active {
+  background: #ffffff;
+  color: #09090b;
+  font-weight: 600;
+  border-color: #ffffff;
 }
 
 /* ───────────────────────────────────────────────────────────
@@ -778,21 +919,19 @@ a {
 }
 
 .landing-gradient-text {
-  background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 70%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #ffffff;
 }
 
 .landing-section {
-  padding: 80px 24px;
-  max-width: 1240px;
+  padding: 64px 20px;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
 }
 
 @media (max-width: 768px) {
   .landing-section {
-    padding: 48px 16px;
+    padding: 40px 16px;
   }
 }
 
@@ -800,30 +939,29 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: 700;
-  color: #c7d2fe;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e4e4e7;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  font-family: var(--font-mono);
 }
 
 .landing-studio-mockup {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-medium);
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
-  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.8), 0 0 40px -10px rgba(99, 102, 241, 0.25);
   overflow: hidden;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.2s ease;
 }
 
 .landing-studio-mockup:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 32px 80px -12px rgba(0, 0, 0, 0.9), 0 0 60px -10px rgba(99, 102, 241, 0.35);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .landing-feature-card {
