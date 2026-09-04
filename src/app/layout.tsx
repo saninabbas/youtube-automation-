@@ -42,6 +42,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastProvider } from '@/components/Toast';
+
 export default function RootLayout({
   children,
 }: {
@@ -50,7 +52,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AppShell>{children}</AppShell>
+        <ToastProvider>
+          <AppShell>{children}</AppShell>
+        </ToastProvider>
       </body>
     </html>
   );

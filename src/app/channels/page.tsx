@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 
 interface Channel {
   id: string;
@@ -26,15 +27,44 @@ interface Channel {
   created_at: string;
 }
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const NICHE_PRESETS = [
+  { id: 'ai', label: '🤖 AI & Tech', niche: 'Cutting-edge AI tools, future tech trends, and technological innovations' },
+  { id: 'finance', label: '💰 Wealth & Finance', niche: 'Personal finance, smart investing, wealth building, and financial psychology' },
+  { id: 'stoic', label: '🧠 Stoicism & Mindset', niche: 'Stoic philosophy, mental mastery, discipline, and emotional resilience' },
+  { id: 'crime', label: '🕵️ True Crime & Mystery', niche: 'Unsolved criminal cases, bizarre mysteries, and psychological investigations' },
+  { id: 'history', label: '🏛️ Forgotten History', niche: 'Untold historical events, pivotal battles, and ancient civilizations' },
+  { id: 'science', label: '🌌 Space & Science', niche: 'Mind-bending astrophysics, cosmos exploration, and scientific breakthroughs' },
+];
+
+const DAYS_SHORT = [
+  { full: 'Monday', short: 'Mon' },
+  { full: 'Tuesday', short: 'Tue' },
+  { full: 'Wednesday', short: 'Wed' },
+  { full: 'Thursday', short: 'Thu' },
+  { full: 'Friday', short: 'Fri' },
+  { full: 'Saturday', short: 'Sat' },
+  { full: 'Sunday', short: 'Sun' },
+];
+
+const DURATION_OPTIONS = [
+  { value: 1, label: '⚡ 60s Shorts', desc: 'YouTube Shorts & TikToks' },
+  { value: 5, label: '⏱️ 5 Mins', desc: 'Quick punchy videos' },
+  { value: 8, label: '🎬 8 Mins', desc: 'Mid-roll monetization standard' },
+  { value: 12, label: '📚 12 Mins', desc: 'Deep dive documentary' },
+];
 
 export default function ChannelsPage() {
+  const toast = useToast();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'general' | 'persona' | 'schedule'>('general');
+
+  // Delete confirmation modal state
+  const [deleteTarget, setDeleteTarget] = useState<Channel | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
@@ -42,7 +72,7 @@ export default function ChannelsPage() {
   const [language, setLanguage] = useState('en');
   const [voice, setVoice] = useState('en-US-ChristopherNeural');
   const [voiceSpeed, setVoiceSpeed] = useState('1.0x');
-  const [targetDuration, setTargetDuration] = useState(5);
+  const [targetDuration, setTargetDuration] = useState(8);
   const [visualStyle, setVisualStyle] = useState('Cinematic High-Contrast');
   const [subtitleStyle, setSubtitleStyle] = useState('Modern Clean White');
   const [introStyle, setIntroStyle] = useState('High-Impact Dramatic Question');
@@ -64,7 +94,7 @@ export default function ChannelsPage() {
         setChannels(data.channels || []);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch channels');
+      toast.error(err.message || 'Failed to fetch channels');
     } finally {
       setLoading(false);
     }
@@ -126,7 +156,8 @@ export default function ChannelsPage() {
 
   const handleSaveChannel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !niche.trim()) return;
+    if (!name.trim()) { toast.warning('Please enter a channel name'); return; }
+    if (!niche.trim()) { toast.warning('Please specify your channel niche'); return; }
 
     try {
       setSubmitting(true);
@@ -159,26 +190,43 @@ export default function ChannelsPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Failed to save channel');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to save channel');
 
+      toast.success(editingChannel ? 'Channel profile updated! ✨' : 'Channel created successfully! 🎉');
       setShowModal(false);
       await fetchChannels();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'An unexpected error occurred.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeleteChannel = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete channel "${name}"? All associated videos will be retained.`)) return;
+  const toggleDay = (day: string) => {
+    if (selectedDays.includes(day)) {
+      if (selectedDays.length > 1) setSelectedDays(selectedDays.filter((d) => d !== day));
+    } else {
+      setSelectedDays([...selectedDays, day]);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/channels/${id}`, { method: 'DELETE' });
+      setDeleting(true);
+      const res = await fetch(`/api/channels/${deleteTarget.id}`, { method: 'DELETE' });
       if (res.ok) {
+        toast.success(`Channel "${deleteTarget.name}" deleted.`);
+        setDeleteTarget(null);
         await fetchChannels();
+      } else {
+        toast.error('Failed to delete channel');
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      toast.error(err.message || 'Network error deleting channel');
+    } finally {
+      setDeleting(false);
     }
   };
 

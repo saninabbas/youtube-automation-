@@ -3,13 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb, Channel } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 
+import { DEFAULT_USER_ID } from '@/lib/db';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser(request);
-    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    const userId = user.id;
+    const userId = user?.id || DEFAULT_USER_ID;
 
     const db = getDb();
     const channels = db
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ channels });
   } catch (err: any) {
+    console.error('Channels GET error:', err);
     return NextResponse.json({ error: err.message || 'Failed to fetch channels' }, { status: 500 });
   }
 }
@@ -32,8 +34,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser(request);
-    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    const userId = user.id;
+    const userId = user?.id || DEFAULT_USER_ID;
+
+    const db = getDb();
+    const nowIso = new Date().toISOString();
+    
+    // Ensure user record exists in container DB
+    db.prepare(`
+      INSERT OR IGNORE INTO users (id, email, password_hash, salt, name, email_verified, role, status, onboarding_completed, created_at, updated_at)
+      VALUES (?, ?, '', '', ?, 1, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
+    `).run(userId, user?.email || 'creator@autovideo.local', user?.name || 'Creator', nowIso, nowIso);
 
     const body = await request.json();
     const {
@@ -63,7 +73,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Niche is required' }, { status: 400 });
     }
 
-    const db = getDb();
     const id = uuidv4();
     const now = new Date().toISOString();
 
