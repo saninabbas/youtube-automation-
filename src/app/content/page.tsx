@@ -109,33 +109,38 @@ function ContentLibraryList() {
   };
 
   return (
-    <div className="content-container" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="content-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* ───────────────────────────────────────────────────────────
           1. HEADER BAR
       ─────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
-            Video Projects Library
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Manage generated videos, monitor background pipeline jobs, and inspect 1080p production assets.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
+              Video Projects
+            </h1>
+            <span style={{ fontSize: '11px', fontFamily: 'monospace', padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#a1a1aa' }}>
+              {projects.length} {projects.length === 1 ? 'RECORD' : 'RECORDS'}
+            </span>
+          </div>
+          <p style={{ fontSize: '13px', color: '#71717a', margin: 0 }}>
+            Manage generated videos, monitor background rendering pipelines, and inspect 1080p output assets.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Link href="/calendar" className="btn btn-secondary btn-sm">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link href="/calendar" className="btn btn-secondary btn-sm" style={{ height: '32px' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span>Calendar View</span>
+            <span>Calendar</span>
           </Link>
 
-          <Link href="/content/new" className="btn btn-primary btn-sm">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <Link href="/content/new" className="btn btn-primary btn-sm" style={{ height: '32px' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -148,77 +153,93 @@ function ContentLibraryList() {
           2. FILTER TABS & CONTROLS
       ─────────────────────────────────────────────────────────── */}
       <div
+        className="card"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '16px',
-          padding: '12px 18px',
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)',
+          gap: '12px',
+          padding: '10px 14px',
+          background: 'rgba(24, 24, 27, 0.5)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
         }}
       >
-        {/* Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto' }}>
+        {/* Filter Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflowX: 'auto' }}>
           {[
-            { id: 'ALL', label: 'All Projects', count: projects.length },
+            { id: 'ALL', label: 'All', count: projects.length },
             { id: 'GENERATING', label: 'Generating', count: countGenerating },
             { id: 'READY', label: 'Ready', count: countReady },
             { id: 'PUBLISHED', label: 'Published', count: countPublished },
             { id: 'FAILED', label: 'Failed', count: countFailed },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id as any)}
-              className={`btn btn-sm ${activeTab === t.id ? 'btn-secondary' : 'btn-ghost'}`}
-              style={{
-                borderRadius: 'var(--radius-full)',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: activeTab === t.id ? 700 : 500,
-                color: activeTab === t.id ? '#fff' : 'var(--text-secondary)',
-                background: activeTab === t.id ? 'var(--bg-elevated)' : 'transparent',
-                borderColor: activeTab === t.id ? 'var(--border-medium)' : 'transparent',
-              }}
-            >
-              <span>{t.label}</span>
-              <span
+          ].map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id as any)}
                 style={{
-                  fontSize: '10px',
-                  padding: '1px 6px',
-                  borderRadius: 'var(--radius-full)',
-                  background: activeTab === t.id ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                  color: '#fff',
-                  marginLeft: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 10px',
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
+                  fontWeight: isActive ? 600 : 500,
+                  borderRadius: '4px',
+                  border: isActive ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.06)',
+                  background: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.03)',
+                  color: isActive ? '#09090b' : '#a1a1aa',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
               >
-                {t.count}
-              </span>
-            </button>
-          ))}
+                <span>{t.label}</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '0px 5px',
+                    borderRadius: '3px',
+                    background: isActive ? '#09090b' : 'rgba(255, 255, 255, 0.08)',
+                    color: isActive ? '#ffffff' : '#71717a',
+                  }}
+                >
+                  {t.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Search, Sort, View Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ position: 'relative' }}>
             <input
               type="text"
-              placeholder="Filter topics..."
+              placeholder="Search topic or channel..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="form-input"
-              style={{ padding: '6px 10px 6px 30px', fontSize: '12px', width: '160px', borderRadius: 'var(--radius-md)' }}
+              style={{
+                padding: '5px 8px 5px 28px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                width: '180px',
+                height: '28px',
+                borderRadius: '4px',
+                background: '#09090b',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              }}
             />
             <svg
-              width="13"
-              height="13"
+              width="12"
+              height="12"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--text-muted)' }}
+              style={{ position: 'absolute', left: '9px', top: '8px', color: '#71717a' }}
             >
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -229,27 +250,37 @@ function ContentLibraryList() {
             className="form-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            style={{ padding: '6px 10px', fontSize: '12px', width: 'auto', borderRadius: 'var(--radius-md)' }}
+            style={{
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontFamily: 'monospace',
+              width: 'auto',
+              height: '28px',
+              borderRadius: '4px',
+              background: '#09090b',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              color: '#d4d4d8',
+            }}
           >
             <option value="newest">Newest First</option>
             <option value="duration">Longest Duration</option>
             <option value="title">Alphabetical</option>
           </select>
 
-          <div style={{ display: 'flex', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', padding: '2px', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', background: '#09090b', borderRadius: '4px', padding: '2px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <button
               onClick={() => setViewMode('grid')}
               style={{
-                background: viewMode === 'grid' ? 'var(--bg-elevated)' : 'transparent',
+                background: viewMode === 'grid' ? '#27272a' : 'transparent',
                 border: 'none',
-                color: viewMode === 'grid' ? '#fff' : 'var(--text-muted)',
-                padding: '4px 6px',
-                borderRadius: '4px',
+                color: viewMode === 'grid' ? '#f4f4f5' : '#71717a',
+                padding: '3px 6px',
+                borderRadius: '3px',
                 cursor: 'pointer',
               }}
               title="Grid View"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="7" height="7" />
                 <rect x="14" y="3" width="7" height="7" />
                 <rect x="14" y="14" width="7" height="7" />
@@ -259,16 +290,16 @@ function ContentLibraryList() {
             <button
               onClick={() => setViewMode('list')}
               style={{
-                background: viewMode === 'list' ? 'var(--bg-elevated)' : 'transparent',
+                background: viewMode === 'list' ? '#27272a' : 'transparent',
                 border: 'none',
-                color: viewMode === 'list' ? '#fff' : 'var(--text-muted)',
-                padding: '4px 6px',
-                borderRadius: '4px',
+                color: viewMode === 'list' ? '#f4f4f5' : '#71717a',
+                padding: '3px 6px',
+                borderRadius: '3px',
                 cursor: 'pointer',
               }}
               title="List View"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="8" y1="6" x2="21" y2="6" />
                 <line x1="8" y1="12" x2="21" y2="12" />
                 <line x1="8" y1="18" x2="21" y2="18" />
@@ -285,64 +316,66 @@ function ContentLibraryList() {
           3. PROJECTS DISPLAY (Grid or List)
       ─────────────────────────────────────────────────────────── */}
       {loading && projects.length === 0 ? (
-        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div style={{ padding: '60px', textAlign: 'center', color: '#71717a', fontFamily: 'monospace', fontSize: '13px' }}>
           Loading video projects library...
         </div>
       ) : sortedProjects.length === 0 ? (
         <div
           style={{
-            padding: '64px',
+            padding: '56px 24px',
             textAlign: 'center',
-            background: 'var(--bg-secondary)',
-            border: '1px dashed var(--border-medium)',
-            borderRadius: 'var(--radius-xl)',
+            background: 'rgba(24, 24, 27, 0.4)',
+            border: '1px dashed rgba(255, 255, 255, 0.12)',
+            borderRadius: '8px',
           }}
         >
-          <div style={{ fontSize: '36px', marginBottom: '12px' }}>🎬</div>
-          <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '6px' }}>
-            No projects found in this view
+          <div style={{ width: '40px', height: '40px', margin: '0 auto 12px auto', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a1a1aa' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </div>
+          <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '4px' }}>
+            No matching projects found
           </h3>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px', maxWidth: '380px', margin: '0 auto 24px' }}>
-            {search ? `No projects match "${search}". Try clearing your filter.` : 'Create a new automated video to populate your production library.'}
+          <p style={{ fontSize: '13px', color: '#71717a', maxWidth: '380px', margin: '0 auto 20px auto' }}>
+            {search ? `No projects match "${search}". Try adjusting your filters.` : 'Generate a new automated video to start populating your production pipeline.'}
           </p>
           <Link href="/content/new" className="btn btn-primary btn-sm">
             + Create New Video
           </Link>
         </div>
       ) : viewMode === 'grid' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '22px' }}>
-          {sortedProjects.map((p) => (
-            <Link
-              key={p.id}
-              href={`/content/${p.id}`}
-              className="card"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
-                padding: '16px',
-                textDecoration: 'none',
-              }}
-            >
-              {/* Thumbnail 16:9 */}
-              <div
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '16px' }}>
+          {sortedProjects.map((p) => {
+            const isProcessing = p.status === 'PROCESSING' || p.status === 'PENDING' || p.publishing_status === 'UPLOADING';
+            const isReady = p.status === 'COMPLETED';
+            const isFailed = p.status === 'FAILED';
+
+            return (
+              <Link
+                key={p.id}
+                href={`/content/${p.id}`}
+                className="card"
                 style={{
-                  aspectRatio: '16 / 9',
-                  borderRadius: 'var(--radius-md)',
-                  background: '#000',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  border: '1px solid var(--border-subtle)',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  padding: '14px',
+                  textDecoration: 'none',
+                  background: 'rgba(18, 18, 21, 0.8)',
+                  borderColor: 'rgba(255, 255, 255, 0.08)',
+                  transition: 'border-color 0.15s ease',
                 }}
               >
+                {/* Thumbnail 16:9 */}
                 <div
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'radial-gradient(circle at center, rgba(99,102,241,0.18) 0%, rgba(0,0,0,0.85) 100%)',
+                    aspectRatio: '16 / 9',
+                    borderRadius: '6px',
+                    background: '#09090b',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -350,165 +383,220 @@ function ContentLibraryList() {
                 >
                   <div
                     style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '50%',
-                      background: 'rgba(255,255,255,0.12)',
-                      backdropFilter: 'blur(8px)',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '6px',
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#fff',
+                      color: '#f4f4f5',
                     }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="5 3 19 12 5 21 5 3" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="6 4 20 12 6 20 6 4" />
                     </svg>
+                  </div>
+
+                  {/* Status Badges */}
+                  <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', gap: '4px' }}>
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontFamily: 'monospace',
+                        fontWeight: 600,
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        background: isReady ? 'rgba(16, 185, 129, 0.15)' : isProcessing ? 'rgba(59, 130, 246, 0.15)' : isFailed ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+                        border: isReady ? '1px solid rgba(16, 185, 129, 0.3)' : isProcessing ? '1px solid rgba(59, 130, 246, 0.3)' : isFailed ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.15)',
+                        color: isReady ? '#10b981' : isProcessing ? '#60a5fa' : isFailed ? '#ef4444' : '#e4e4e7',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {p.status}
+                    </span>
+                    {p.publishing_status && p.publishing_status !== 'DRAFT' && (
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontFamily: 'monospace',
+                          padding: '2px 6px',
+                          borderRadius: '3px',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          color: '#d4d4d8',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {p.publishing_status}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Duration */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      right: '8px',
+                      background: 'rgba(9, 9, 11, 0.85)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      color: '#f4f4f5',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {p.target_length_minutes}m • 1080P
                   </div>
                 </div>
 
-                {/* Status Badges */}
-                <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '6px' }}>
-                  <span className={`status-pill ${p.status}`}>{p.status}</span>
-                  {p.publishing_status && p.publishing_status !== 'DRAFT' && (
-                    <span className={`status-pill ${p.publishing_status}`}>{p.publishing_status}</span>
-                  )}
+                {/* Title & Metadata */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <h3
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#f4f4f5',
+                      lineHeight: 1.4,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      margin: 0,
+                    }}
+                  >
+                    {p.topic}
+                  </h3>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace', color: '#71717a' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                      {p.channel_name || 'Default Channel'}
+                    </span>
+                    <span>STAGE: <strong style={{ color: '#d4d4d8', fontWeight: 500 }}>{p.current_stage}</strong></span>
+                  </div>
                 </div>
 
-                {/* Duration */}
+                {/* Actions Footer */}
                 <div
                   style={{
-                    position: 'absolute',
-                    bottom: '10px',
-                    right: '10px',
-                    background: 'rgba(0,0,0,0.8)',
-                    padding: '2px 8px',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: '#fff',
-                    fontFamily: 'var(--font-mono)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '8px',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                    marginTop: 'auto',
                   }}
                 >
-                  {p.target_length_minutes} min
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#52525b' }}>
+                    {new Date(p.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase()}
+                  </span>
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {p.status === 'FAILED' && (
+                      <button
+                        onClick={(e) => handleRetryProject(p.id, e)}
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '2px 8px', fontSize: '11px', height: '24px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                        title="Retry Pipeline"
+                      >
+                        Retry
+                      </button>
+                    )}
+
+                    <span className="btn btn-secondary btn-sm" style={{ padding: '2px 8px', fontSize: '11px', height: '24px' }}>
+                      Studio ➔
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        /* List View */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {sortedProjects.map((p) => {
+            const isReady = p.status === 'COMPLETED';
+            const isProcessing = p.status === 'PROCESSING' || p.status === 'PENDING';
+            const isFailed = p.status === 'FAILED';
 
-              {/* Title & Metadata */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <h3
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.4,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {p.topic}
-                </h3>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
-                  <span>{p.channel_name || 'Default Channel'}</span>
-                  <span>Stage: <strong style={{ color: 'var(--text-secondary)' }}>{p.current_stage}</strong></span>
-                </div>
-              </div>
-
-              {/* Actions Footer */}
-              <div
+            return (
+              <Link
+                key={p.id}
+                href={`/content/${p.id}`}
+                className="card"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  paddingTop: '10px',
-                  borderTop: '1px solid var(--border-subtle)',
-                  marginTop: 'auto',
+                  padding: '10px 16px',
+                  textDecoration: 'none',
+                  gap: '14px',
+                  background: 'rgba(18, 18, 21, 0.8)',
+                  borderColor: 'rgba(255, 255, 255, 0.08)',
                 }}
               >
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                  {new Date(p.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: '48px',
+                      height: '28px',
+                      borderRadius: '4px',
+                      background: '#09090b',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#a1a1aa' }}>
+                      <polygon points="6 4 20 12 6 20 6 4" />
+                    </svg>
+                  </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {p.status === 'FAILED' && (
-                    <button
-                      onClick={(e) => handleRetryProject(p.id, e)}
-                      className="btn btn-danger btn-sm"
-                      title="Retry Pipeline"
-                    >
-                      Retry
-                    </button>
-                  )}
-
-                  <span className="btn btn-secondary btn-sm" style={{ padding: '4px 10px', fontSize: '11px' }}>
-                    Open Studio ➔
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        /* List View */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {sortedProjects.map((p) => (
-            <Link
-              key={p.id}
-              href={`/content/${p.id}`}
-              className="card"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 20px',
-                textDecoration: 'none',
-                gap: '16px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
-                <div
-                  style={{
-                    width: '64px',
-                    height: '36px',
-                    borderRadius: 'var(--radius-sm)',
-                    background: '#000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--accent-primary)' }}>
-                    <polygon points="5 3 19 12 5 21 5 3" />
-                  </svg>
-                </div>
-
-                <div style={{ minWidth: 0 }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {p.topic}
-                  </h4>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '12px' }}>
-                    <span>{p.channel_name}</span>
-                    <span>•</span>
-                    <span>{p.target_length_minutes}m</span>
-                    <span>•</span>
-                    <span>Stage: {p.current_stage}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
+                      {p.topic}
+                    </h4>
+                    <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#71717a', display: 'flex', gap: '8px' }}>
+                      <span>{p.channel_name}</span>
+                      <span>•</span>
+                      <span>{p.target_length_minutes}m</span>
+                      <span>•</span>
+                      <span>STAGE: {p.current_stage}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
-                <span className={`status-pill ${p.status}`}>{p.status}</span>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  {new Date(p.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            </Link>
-          ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      background: isReady ? 'rgba(16, 185, 129, 0.15)' : isProcessing ? 'rgba(59, 130, 246, 0.15)' : isFailed ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+                      border: isReady ? '1px solid rgba(16, 185, 129, 0.3)' : isProcessing ? '1px solid rgba(59, 130, 246, 0.3)' : isFailed ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.15)',
+                      color: isReady ? '#10b981' : isProcessing ? '#60a5fa' : isFailed ? '#ef4444' : '#e4e4e7',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {p.status}
+                  </span>
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#52525b' }}>
+                    {new Date(p.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
@@ -517,7 +605,7 @@ function ContentLibraryList() {
 
 export default function ContentLibraryPage() {
   return (
-    <React.Suspense fallback={<div className="content-container">Loading projects...</div>}>
+    <React.Suspense fallback={<div className="content-container" style={{ padding: '40px', color: '#71717a', fontFamily: 'monospace', fontSize: '13px' }}>Loading projects...</div>}>
       <ContentLibraryList />
     </React.Suspense>
   );

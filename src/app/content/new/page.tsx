@@ -237,51 +237,46 @@ function CreateVideoWizardContent() {
   };
 
   return (
-    <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px', padding: '16px' }}>
+    <div style={{ maxWidth: '1180px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Dashboard</Link>
-            <span style={{ color: 'var(--text-dim)' }}>/</span>
-            <span style={{ color: '#818cf8', fontSize: '13px', fontWeight: 600 }}>Studio</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+            <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Dashboard</Link>
+            <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>/</span>
+            <span style={{ color: 'var(--text-primary)', fontSize: '12px', fontWeight: 500 }}>Studio</span>
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
-            AI Video Creation Studio
+          <h1 style={{ fontSize: '20px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.025em' }}>
+            Create Video
           </h1>
         </div>
 
         <Link
           href="/templates"
           className="btn btn-secondary btn-sm"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '10px' }}
         >
           <span>Browse Templates</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
+          <span style={{ color: 'var(--text-muted)' }}>➔</span>
         </Link>
       </div>
 
       {/* 3-Column Studio Wizard Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 240px) 1fr minmax(280px, 320px)', gap: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 290px', gap: '18px', alignItems: 'start' }}>
         {/* LEFT: STEP NAVIGATION */}
         <div
           className="card"
           style={{
-            padding: '16px 12px',
+            padding: '8px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
-            borderRadius: '16px',
-            background: 'linear-gradient(180deg, rgba(22,26,36,0.8) 0%, rgba(16,19,26,0.95) 100%)',
+            gap: '3px',
           }}
         >
           {[
-            { num: 1, label: 'Topic & Idea', icon: '💡' },
-            { num: 2, label: 'Aspect & Format', icon: '📐' },
-            { num: 3, label: 'Visual Aesthetic', icon: '🎨' },
-            { num: 4, label: 'Voice & Language', icon: '🎙️' },
+            { num: 1, label: 'Topic & Idea', tag: '01' },
+            { num: 2, label: 'Format & Ratio', tag: '02' },
+            { num: 3, label: 'Visual Style', tag: '03' },
+            { num: 4, label: 'Voice & Speed', tag: '04' },
           ].map((s) => (
             <button
               key={s.num}
@@ -294,83 +289,57 @@ function CreateVideoWizardContent() {
                 textAlign: 'left',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                padding: '12px 14px',
-                borderRadius: '10px',
+                gap: '8px',
+                padding: '8px 10px',
+                borderRadius: '6px',
                 fontSize: '13px',
-                fontWeight: activeStep === s.num ? 700 : 500,
-                background: activeStep === s.num ? 'rgba(99,102,241,0.18)' : 'transparent',
-                border: activeStep === s.num ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent',
-                color: activeStep === s.num ? '#a5b4fc' : '#94a3b8',
-                transition: 'all 0.15s ease',
+                fontWeight: activeStep === s.num ? 500 : 400,
               }}
             >
-              <span>{s.icon}</span>
+              <span className="tabular-nums" style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', opacity: 0.6 }}>
+                {s.tag}
+              </span>
               <span>{s.label}</span>
             </button>
           ))}
         </div>
 
         {/* CENTER: MAIN CONFIGURATION PANELS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* STEP 1: TOPIC & INSPIRATION */}
           {activeStep === 1 && (
-            <div
-              className="card"
-              style={{
-                padding: '28px',
-                borderRadius: '20px',
-                background: 'linear-gradient(180deg, rgba(22,26,36,0.7) 0%, rgba(16,19,26,0.95) 100%)',
-                border: '1px solid var(--border-medium)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#f8fafc' }}>
-                  01. What is this video about?
+            <div className="card" style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5' }}>
+                  Topic & Narrative Concept
                 </h2>
                 <button
                   type="button"
                   onClick={enhancePrompt}
                   disabled={enhancing || !topic.trim()}
+                  className="btn btn-secondary btn-sm"
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(168,85,247,0.2) 100%)',
-                    border: '1px solid rgba(99,102,241,0.4)',
-                    color: '#c4b5fd',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: topic.trim() ? 'pointer' : 'not-allowed',
-                    opacity: topic.trim() ? 1 : 0.5,
+                    fontSize: '11px',
+                    fontFamily: 'var(--font-mono)',
+                    opacity: topic.trim() ? 1 : 0.4,
                   }}
                 >
                   <span>✨ Enhance Hook</span>
                 </button>
               </div>
 
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.5 }}>
-                Enter any topic or headline. The AI engine decomposes it into viral hooks, narration scenes, and visual prompts.
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Enter any prompt or topic. The autonomous engine generates viral hooks, scene breakdowns, and voice scripts.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
-                    Video Concept / Topic Prompt *
-                  </label>
                   <textarea
                     rows={4}
-                    className="topbar-search"
+                    className="form-textarea"
                     style={{
-                      width: '100%',
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      background: 'rgba(0,0,0,0.4)',
-                      border: '1px solid var(--border-medium)',
-                      color: '#fff',
-                      fontSize: '14px',
+                      padding: '12px 14px',
+                      fontSize: '13px',
                       lineHeight: 1.5,
                       resize: 'vertical',
                     }}
@@ -383,37 +352,37 @@ function CreateVideoWizardContent() {
 
                 {/* Viral Topic Ideas Presets */}
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#94a3b8', marginBottom: '10px' }}>
-                    ⚡ Viral Topic Inspirations (1-Click Fill)
-                  </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)', marginBottom: '8px' }}>
+                    Quick Presets
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {VIRAL_TOPIC_PRESETS.map((preset) => (
                       <div
                         key={preset.id}
                         onClick={() => setTopic(preset.full)}
                         style={{
-                          padding: '10px 14px',
-                          borderRadius: '10px',
-                          background: topic === preset.full ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
-                          border: topic === preset.full ? '1px solid #6366f1' : '1px solid var(--border-subtle)',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          background: topic === preset.full ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
+                          border: topic === preset.full ? '1px solid #71717a' : '1px solid var(--border-subtle)',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          gap: '12px',
-                          transition: 'all 0.15s ease',
+                          gap: '10px',
+                          transition: 'border-color 0.12s ease',
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#a5b4fc', flexShrink: 0 }}>
+                          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', flexShrink: 0 }}>
                             {preset.tag}
                           </span>
-                          <span style={{ fontSize: '13px', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {preset.label}
                           </span>
                         </div>
-                        <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600, flexShrink: 0 }}>
-                          + Use Idea
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>
+                          Use ➔
                         </span>
                       </div>
                     ))}
@@ -423,25 +392,17 @@ function CreateVideoWizardContent() {
                 {/* Channel Selector */}
                 {channels.length > 0 && (
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
-                      Target YouTube Channel Persona
+                    <label className="form-label" style={{ marginBottom: '6px' }}>
+                      Target Channel Persona
                     </label>
                     <select
+                      className="form-select"
                       value={channelId}
                       onChange={(e) => setChannelId(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px 14px',
-                        borderRadius: '12px',
-                        background: 'rgba(0,0,0,0.4)',
-                        border: '1px solid var(--border-medium)',
-                        color: '#fff',
-                        fontSize: '13px',
-                      }}
                     >
                       {channels.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} — ({c.niche})
+                          {c.name} ({c.niche})
                         </option>
                       ))}
                     </select>
@@ -453,61 +414,50 @@ function CreateVideoWizardContent() {
 
           {/* STEP 2: FORMAT & ASPECT RATIO */}
           {activeStep === 2 && (
-            <div
-              className="card"
-              style={{
-                padding: '28px',
-                borderRadius: '20px',
-                background: 'linear-gradient(180deg, rgba(22,26,36,0.7) 0%, rgba(16,19,26,0.95) 100%)',
-                border: '1px solid var(--border-medium)',
-              }}
-            >
-              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#f8fafc', marginBottom: '4px' }}>
-                02. Choose Format & Aspect Ratio
+            <div className="card" style={{ padding: '20px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
+                Format Archetype & Aspect Ratio
               </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                Select aspect ratio, render resolution, and duration archetype.
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Select display aspect ratio and pacing profile.
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                 {FORMAT_OPTIONS.map((f) => (
                   <div
                     key={f.id}
                     onClick={() => selectFormat(f.id as FormatType)}
                     style={{
-                      padding: '20px',
-                      borderRadius: '16px',
-                      background: format === f.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
-                      border: format === f.id ? '2px solid #6366f1' : '1px solid var(--border-subtle)',
-                      boxShadow: format === f.id ? '0 0 24px rgba(99,102,241,0.25)' : 'none',
+                      padding: '16px',
+                      borderRadius: '8px',
+                      background: format === f.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
+                      border: format === f.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      position: 'relative',
+                      transition: 'all 0.12s ease',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '28px' }}>{f.icon}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '20px' }}>{f.icon}</span>
                       <span
+                        className="badge"
                         style={{
-                          fontSize: '11px',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          background: format === f.id ? '#6366f1' : 'rgba(255,255,255,0.06)',
-                          color: '#fff',
-                          fontWeight: 700,
+                          background: format === f.id ? '#ffffff' : 'var(--bg-surface)',
+                          color: format === f.id ? '#09090b' : 'var(--text-muted)',
+                          border: '1px solid var(--border-subtle)',
+                          fontWeight: 600,
                         }}
                       >
                         {f.ratio}
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
                       {f.title}
                     </h3>
-                    <div style={{ fontSize: '12px', color: '#a5b4fc', fontWeight: 600, marginBottom: '8px' }}>
+                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '6px' }}>
                       {f.res} • {f.time}
                     </div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                       {f.desc}
                     </p>
                   </div>
@@ -518,61 +468,46 @@ function CreateVideoWizardContent() {
 
           {/* STEP 3: VISUAL STYLE GALLERY */}
           {activeStep === 3 && (
-            <div
-              className="card"
-              style={{
-                padding: '28px',
-                borderRadius: '20px',
-                background: 'linear-gradient(180deg, rgba(22,26,36,0.7) 0%, rgba(16,19,26,0.95) 100%)',
-                border: '1px solid var(--border-medium)',
-              }}
-            >
-              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#f8fafc', marginBottom: '4px' }}>
-                03. Visual Aesthetics & Grading
+            <div className="card" style={{ padding: '20px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
+                Visual Style & Aesthetics
               </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                Directs the AI generative visuals pipeline, stock scene matching, and color grading.
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Directs the generative visuals engine and color grading.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {STYLE_GALLERY.map((v) => (
                   <div
                     key={v.id}
                     onClick={() => setVisualStyle(v.id as VisualStyleType)}
                     style={{
-                      padding: '16px 20px',
-                      borderRadius: '14px',
-                      background: visualStyle === v.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
-                      border: visualStyle === v.id ? '2px solid #6366f1' : '1px solid var(--border-subtle)',
-                      boxShadow: visualStyle === v.id ? '0 0 20px rgba(99,102,241,0.2)' : 'none',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      background: visualStyle === v.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
+                      border: visualStyle === v.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      gap: '16px',
-                      transition: 'all 0.15s ease',
+                      gap: '12px',
+                      transition: 'all 0.12s ease',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <span style={{ fontSize: '26px' }}>{v.icon}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '20px' }}>{v.icon}</span>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                          <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>{v.name}</h3>
-                          <span style={{ fontSize: '11px', color: v.color, fontWeight: 600 }}>{v.tag}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1px' }}>
+                          <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>{v.name}</h3>
+                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>{v.tag}</span>
                         </div>
-                        <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{v.desc}</p>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{v.desc}</p>
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        border: visualStyle === v.id ? '6px solid #6366f1' : '2px solid rgba(255,255,255,0.2)',
-                        flexShrink: 0,
-                      }}
-                    />
+                    <span style={{ fontSize: '12px', color: visualStyle === v.id ? '#ffffff' : 'transparent', fontWeight: 600 }}>
+                      ✓
+                    </span>
                   </div>
                 ))}
               </div>
@@ -581,23 +516,15 @@ function CreateVideoWizardContent() {
 
           {/* STEP 4: VOICE & LANGUAGE */}
           {activeStep === 4 && (
-            <div
-              className="card"
-              style={{
-                padding: '28px',
-                borderRadius: '20px',
-                background: 'linear-gradient(180deg, rgba(22,26,36,0.7) 0%, rgba(16,19,26,0.95) 100%)',
-                border: '1px solid var(--border-medium)',
-              }}
-            >
-              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#f8fafc', marginBottom: '4px' }}>
-                04. Neural Voiceover & Pacing
+            <div className="card" style={{ padding: '20px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
+                Neural Voiceover & Narration
               </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                Select AI voice narrator model and speech velocity.
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Select AI voice synthesizer model and speech speed multiplier.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                 {VOICES_LIST.map((voc) => (
                   <div
                     key={voc.id}
@@ -606,43 +533,42 @@ function CreateVideoWizardContent() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '14px 18px',
-                      borderRadius: '14px',
-                      background: voice === voc.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
-                      border: voice === voc.id ? '2px solid #6366f1' : '1px solid var(--border-subtle)',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: voice === voc.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
+                      border: voice === voc.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
+                      transition: 'all 0.12s ease',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div
                         style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '10px',
-                          background: voice === voc.id ? '#6366f1' : 'rgba(255,255,255,0.06)',
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '6px',
+                          background: 'var(--bg-surface)',
+                          border: '1px solid var(--border-subtle)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#fff',
-                          fontWeight: 700,
-                          fontSize: '14px',
+                          fontSize: '12px',
                         }}
                       >
                         🎙️
                       </div>
                       <div>
-                        <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>
+                        <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>
                           {voc.name} ({voc.gender})
                         </h3>
-                        <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                           {voc.tone} • {voc.lang}
                         </p>
                       </div>
                     </div>
 
-                    <span style={{ fontSize: '12px', color: voice === voc.id ? '#a5b4fc' : 'var(--text-muted)', fontWeight: 600 }}>
-                      {voice === voc.id ? '✓ Selected' : 'Select'}
+                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: voice === voc.id ? '#ffffff' : 'var(--text-dim)', fontWeight: 500 }}>
+                      {voice === voc.id ? 'Selected' : 'Select'}
                     </span>
                   </div>
                 ))}
@@ -650,25 +576,23 @@ function CreateVideoWizardContent() {
 
               {/* Speed multiplier */}
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
+                <label className="form-label" style={{ marginBottom: '6px' }}>
                   Speech Velocity Multiplier
                 </label>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   {['0.9x', '1.0x', '1.1x', '1.2x'].map((spd) => (
                     <button
                       key={spd}
                       type="button"
                       onClick={() => setVoiceSpeed(spd)}
+                      className="btn"
                       style={{
                         flex: 1,
-                        padding: '10px',
-                        borderRadius: '10px',
-                        background: voiceSpeed === spd ? '#6366f1' : 'rgba(255,255,255,0.04)',
-                        border: voiceSpeed === spd ? '1px solid #4f46e5' : '1px solid var(--border-subtle)',
-                        color: voiceSpeed === spd ? '#fff' : '#cbd5e1',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
+                        background: voiceSpeed === spd ? '#ffffff' : 'var(--bg-surface)',
+                        color: voiceSpeed === spd ? '#09090b' : 'var(--text-secondary)',
+                        border: voiceSpeed === spd ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
+                        fontSize: '12px',
+                        fontFamily: 'var(--font-mono)',
                       }}
                     >
                       {spd}
@@ -680,48 +604,46 @@ function CreateVideoWizardContent() {
           )}
         </div>
 
-        {/* RIGHT: LIVE STUDIO BLUEPRINT & LAUNCH */}
+        {/* RIGHT: LIVE STUDIO BLUEPRINT (Terminal Grade) */}
         <div
           className="card"
           style={{
-            padding: '24px',
-            borderRadius: '20px',
+            padding: '16px',
             position: 'sticky',
-            top: '88px',
-            background: 'linear-gradient(180deg, #161a26 0%, #0d1017 100%)',
+            top: '76px',
+            background: 'var(--bg-surface)',
             border: '1px solid var(--border-medium)',
-            boxShadow: '0 20px 40px -10px rgba(0,0,0,0.6)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Studio Blueprint
             </span>
-            <span className="badge badge-ready" style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px' }}>
-              1080p CFR
+            <span className="badge badge-ready">
+              1080P CFR
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', fontSize: '13px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Aspect Ratio:</span>
-              <span style={{ color: '#fff', fontWeight: 600 }}>{format === 'SHORT_VERTICAL' ? '9:16 (Vertical)' : '16:9 (Landscape)'}</span>
+              <span style={{ color: 'var(--text-muted)' }}>Aspect Ratio</span>
+              <span style={{ color: 'var(--text-primary)' }}>{format === 'SHORT_VERTICAL' ? '9:16 (Vert)' : '16:9 (Land)'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Target Duration:</span>
-              <span className="tabular-nums" style={{ color: '#fff', fontWeight: 600 }}>{durationMinutes} Mins ({totalSeconds}s)</span>
+              <span style={{ color: 'var(--text-muted)' }}>Duration</span>
+              <span className="tabular-nums" style={{ color: 'var(--text-primary)' }}>{durationMinutes}m ({totalSeconds}s)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Estimated Scenes:</span>
-              <span className="tabular-nums" style={{ color: '#fff', fontWeight: 600 }}>~{estimatedScenes} Dynamic Cuts</span>
+              <span style={{ color: 'var(--text-muted)' }}>Scene Cuts</span>
+              <span className="tabular-nums" style={{ color: 'var(--text-primary)' }}>~{estimatedScenes}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Script Wordcount:</span>
-              <span className="tabular-nums" style={{ color: '#fff', fontWeight: 600 }}>~{approxWords} Words</span>
+              <span style={{ color: 'var(--text-muted)' }}>Script Target</span>
+              <span className="tabular-nums" style={{ color: 'var(--text-primary)' }}>~{approxWords}w</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Pipeline Cost:</span>
-              <span className="tabular-nums" style={{ color: '#34d399', fontWeight: 700 }}>⚡ {creditCost} Credits</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Credit Cost</span>
+              <span className="tabular-nums" style={{ color: 'var(--status-ready)', fontWeight: 600 }}>⚡ {creditCost} Credits</span>
             </div>
           </div>
 
@@ -729,23 +651,21 @@ function CreateVideoWizardContent() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting || !topic.trim()}
-            className="btn btn-primary btn-lg"
+            className="btn btn-primary"
             style={{
               width: '100%',
-              marginBottom: '14px',
-              padding: '14px',
-              borderRadius: '12px',
-              fontWeight: 700,
-              fontSize: '15px',
-              boxShadow: '0 4px 20px rgba(99,102,241,0.5)',
+              marginBottom: '10px',
+              padding: '10px',
+              fontSize: '13px',
+              fontWeight: 600,
               cursor: topic.trim() && !submitting ? 'pointer' : 'not-allowed',
             }}
           >
-            {submitting ? 'Queuing Pipeline...' : '⚡ Generate 1080p Video'}
+            {submitting ? 'Queuing Pipeline...' : 'Generate 1080p Video'}
           </button>
 
-          <p style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.45 }}>
-            Autonomous pipeline: Script Engine $\to$ Neural Voiceover $\to$ Stock B-Roll $\to$ Dynamic Subtitles $\to$ FFmpeg 1080p MP4.
+          <p style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.4 }}>
+            Autonomous Script $\to$ TTS $\to$ Stock B-Roll $\to$ 1080p MP4.
           </p>
         </div>
       </div>
@@ -755,7 +675,7 @@ function CreateVideoWizardContent() {
 
 export default function CreateVideoPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Loading Studio...</div>}>
+    <Suspense fallback={<div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading Studio...</div>}>
       <CreateVideoWizardContent />
     </Suspense>
   );

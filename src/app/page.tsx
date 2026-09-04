@@ -115,44 +115,44 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* ─────────────────────────────────────────────────────────────
           1. CREATOR COMMAND CENTER HERO
       ───────────────────────────────────────────────────────────── */}
       <div
-        className="card card-glow"
+        className="card"
         style={{
-          padding: '36px 32px',
-          background: 'linear-gradient(135deg, rgba(22, 26, 38, 0.9) 0%, rgba(13, 16, 23, 0.95) 100%)',
-          border: '1px solid var(--border-medium)',
+          padding: '24px 28px',
+          background: 'rgba(24, 24, 27, 0.65)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 10px', background: 'var(--status-proc-bg)', border: '1px solid var(--status-proc-border)', borderRadius: 'var(--radius-full)', marginBottom: '12px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-primary)' }} />
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                AI Studio 2026 Active
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '2px 8px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '4px', marginBottom: '10px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.5)' }} />
+              <span style={{ fontSize: '10px', fontWeight: 600, color: '#e4e4e7', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
+                STUDIO ENGINE ONLINE • v2.4.0
               </span>
             </div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', marginBottom: '8px' }}>
-              Good morning, {currentUser?.name || 'Creator'}
+            <h1 style={{ fontSize: '22px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.02em', margin: '0 0 6px 0' }}>
+              Welcome back, {currentUser?.name || 'Creator'}
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '600px', lineHeight: 1.6 }}>
-              Turn your ideas into broadcast-quality 1080p videos with multi-scene AI decomposition, neural voiceover, and automated YouTube publishing.
+            <p style={{ color: '#71717a', fontSize: '13px', maxWidth: '580px', lineHeight: 1.5, margin: 0 }}>
+              Autonomous 1080p video pipeline with multi-scene script decomposition, neural voiceover, and YouTube scheduling.
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Link href="/templates" className="btn btn-secondary">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link href="/templates" className="btn btn-secondary btn-sm" style={{ height: '32px' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="12 2 2 7 12 12 22 7 12 2" />
                 <polyline points="2 17 12 22 22 17" />
               </svg>
-              <span>Use Template</span>
+              <span>Templates</span>
             </Link>
-            <Link href="/content/new" className="btn btn-primary btn-lg">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <Link href="/content/new" className="btn btn-primary btn-sm" style={{ height: '32px' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -162,43 +162,80 @@ export default function HomePage() {
         </div>
 
         {/* Quick Generation Bar */}
-        <form onSubmit={handleQuickCreate} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
+        <form onSubmit={handleQuickCreate} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
             <input
               type="text"
-              className="topbar-search"
-              style={{ width: '100%', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: '14px', background: 'var(--bg-primary)' }}
-              placeholder="Enter any topic, e.g. 'The 7 Laws of Quantum Computing in 2026'..."
+              className="form-input"
+              style={{
+                width: '100%',
+                borderRadius: '6px',
+                padding: '10px 14px',
+                fontSize: '13px',
+                background: '#09090b',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              }}
+              placeholder="Enter video topic, e.g. 'The 7 Laws of Neuromorphic AI in 2026'..."
               value={quickTopic}
               onChange={(e) => setQuickTopic(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
             <button
               type="button"
               onClick={() => setQuickPreset('SHORT')}
-              className={`btn btn-sm ${quickPreset === 'SHORT' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                padding: '0 12px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: quickPreset === 'SHORT' ? 600 : 500,
+                borderRadius: '6px',
+                border: quickPreset === 'SHORT' ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                background: quickPreset === 'SHORT' ? '#ffffff' : '#18181b',
+                color: quickPreset === 'SHORT' ? '#09090b' : '#a1a1aa',
+                cursor: 'pointer',
+              }}
             >
-              📱 9:16 Short (60s)
+              9:16 Shorts (60s)
             </button>
             <button
               type="button"
               onClick={() => setQuickPreset('STANDARD')}
-              className={`btn btn-sm ${quickPreset === 'STANDARD' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                padding: '0 12px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: quickPreset === 'STANDARD' ? 600 : 500,
+                borderRadius: '6px',
+                border: quickPreset === 'STANDARD' ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                background: quickPreset === 'STANDARD' ? '#ffffff' : '#18181b',
+                color: quickPreset === 'STANDARD' ? '#09090b' : '#a1a1aa',
+                cursor: 'pointer',
+              }}
             >
-              🎬 16:9 Standard (3m)
+              16:9 Standard (3m)
             </button>
             <button
               type="button"
               onClick={() => setQuickPreset('DOCUMENTARY')}
-              className={`btn btn-sm ${quickPreset === 'DOCUMENTARY' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                padding: '0 12px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: quickPreset === 'DOCUMENTARY' ? 600 : 500,
+                borderRadius: '6px',
+                border: quickPreset === 'DOCUMENTARY' ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                background: quickPreset === 'DOCUMENTARY' ? '#ffffff' : '#18181b',
+                color: quickPreset === 'DOCUMENTARY' ? '#09090b' : '#a1a1aa',
+                cursor: 'pointer',
+              }}
             >
-              🎙️ Deep-Dive (8m)
+              Deep-Dive (8m)
             </button>
 
-            <button type="submit" disabled={creating || !quickTopic.trim()} className="btn btn-primary">
-              {creating ? 'Initializing...' : '⚡ Generate'}
+            <button type="submit" disabled={creating || !quickTopic.trim()} className="btn btn-primary btn-sm" style={{ padding: '0 16px', height: '38px' }}>
+              {creating ? 'Queuing...' : 'Generate ➔'}
             </button>
           </div>
         </form>
@@ -207,62 +244,58 @@ export default function HomePage() {
       {/* ─────────────────────────────────────────────────────────────
           2. METRICS SNAPSHOT GRID
       ───────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-        <div className="card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Videos Generated
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
+              VIDEOS GENERATED
             </span>
-            <span style={{ color: 'var(--accent-primary)' }}>🎬</span>
           </div>
-          <div className="tabular-nums" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '2px' }}>
             {projects.length}
           </div>
-          <span style={{ fontSize: '12px', color: 'var(--status-ready)', fontWeight: 600 }}>
+          <span style={{ fontSize: '11px', color: '#10b981', fontFamily: 'monospace' }}>
             ✓ {completedCount} 1080p Rendered
           </span>
         </div>
 
-        <div className="card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Credits Balance
+        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
+              CREDITS BALANCE
             </span>
-            <span style={{ color: 'var(--accent-emerald)' }}>⚡</span>
           </div>
-          <div className="tabular-nums" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '4px' }}>
             {credits?.balance ?? 475}
           </div>
-          <div style={{ width: '100%', height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden', marginTop: '6px' }}>
-            <div style={{ width: `${Math.min(100, ((credits?.balance ?? 475) / 500) * 100)}%`, height: '100%', background: 'var(--accent-emerald)' }} />
+          <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ width: `${Math.min(100, ((credits?.balance ?? 475) / 500) * 100)}%`, height: '100%', background: '#f4f4f5' }} />
           </div>
         </div>
 
-        <div className="card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Active Channels
+        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
+              ACTIVE CHANNELS
             </span>
-            <span style={{ color: 'var(--accent-cyan)' }}>📡</span>
           </div>
-          <div className="tabular-nums" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '2px' }}>
             {channels.length || 1}
           </div>
-          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>YouTube Auto-Publish Ready</span>
+          <span style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: 'monospace' }}>YouTube Bridge Ready</span>
         </div>
 
-        <div className="card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Active Pipeline Jobs
+        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
+              PIPELINE WORKERS
             </span>
-            <span style={{ color: 'var(--accent-purple)' }}>⚙️</span>
           </div>
-          <div className="tabular-nums" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '2px' }}>
             {processingCount}
           </div>
-          <span style={{ fontSize: '12px', color: processingCount > 0 ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
-            {processingCount > 0 ? 'Parallel Worker Rendering...' : 'Queue Idle & Ready'}
+          <span style={{ fontSize: '11px', color: processingCount > 0 ? '#60a5fa' : '#71717a', fontFamily: 'monospace' }}>
+            {processingCount > 0 ? 'Parallel Rendering...' : 'Queue Idle & Ready'}
           </span>
         </div>
       </div>
@@ -271,40 +304,46 @@ export default function HomePage() {
           3. RECENT PROJECTS MEDIA LIBRARY
       ───────────────────────────────────────────────────────────── */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Recent Video Projects</h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Click any project to open the 3-Pane Video Studio & Copilot.</p>
+            <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.01em', margin: 0 }}>
+              Recent Video Projects
+            </h2>
+            <p style={{ fontSize: '12px', color: '#71717a', margin: '2px 0 0 0' }}>
+              Click any project to inspect the multi-scene script and preview 1080p output.
+            </p>
           </div>
-          <Link href="/content" className="btn btn-ghost btn-sm">
+          <Link href="/content" className="btn btn-secondary btn-sm" style={{ fontSize: '11px', height: '26px' }}>
             View All ({projects.length}) ➔
           </Link>
         </div>
 
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
             {[1, 2, 3].map((n) => (
-              <div key={n} className="card" style={{ height: '220px', background: 'var(--bg-secondary)', opacity: 0.6 }} />
+              <div key={n} className="card" style={{ height: '200px', background: 'rgba(24, 24, 27, 0.4)', opacity: 0.5 }} />
             ))}
           </div>
         ) : projects.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--text-muted)', fontSize: '24px' }}>
-              🎬
+          <div className="card" style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(24, 24, 27, 0.4)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', color: '#a1a1aa' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
             </div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>No video projects yet</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '20px', maxWidth: '400px', margin: '0 auto 20px' }}>
-              Enter a topic above or launch the 5-step video wizard to generate your first AI video.
+            <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', marginBottom: '4px' }}>No video projects created</h3>
+            <p style={{ color: '#71717a', fontSize: '12px', marginBottom: '16px', maxWidth: '360px', margin: '0 auto 16px' }}>
+              Enter a topic above or launch the video wizard to generate your first AI video.
             </p>
-            <Link href="/content/new" className="btn btn-primary">
+            <Link href="/content/new" className="btn btn-primary btn-sm">
               + Create Your First Video
             </Link>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '14px' }}>
             {projects.slice(0, 6).map((proj) => {
               const isCompleted = proj.status === 'COMPLETED';
-              const isProcessing = proj.status === 'PROCESSING';
+              const isProcessing = proj.status === 'PROCESSING' || proj.status === 'PENDING';
 
               return (
                 <div
@@ -313,57 +352,71 @@ export default function HomePage() {
                   onClick={() => router.push(`/content/${proj.id}`)}
                   style={{
                     cursor: 'pointer',
-                    padding: '16px',
+                    padding: '14px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
+                    gap: '10px',
+                    background: 'rgba(18, 18, 21, 0.8)',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
                   }}
                 >
                   {/* Thumbnail / Video Box */}
                   <div
                     style={{
                       aspectRatio: '16 / 9',
-                      background: '#000',
-                      borderRadius: 'var(--radius-md)',
+                      background: '#09090b',
+                      borderRadius: '6px',
                       position: 'relative',
                       overflow: 'hidden',
-                      marginBottom: '14px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.8) 100%)' }} />
-
                     {/* Status Badge */}
-                    <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}>
-                      <span className={`badge ${isCompleted ? 'badge-ready' : isProcessing ? 'badge-proc' : 'badge-warn'}`}>
-                        {isCompleted ? '✓ 1080p Ready' : isProcessing ? `⚡ ${proj.current_stage || 'Rendering'}` : 'Draft'}
+                    <div style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 2 }}>
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontFamily: 'monospace',
+                          fontWeight: 600,
+                          padding: '2px 6px',
+                          borderRadius: '3px',
+                          background: isCompleted ? 'rgba(16, 185, 129, 0.15)' : isProcessing ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+                          border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : isProcessing ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255, 255, 255, 0.15)',
+                          color: isCompleted ? '#10b981' : isProcessing ? '#60a5fa' : '#e4e4e7',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {isCompleted ? '1080P READY' : isProcessing ? `⚡ ${proj.current_stage || 'RENDERING'}` : 'DRAFT'}
                       </span>
                     </div>
 
                     {/* Duration Badge */}
-                    <div style={{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 2, background: 'rgba(0,0,0,0.8)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#fff' }}>
+                    <div style={{ position: 'absolute', bottom: '8px', right: '8px', zIndex: 2, background: 'rgba(9,9,11,0.85)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace' }}>
                       {proj.target_length_minutes ? `${proj.target_length_minutes}m` : '60s'}
                     </div>
 
                     {/* Center Icon */}
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                      <polygon points="5 3 19 12 5 21 5 3" />
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 3 19 12 5 21 5 3" />
+                    <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f4f4f5' }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="6 4 20 12 6 20 6 4" />
                       </svg>
                     </div>
                   </div>
 
                   {/* Project Info */}
                   <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '6px', lineHeight: 1.4 }}>
+                    <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5', margin: '0 0 4px 0', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {proj.topic}
                     </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
-                      <span>{proj.channel_name || 'YouTube Channel'}</span>
-                      <span className="tabular-nums">{new Date(proj.created_at).toLocaleDateString()}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace', color: '#71717a' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                        {proj.channel_name || 'YouTube Channel'}
+                      </span>
+                      <span>{new Date(proj.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase()}</span>
                     </div>
                   </div>
                 </div>

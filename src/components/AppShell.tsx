@@ -193,16 +193,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-header">
           <Link href="/" className="sidebar-brand">
             <div className="brand-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
             </div>
             {!collapsed && (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '15px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-                  AutoVideo<span style={{ color: 'var(--accent-primary)' }}>.ai</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.02em' }}>
+                  AutoVideo
                 </span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.04em' }}>STUDIO 2026</span>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                  STUDIO
+                </span>
               </div>
             )}
           </Link>

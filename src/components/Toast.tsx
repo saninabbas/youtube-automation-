@@ -72,58 +72,34 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         style={{
           position: 'fixed',
-          top: '24px',
-          right: '24px',
+          top: '20px',
+          right: '20px',
           zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
-          maxWidth: '420px',
-          width: 'calc(100vw - 48px)',
+          gap: '8px',
+          maxWidth: '380px',
+          width: 'calc(100vw - 40px)',
           pointerEvents: 'none',
         }}
       >
         {toasts.map((toast) => {
           const config = {
             success: {
-              border: 'rgba(16, 185, 129, 0.4)',
-              bg: 'linear-gradient(135deg, rgba(6, 78, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-              iconColor: '#10b981',
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-              ),
+              border: 'rgba(16, 185, 129, 0.3)',
+              dotColor: '#10b981',
             },
             error: {
-              border: 'rgba(239, 68, 68, 0.4)',
-              bg: 'linear-gradient(135deg, rgba(127, 29, 29, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-              iconColor: '#f87171',
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ),
+              border: 'rgba(244, 63, 94, 0.3)',
+              dotColor: '#f43f5e',
             },
             warning: {
-              border: 'rgba(245, 158, 11, 0.4)',
-              bg: 'linear-gradient(135deg, rgba(120, 53, 15, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-              iconColor: '#fbbf24',
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                </svg>
-              ),
+              border: 'rgba(245, 158, 11, 0.3)',
+              dotColor: '#f59e0b',
             },
             info: {
-              border: 'rgba(99, 102, 241, 0.4)',
-              bg: 'linear-gradient(135deg, rgba(49, 46, 129, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-              iconColor: '#818cf8',
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                </svg>
-              ),
+              border: 'rgba(255, 255, 255, 0.15)',
+              dotColor: '#a1a1aa',
             },
           }[toast.type];
 
@@ -132,60 +108,57 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               key={toast.id}
               style={{
                 pointerEvents: 'auto',
-                background: config.bg,
+                background: '#121215',
                 border: `1px solid ${config.border}`,
-                boxShadow: '0 12px 36px -4px rgba(0, 0, 0, 0.5), 0 0 20px -2px rgba(0, 0, 0, 0.3)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '14px',
-                padding: '14px 18px',
+                boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.8)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: '8px',
+                padding: '10px 14px',
                 display: 'flex',
-                alignItems: 'flex-start',
-                gap: '14px',
-                color: '#fff',
+                alignItems: 'center',
+                gap: '10px',
+                color: '#f4f4f5',
+                animation: 'slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
-              <div
+              <span
                 style={{
-                  color: config.iconColor,
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: config.dotColor,
                   flexShrink: 0,
-                  marginTop: '1px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                 }}
-              >
-                {config.icon}
-              </div>
+              />
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 {toast.title && (
-                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#f4f4f5' }}>
                     {toast.title}
-                  </h4>
+                  </div>
                 )}
-                <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.45, margin: 0, wordBreak: 'break-word' }}>
+                <div style={{ fontSize: '12px', color: '#a1a1aa', lineHeight: 1.4, wordBreak: 'break-word' }}>
                   {toast.message}
-                </p>
+                </div>
               </div>
 
               <button
+                type="button"
                 onClick={() => removeToast(toast.id)}
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: '#71717a',
                   cursor: 'pointer',
                   padding: '2px',
-                  lineHeight: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderRadius: '4px',
                 }}
-                title="Dismiss"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
