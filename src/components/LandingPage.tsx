@@ -8,7 +8,7 @@ export function LandingPage() {
   const [selectedScene, setSelectedScene] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [playbackProgress, setPlaybackProgress] = useState<number>(24);
-  const [activeVoice, setActiveVoice] = useState<string>('Adam (Neural 48kHz)');
+  const [activeVoice, setActiveVoice] = useState<string>('Christopher (Neural)');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -17,6 +17,33 @@ export function LandingPage() {
 
   // Savings Calculator state
   const [videosPerMonth, setVideosPerMonth] = useState<number>(24);
+
+  const workflowSteps = [
+    {
+      num: '01',
+      title: 'Prompt Input',
+      desc: 'Enter any topic, headline, or idea. The AI engine structures it into retention-focused narrative beats.',
+      tag: 'LLM SCRIPT ENGINE',
+    },
+    {
+      num: '02',
+      title: 'Select Aesthetics',
+      desc: 'Pick your visual style from Cinematic 35mm, Documentary Minimalist, Cyberpunk, or Nature Vitality.',
+      tag: '1080P B-ROLL FEED',
+    },
+    {
+      num: '03',
+      title: 'Neural Voice',
+      desc: 'Select from 40+ high-fidelity neural voices with customizable speech pacing and studio dynamics.',
+      tag: '48KHZ STEREO AAC',
+    },
+    {
+      num: '04',
+      title: 'Direct Auto-Publish',
+      desc: 'Connect your YouTube channel via Google OAuth 2.0 and let autopilot release scheduled videos.',
+      tag: 'YOUTUBE DATA API V3',
+    },
+  ];
 
   const scenes = [
     {
@@ -33,7 +60,7 @@ export function LandingPage() {
       time: '00:20 - 00:44',
       duration: '24s',
       caption: '"Neuromorphic chips mimic biological neurons, computing and storing data at the exact same physical location."',
-      tag: 'B-Roll: Biological Brain Synapse 3D',
+      tag: 'B-Roll: Brain Synapse Simulation',
     },
     {
       id: 2,
@@ -49,354 +76,333 @@ export function LandingPage() {
       time: '01:05 - 01:24',
       duration: '19s',
       caption: '"Subscribe for our weekly deep dive into the next computing frontier. See you in the next breakdown."',
-      tag: 'B-Roll: High-CTR Endscreen & Cards',
+      tag: 'B-Roll: High-CTR Endscreen Cards',
     },
   ];
 
   const simulatedTopics = [
     {
       topic: 'The 2026 Neuromorphic AI Chip Revolution',
-      niche: 'AI Tech & Hardware',
+      niche: 'AI & Tech',
       scenes: [
-        '01. Hook: Silicon computing hitting the memory wall (00:00 - 00:18)',
-        '02. Core: How synaptic architecture mimics biological brain (00:18 - 00:42)',
-        '03. Proof: 100x energy efficiency in autonomous robotics (00:42 - 01:05)',
-        '04. CTA: Which tech giant will dominate the architecture war? (01:05 - 01:25)',
+        '01. Hook: Silicon computing hitting the physical memory wall (00:00 - 00:18)',
+        '02. Core: How synaptic architecture mimics biological neurons (00:18 - 00:42)',
+        '03. Proof: 100x energy efficiency in autonomous robotics benchmarks (00:42 - 01:05)',
+        '04. CTA: Which tech giant will dominate the architectural transition? (01:05 - 01:25)',
       ],
-      suggestedTitle: 'Why Neuromorphic AI Chips Will Replace GPUs by 2027 (Full Breakdown)',
-      estDuration: '01:25 (1080p CFR)',
+      suggestedTitle: 'Why Neuromorphic AI Chips Will Replace GPUs by 2027',
+      estDuration: '01:25 • 1080P CFR',
       credits: '58 Credits',
     },
     {
-      topic: 'How Quantitative Hedge Funds Exploit Microstructure',
-      niche: 'Finance & Trading Systems',
+      topic: 'How Quantitative Hedge Funds Exploit Market Microstructure',
+      niche: 'Finance & Systems',
       scenes: [
-        '01. Hook: The 1-nanosecond difference between profit and liquidation (00:00 - 00:16)',
-        '02. Core: Limit order book dynamics and latency arbitrage (00:16 - 00:45)',
-        '03. Proof: Machine learning predictive fill rates in dark pools (00:45 - 01:10)',
-        '04. CTA: Subscribe for institutional finance algorithms decoded (01:10 - 01:30)',
+        '01. Hook: The 1-nanosecond gap between profit and liquidation (00:00 - 00:16)',
+        '02. Core: Limit order book dynamics and latency arbitrage mechanisms (00:16 - 00:45)',
+        '03. Proof: Predictive fill rates in dark pools using machine learning (00:45 - 01:10)',
+        '04. CTA: Subscribe for institutional quantitative trading breakdowns (01:10 - 01:30)',
       ],
-      suggestedTitle: 'The Secret Algorithms Behind Wall Street Top High-Frequency Desks',
-      estDuration: '01:30 (1080p CFR)',
+      suggestedTitle: 'Inside High-Frequency Trading: How Algorithms Trade in Nanoseconds',
+      estDuration: '01:30 • 1080P CFR',
       credits: '62 Credits',
     },
     {
       topic: 'What Actually Happens Inside an Event Horizon',
-      niche: 'Deep Science & Astronomy',
+      niche: 'Space & Physics',
       scenes: [
-        '01. Hook: Time dilation makes falling matter appear frozen forever (00:00 - 00:22)',
-        '02. Core: Spaghettification and gravitational tidal forces (00:22 - 00:50)',
-        '03. Proof: Hawking radiation and the quantum information paradox (00:50 - 01:15)',
-        '04. CTA: Leave a comment: Does information truly escape? (01:15 - 01:35)',
+        '01. Hook: Gravitational time dilation freezes falling matter at the boundary (00:00 - 00:22)',
+        '02. Core: Tidal forces and mathematical spaghettification (00:22 - 00:50)',
+        '03. Proof: Hawking radiation and the black hole information paradox (00:50 - 01:15)',
+        '04. CTA: Comment below: Does physical information truly escape? (01:15 - 01:35)',
       ],
-      suggestedTitle: 'What You Would Actually See Inside a Supermassive Black Hole',
-      estDuration: '01:35 (1080p CFR)',
+      suggestedTitle: 'What You Would Actually Experience Falling Into a Black Hole',
+      estDuration: '01:35 • 1080P CFR',
       credits: '65 Credits',
     },
     {
-      topic: '5 Psychological Habits of Elite Engineers',
-      niche: 'Productivity & Tech Career',
+      topic: '5 Psychological Habits of Elite Software Engineers',
+      niche: 'Engineering & Career',
       scenes: [
-        '01. Hook: Top 1% engineers write fewer lines of code, not more (00:00 - 00:18)',
+        '01. Hook: The top 1% of engineers write fewer lines of code, not more (00:00 - 00:18)',
         '02. Core: Deep work scheduling and asynchronous communication protocols (00:18 - 00:44)',
         '03. Proof: The compound leverage of idempotent automation (00:44 - 01:08)',
         '04. CTA: Download our free system architecture cheat sheet below (01:08 - 01:28)',
       ],
-      suggestedTitle: 'How 10x Engineers Think: 5 Rules for Extreme Technical Leverage',
-      estDuration: '01:28 (1080p CFR)',
+      suggestedTitle: 'How 10x Engineers Think: 5 Rules for Extreme Leverage',
+      estDuration: '01:28 • 1080P CFR',
       credits: '60 Credits',
     },
   ];
 
   const faqs = [
     {
-      q: 'How does the 30-day YouTube auto-publishing work?',
-      a: 'You connect your YouTube channel once using official Google OAuth 2.0. In your Content Calendar, you schedule release dates across the month. AutoVideo generates, renders in 1080p, and automatically uploads each video to your channel with custom thumbnails, tags, and titles right on schedule.',
+      q: 'How does the YouTube auto-publishing integration work?',
+      a: 'You connect your YouTube channel once using official Google OAuth 2.0. In your Content Calendar, you set scheduled release times. AutoVideo generates, renders in 1080p, and uploads directly to your channel with custom titles, tags, and thumbnails.',
     },
     {
       q: 'Do I need my own video editing software or external API keys?',
-      a: 'No external software is required. AutoVideo includes a native 1080p FFmpeg compositor, neural voiceovers, dynamic subtitle burning, and stock B-roll matching out of the box. You can optionally configure your own Gemini or ElevenLabs keys in Settings if desired.',
+      a: 'No external software is required. AutoVideo includes a native 1080p FFmpeg compositor, neural voiceovers, dynamic subtitle burning, and stock B-roll matching out-of-the-box.',
     },
     {
-      q: 'What resolution and video format are generated?',
-      a: 'All videos are rendered in broadcast-quality 1080p Full HD (1920x1080) at a constant 30 fps (CFR) using H.264 video and 48kHz AAC stereo audio formatted with FastStart for instant YouTube playback.',
+      q: 'What resolution and video format are rendered?',
+      a: 'All videos are rendered in broadcast-quality 1080p Full HD (1920x1080) at a constant 30 fps (CFR) using H.264 video and 48kHz AAC stereo audio formatted for instant YouTube streaming.',
     },
     {
-      q: 'Can I customize the script and scenes with AI Copilot?',
-      a: 'Yes. The Video Studio lets you edit any sentence, replace B-roll clips, or use the built-in AI Copilot to rewrite scene hooks, change tone, or adjust pacing with a single click.',
+      q: 'Can I edit the script and preview scenes before publishing?',
+      a: 'Yes. The Video Studio lets you edit any sentence, swap B-roll clips, change narration voice, or use the built-in AI Copilot to rewrite scene hooks with one click.',
     },
     {
       q: 'What happens if a YouTube upload fails due to network or quota issues?',
-      a: 'The background scheduler features automatic error logging and lease recovery. You can also click [Retry] in the Content Calendar or Studio at any time to re-trigger upload without re-rendering the video.',
+      a: 'The background scheduler features automated retry recovery and error logging. You can also click Retry in your Calendar or Studio dashboard at any time to re-trigger upload.',
     },
     {
-      q: 'How do credits work and can I top up anytime?',
-      a: 'Every new account receives 500 free credits. Generating a complete 1080p video costs ~60 credits. Paid subscription plans include monthly credit allotments, and you can purchase instant credit top-up packs directly from your billing dashboard.',
+      q: 'How do credits work and can I upgrade anytime?',
+      a: 'Every new account receives 500 free credits. Generating a complete 1080p video costs ~60 credits. Paid subscription plans include monthly credit allotments, and you can purchase top-ups anytime.',
     },
   ];
 
   // Calculate Savings
   const traditionalCost = videosPerMonth * 125 + 180;
-  const autoVideoCost = videosPerMonth <= 8 ? 19 : videosPerMonth <= 24 ? 49 : videosPerMonth <= 60 ? 99 : 199;
+  const autoVideoCost = videosPerMonth <= 8 ? 19 : videosPerMonth <= 24 ? 49 : 99;
   const netSavings = traditionalCost - autoVideoCost;
   const hoursSaved = Math.round(videosPerMonth * 4.5);
 
   return (
-    <div style={{ background: '#07080b', color: '#f8fafc', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
+    <div style={{ background: '#09090b', color: '#f4f4f5', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
       {/* ───────────────────────────────────────────────────────────
-          1. RESTRAINED EDITORIAL NAVBAR
+          1. NAVIGATION BAR
       ─────────────────────────────────────────────────────────── */}
       <header
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          background: 'rgba(7, 8, 11, 0.94)',
-          backdropFilter: 'blur(16px)',
+          background: 'rgba(9, 9, 11, 0.85)',
+          backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '0 32px',
-          height: '64px',
+          padding: '0 24px',
+          height: '56px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
             <div
               style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
-                background: '#4f46e5',
+                width: '24px',
+                height: '24px',
+                borderRadius: '4px',
+                background: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                color: '#09090b',
+                fontWeight: 700,
+                fontSize: '12px',
+                fontFamily: 'monospace',
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
+              AV
             </div>
-            <span style={{ fontSize: '15px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
-              AutoVideo<span style={{ color: '#94a3b8' }}>.ai</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.02em' }}>
+              AutoVideo
+            </span>
+            <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#71717a', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '1px 4px', borderRadius: '3px' }}>
+              v2.4
             </span>
           </Link>
 
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }} className="hidden-mobile">
-            <a href="#workflow" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '20px' }} className="hidden-mobile">
+            <a href="#workflow" style={{ fontSize: '12px', color: '#a1a1aa', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}>
               Workflow
             </a>
-            <a href="#simulator" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
-              Live Simulator
+            <a href="#simulator" style={{ fontSize: '12px', color: '#a1a1aa', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}>
+              Simulator
             </a>
-            <a href="#capabilities" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
-              Capabilities
+            <a href="#capabilities" style={{ fontSize: '12px', color: '#a1a1aa', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}>
+              Features
             </a>
-            <a href="#calculator" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
-              ROI Calculator
+            <a href="#calculator" style={{ fontSize: '12px', color: '#a1a1aa', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}>
+              ROI
             </a>
-            <a href="#pricing" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
+            <a href="#pricing" style={{ fontSize: '12px', color: '#a1a1aa', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}>
               Pricing
             </a>
-            <a href="#faq" style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
+            <a href="#faq" style={{ fontSize: '12px', color: '#a1a1aa', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}>
               FAQ
             </a>
           </nav>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Link href="/login" style={{ fontSize: '13px', fontWeight: 500, color: '#cbd5e1', padding: '6px 12px' }} className="hidden-mobile">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Link
+            href="/login"
+            style={{
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#a1a1aa',
+              padding: '5px 10px',
+              textDecoration: 'none',
+            }}
+            className="hidden-mobile"
+          >
             Sign In
           </Link>
           <Link
             href="/signup"
             style={{
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 600,
-              color: '#fff',
-              background: '#4f46e5',
-              padding: '8px 16px',
+              color: '#09090b',
+              background: '#ffffff',
+              padding: '6px 14px',
               borderRadius: '6px',
               textDecoration: 'none',
+              border: '1px solid #ffffff',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#4338ca'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#4f46e5'}
           >
-            Start Creating Free
+            Start Free ➔
           </Link>
 
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="btn btn-secondary btn-sm"
-            style={{ padding: '6px 10px', display: 'none' }}
+            style={{ padding: '4px 8px', display: 'none' }}
             id="mobileMenuToggle"
-            aria-label="Toggle navigation menu"
+            aria-label="Toggle menu"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {mobileMenuOpen ? (
-                <path d="M18 6L6 18M6 6l12 12" />
-              ) : (
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              )}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {mobileMenuOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
             </svg>
           </button>
         </div>
 
         {mobileMenuOpen && (
           <div className="landing-mobile-drawer">
-            <a href="#workflow" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-              Workflow
-            </a>
-            <a href="#simulator" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-              Live Simulator
-            </a>
-            <a href="#capabilities" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-              Capabilities
-            </a>
-            <a href="#calculator" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-              ROI Calculator
-            </a>
-            <a href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-              Pricing
-            </a>
-            <a href="#faq" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-              FAQ
-            </a>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="btn btn-secondary btn-sm" style={{ flex: 1, textAlign: 'center' }}>
-                Sign In
-              </Link>
-              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="btn btn-primary btn-sm" style={{ flex: 1, textAlign: 'center' }}>
-                Start Creating Free
-              </Link>
+            <a href="#workflow" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>Workflow</a>
+            <a href="#simulator" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>Simulator</a>
+            <a href="#capabilities" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>Features</a>
+            <a href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>Pricing</a>
+            <a href="#faq" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>FAQ</a>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="btn btn-secondary btn-sm" style={{ flex: 1, textAlign: 'center' }}>Sign In</Link>
+              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="btn btn-primary btn-sm" style={{ flex: 1, textAlign: 'center' }}>Start Free</Link>
             </div>
           </div>
         )}
       </header>
 
       {/* ───────────────────────────────────────────────────────────
-          2. EDITORIAL HERO SECTION
+          2. HERO SECTION
       ─────────────────────────────────────────────────────────── */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '80px 24px 40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '9999px', marginBottom: '24px' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f46e5' }} />
-          <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            AI Video Automation & YouTube Autopilot
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '56px 20px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '4px', marginBottom: '18px' }}>
+          <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
+          <span style={{ fontSize: '10px', fontWeight: 600, color: '#a1a1aa', letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: 'monospace' }}>
+            AUTONOMOUS VIDEO PIPELINE • YOUTUBE DIRECT
           </span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(2.4rem, 5.5vw, 4.4rem)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.035em', lineHeight: 1.12, maxWidth: '900px', margin: '0 auto 20px' }}>
-          Turn an idea into a<br />finished YouTube video.
+        <h1 style={{ fontSize: 'clamp(2rem, 4.5vw, 3.4rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.03em', lineHeight: 1.15, maxWidth: '820px', margin: '0 auto 16px' }}>
+          Turn an idea into a finished YouTube video.
         </h1>
 
-        <p style={{ fontSize: 'clamp(1rem, 1.8vw, 1.15rem)', color: '#94a3b8', maxWidth: '640px', lineHeight: 1.6, margin: '0 auto 32px' }}>
-          Create the script, generate scenes, add narration, render in 1080p, and schedule directly to YouTube — from one workflow.
+        <p style={{ fontSize: 'clamp(0.95rem, 1.5vw, 1.1rem)', color: '#a1a1aa', maxWidth: '580px', lineHeight: 1.6, margin: '0 auto 24px' }}>
+          Generate retention-focused scripts, voiceovers, and dynamic visuals in seconds.
         </p>
 
-        {/* CTA Group */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '28px' }}>
+        {/* Primary Call to Action */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '22px' }}>
           <Link
             href="/signup"
             style={{
-              padding: '13px 28px',
-              fontSize: '14px',
+              padding: '10px 22px',
+              fontSize: '13px',
               fontWeight: 600,
-              color: '#fff',
-              background: '#4f46e5',
+              color: '#09090b',
+              background: '#ffffff',
               borderRadius: '6px',
               textDecoration: 'none',
-              boxShadow: '0 4px 20px rgba(79, 70, 229, 0.3)',
-              transition: 'background 0.15s, transform 0.15s',
+              border: '1px solid #ffffff',
+              transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#4338ca'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#4f46e5'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
             Start Creating Free ➔
           </Link>
           <a
             href="#simulator"
             style={{
-              padding: '13px 24px',
-              fontSize: '14px',
+              padding: '10px 18px',
+              fontSize: '13px',
               fontWeight: 500,
-              color: '#cbd5e1',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#d4d4d8',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '6px',
               textDecoration: 'none',
-              transition: 'background 0.15s',
+              fontFamily: 'monospace',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
           >
-            ⚡ Test Live Topic Simulator
+            Live Simulator ↓
           </a>
         </div>
 
-        {/* Quiet Trust Proof */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', flexWrap: 'wrap', fontSize: '12px', color: '#64748b' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: '#10b981' }}>✓</span> 500 Free AI Credits
-          </span>
+        {/* Monospace Trust Proof */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', fontSize: '11px', fontFamily: 'monospace', color: '#71717a' }}>
+          <span>✓ 500 FREE CREDITS</span>
           <span>•</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: '#10b981' }}>✓</span> 1080p 30fps CFR Output
-          </span>
+          <span>✓ 1080P 30FPS CFR</span>
           <span>•</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: '#10b981' }}>✓</span> Official YouTube Data API v3
-          </span>
+          <span>✓ YOUTUBE DATA API V3</span>
         </div>
 
         {/* ───────────────────────────────────────────────────────────
-            3. INTERACTIVE 3-PANE STUDIO WORKSPACE (Centerpiece)
+            3. INTERACTIVE 3-PANE STUDIO WORKSPACE
         ─────────────────────────────────────────────────────────── */}
         <div
           style={{
             width: '100%',
-            maxWidth: '1140px',
-            marginTop: '44px',
-            background: '#0d0f17',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '12px',
+            maxWidth: '1040px',
+            marginTop: '36px',
+            background: '#121215',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '8px',
             overflow: 'hidden',
-            boxShadow: '0 24px 70px -12px rgba(0, 0, 0, 0.8)',
             textAlign: 'left',
           }}
         >
-          {/* Top Workspace Chrome */}
-          <div style={{ padding: '12px 18px', background: '#121520', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }} />
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }} />
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }} />
+          {/* Workspace Chrome */}
+          <div style={{ padding: '10px 16px', background: '#09090b', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '5px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#27272a' }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#27272a' }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#27272a' }} />
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>
-                projects / how-neuromorphic-ai-works.mp4
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#a1a1aa', fontFamily: 'monospace' }}>
+                studio / neuromorphic-ai-revolution.mp4
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 600 }}>
-                ● 1080p FFmpeg CFR Ready
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(16, 185, 129, 0.25)', fontFamily: 'monospace', fontWeight: 600 }}>
+                ● 1080P CFR READY
               </span>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>Duration: 01:24</span>
+              <span style={{ fontSize: '11px', color: '#71717a', fontFamily: 'monospace' }}>01:24</span>
             </div>
           </div>
 
-          {/* 3-Pane Realistic Studio Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr 280px', minHeight: '400px' }} className="studio-responsive-grid">
-            {/* Left Pane: Interactive Scene Breakdown */}
-            <div style={{ padding: '14px', background: '#0f121a', borderRight: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Storyboard ({scenes.length} Scenes)
-                </span>
-                <span style={{ fontSize: '10px', color: '#4f46e5', fontWeight: 600 }}>Click scene</span>
+          {/* 3-Pane Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 240px', minHeight: '360px' }} className="studio-responsive-grid">
+            {/* Left: Storyboard */}
+            <div style={{ padding: '12px', background: '#121215', borderRight: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', fontFamily: 'monospace', marginBottom: '2px' }}>
+                STORYBOARD ({scenes.length} SCENES)
               </div>
 
               {scenes.map((s, idx) => (
@@ -404,38 +410,38 @@ export function LandingPage() {
                   key={s.id}
                   onClick={() => { setSelectedScene(idx); setPlaybackProgress((idx + 1) * 24); }}
                   style={{
-                    padding: '10px 12px',
-                    borderRadius: '6px',
-                    background: selectedScene === idx ? '#1c2233' : 'transparent',
-                    border: `1px solid ${selectedScene === idx ? 'rgba(79, 70, 229, 0.6)' : 'rgba(255, 255, 255, 0.06)'}`,
+                    padding: '8px 10px',
+                    borderRadius: '4px',
+                    background: selectedScene === idx ? '#18181b' : 'transparent',
+                    border: `1px solid ${selectedScene === idx ? '#ffffff' : 'rgba(255, 255, 255, 0.05)'}`,
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
+                    transition: 'all 0.12s ease',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: selectedScene === idx ? '#fff' : '#cbd5e1' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: selectedScene === idx ? '#ffffff' : '#a1a1aa' }}>
                       {s.title}
                     </div>
-                    <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', color: '#94a3b8' }}>
+                    <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', color: '#71717a', fontFamily: 'monospace' }}>
                       {s.duration}
                     </span>
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ fontSize: '10px', color: '#52525b', marginTop: '1px', fontFamily: 'monospace' }}>
                     {s.time}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Center Pane: 1080p Theater Video Player */}
-            <div style={{ padding: '20px', background: '#08090d', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            {/* Center: Video Player */}
+            <div style={{ padding: '16px', background: '#09090b', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div
                 style={{
                   width: '100%',
                   aspectRatio: '16 / 9',
-                  background: '#11141f',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: '#121215',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                   position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
@@ -443,100 +449,101 @@ export function LandingPage() {
                   overflow: 'hidden',
                 }}
               >
-                <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', color: '#cbd5e1', background: 'rgba(0,0,0,0.75)', padding: '3px 8px', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
-                  1920 × 1080 • 30fps CFR
+                <div style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '9px', color: '#a1a1aa', background: 'rgba(0,0,0,0.85)', padding: '2px 6px', borderRadius: '3px', fontFamily: 'monospace' }}>
+                  1920 × 1080 • 30FPS
                 </div>
 
-                <div style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '10px', color: '#10b981', background: 'rgba(0,0,0,0.75)', padding: '3px 8px', borderRadius: '4px' }}>
+                <div style={{ position: 'absolute', top: '8px', left: '8px', fontSize: '9px', color: '#10b981', background: 'rgba(0,0,0,0.85)', padding: '2px 6px', borderRadius: '3px', fontFamily: 'monospace' }}>
                   {scenes[selectedScene].tag}
                 </div>
 
-                {/* Subtitle Caption Overlay */}
+                {/* Subtitle Caption */}
                 <div
                   style={{
                     position: 'absolute',
-                    bottom: '20px',
-                    left: '20px',
-                    right: '20px',
+                    bottom: '14px',
+                    left: '14px',
+                    right: '14px',
                     textAlign: 'center',
-                    padding: '10px 14px',
-                    background: 'rgba(0, 0, 0, 0.82)',
-                    backdropFilter: 'blur(8px)',
-                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    background: 'rgba(9, 9, 11, 0.9)',
+                    borderRadius: '4px',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                   }}
                 >
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#facc15' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#f4f4f5' }}>
                     {scenes[selectedScene].caption}
                   </span>
                 </div>
               </div>
 
-              {/* Scrubber Bar & Controls */}
-              <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Scrubber Bar */}
+              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button
                   type="button"
                   onClick={() => setIsPlaying(!isPlaying)}
                   style={{
-                    background: 'rgba(255,255,255,0.08)',
+                    background: '#18181b',
                     border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#fff',
+                    color: '#f4f4f5',
                     borderRadius: '4px',
-                    padding: '4px 10px',
-                    fontSize: '11px',
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
                     cursor: 'pointer',
                   }}
                 >
-                  {isPlaying ? '⏸ Pause' : '▶ Play'}
+                  {isPlaying ? 'PAUSE' : 'PLAY'}
                 </button>
-                <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ fontSize: '10px', color: '#71717a', fontFamily: 'monospace' }}>
                   00:{(selectedScene + 1) * 18}
                 </span>
-                <div style={{ flex: 1, height: '4px', background: '#1c2233', borderRadius: '2px', position: 'relative' }}>
-                  <div style={{ width: `${playbackProgress}%`, height: '100%', background: '#4f46e5', borderRadius: '2px', transition: 'width 0.3s' }} />
+                <div style={{ flex: 1, height: '3px', background: '#27272a', borderRadius: '2px', position: 'relative' }}>
+                  <div style={{ width: `${playbackProgress}%`, height: '100%', background: '#ffffff', borderRadius: '2px', transition: 'width 0.2s' }} />
                 </div>
-                <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'var(--font-mono)' }}>01:24</span>
+                <span style={{ fontSize: '10px', color: '#71717a', fontFamily: 'monospace' }}>01:24</span>
               </div>
             </div>
 
-            {/* Right Pane: Automation & Controls */}
-            <div style={{ padding: '14px', background: '#0f121a', borderLeft: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Studio Controls
+            {/* Right: Telemetry & Controls */}
+            <div style={{ padding: '12px', background: '#121215', borderLeft: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', fontFamily: 'monospace' }}>
+                PIPELINE CONTROLS
               </div>
 
-              <div style={{ padding: '10px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Neural Voiceover</div>
+              <div style={{ padding: '8px 10px', background: '#09090b', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '10px', color: '#71717a', fontFamily: 'monospace' }}>VOICEOVER</div>
                 <select
                   value={activeVoice}
                   onChange={(e) => setActiveVoice(e.target.value)}
                   style={{
                     width: '100%',
-                    background: '#0a0d14',
-                    color: '#fff',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '4px',
-                    padding: '4px 6px',
+                    background: 'transparent',
+                    color: '#f4f4f5',
+                    border: 'none',
+                    padding: '2px 0',
                     fontSize: '11px',
+                    fontWeight: 500,
+                    outline: 'none',
                   }}
                 >
-                  <option>Adam (Neural 48kHz)</option>
-                  <option>Rachel (Conversational)</option>
-                  <option>Nova (Deep Documentary)</option>
-                  <option>Marcus (Fast Paced Tech)</option>
+                  <option value="Christopher (Neural)">Christopher (Neural 48kHz)</option>
+                  <option value="Jenny (Neural)">Jenny (Clear Female)</option>
+                  <option value="Guy (Neural)">Guy (Deep Voice)</option>
+                  <option value="Sonia (Neural)">Sonia (British Studio)</option>
                 </select>
               </div>
 
-              <div style={{ padding: '10px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Target Channel</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', marginTop: '2px' }}>Tech Pulse Daily</div>
-                <div style={{ fontSize: '10px', color: '#10b981', marginTop: '4px' }}>✓ Google OAuth 2.0 Connected</div>
+              <div style={{ padding: '8px 10px', background: '#09090b', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '10px', color: '#71717a', fontFamily: 'monospace' }}>YOUTUBE BRIDGE</div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#f4f4f5', marginTop: '2px' }}>Tech Pulse Daily</div>
+                <div style={{ fontSize: '10px', color: '#10b981', marginTop: '2px', fontFamily: 'monospace' }}>● OAUTH 2.0 CONNECTED</div>
               </div>
 
-              <div style={{ padding: '10px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Release Schedule</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', marginTop: '2px' }}>Aug 31 at 8:00 PM UTC</div>
-                <div style={{ fontSize: '10px', color: '#6366f1', marginTop: '4px' }}>Status: YouTube Autopilot Queued</div>
+              <div style={{ padding: '8px 10px', background: '#09090b', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '10px', color: '#71717a', fontFamily: 'monospace' }}>SCHEDULE RELEASE</div>
+                <div style={{ fontSize: '11px', fontWeight: 500, color: '#f4f4f5', marginTop: '2px' }}>Aug 31 @ 20:00 UTC</div>
+                <div style={{ fontSize: '10px', color: '#a1a1aa', marginTop: '2px', fontFamily: 'monospace' }}>AUTOPILOT QUEUED</div>
               </div>
             </div>
           </div>
@@ -544,37 +551,87 @@ export function LandingPage() {
       </section>
 
       {/* ───────────────────────────────────────────────────────────
-          4. INTERACTIVE LIVE TOPIC-TO-VIDEO SIMULATOR
+          3. WORKFLOW STEPS SECTION (4-Step Linear Pipeline)
       ─────────────────────────────────────────────────────────── */}
-      <section id="simulator" style={{ maxWidth: '1180px', margin: '0 auto', padding: '80px 24px' }}>
-        <div style={{ maxWidth: '640px', marginBottom: '36px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-            Interactive Demo
+      <section id="workflow" style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 20px' }}>
+        <div style={{ textAlign: 'center', maxWidth: '580px', margin: '0 auto 32px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', marginBottom: '6px' }}>
+            LINEAR PIPELINE
           </div>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em', lineHeight: 1.2 }}>
-            See how AutoVideo structures your video in seconds.
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
+            How It Works
           </h2>
-          <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '8px' }}>
-            Click any niche prompt below to see the live AI multi-scene breakdown and suggested metadata.
+          <p style={{ fontSize: '13px', color: '#a1a1aa', marginTop: '6px' }}>
+            From a single prompt to a scheduled 1080p YouTube release in four automated steps.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+          {workflowSteps.map((step) => (
+            <div
+              key={step.num}
+              className="card"
+              style={{
+                padding: '20px',
+                background: '#121215',
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'monospace' }}>
+                  {step.num}
+                </span>
+                <span style={{ fontSize: '9px', fontFamily: 'monospace', padding: '1px 5px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)', color: '#71717a' }}>
+                  {step.tag}
+                </span>
+              </div>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', margin: 0 }}>
+                {step.num}. {step.title}
+              </h3>
+              <p style={{ fontSize: '12px', color: '#71717a', lineHeight: 1.5, margin: 0 }}>
+                {step.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────
+          4. LIVE TOPIC SIMULATOR
+      ─────────────────────────────────────────────────────────── */}
+      <section id="simulator" style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 20px' }}>
+        <div style={{ maxWidth: '600px', marginBottom: '24px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', marginBottom: '4px' }}>
+            INTERACTIVE BENCHMARK
+          </div>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
+            Simulate Video Scene Breakdown
+          </h2>
+          <p style={{ fontSize: '13px', color: '#a1a1aa', marginTop: '6px' }}>
+            Click any niche domain to inspect real-time AI scene structuring and metadata generation.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
           {simulatedTopics.map((t, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setActiveTopicIndex(idx)}
               style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 600,
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: activeTopicIndex === idx ? 600 : 500,
                 cursor: 'pointer',
-                background: activeTopicIndex === idx ? '#4f46e5' : 'rgba(255, 255, 255, 0.05)',
-                color: activeTopicIndex === idx ? '#fff' : '#94a3b8',
-                border: `1px solid ${activeTopicIndex === idx ? '#4f46e5' : 'rgba(255, 255, 255, 0.1)'}`,
-                transition: 'all 0.15s ease',
+                background: activeTopicIndex === idx ? '#ffffff' : '#18181b',
+                color: activeTopicIndex === idx ? '#09090b' : '#a1a1aa',
+                border: activeTopicIndex === idx ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                transition: 'all 0.12s ease',
               }}
             >
               {t.niche}
@@ -582,41 +639,45 @@ export function LandingPage() {
           ))}
         </div>
 
-        <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '28px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '16px', marginBottom: '20px' }}>
+        <div style={{ background: '#121215', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '14px', marginBottom: '16px' }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Selected Topic</div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+              <div style={{ fontSize: '10px', color: '#71717a', textTransform: 'uppercase', fontFamily: 'monospace' }}>INPUT TOPIC</div>
+              <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', margin: '2px 0 0 0' }}>
                 "{simulatedTopics[activeTopicIndex].topic}"
               </h3>
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#1c2233', color: '#10b981', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', background: '#18181b', border: '1px solid rgba(255, 255, 255, 0.08)', color: '#10b981', fontFamily: 'monospace' }}>
                 {simulatedTopics[activeTopicIndex].estDuration}
               </span>
-              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#1c2233', color: '#94a3b8' }}>
-                Cost: {simulatedTopics[activeTopicIndex].credits}
+              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', background: '#18181b', border: '1px solid rgba(255, 255, 255, 0.08)', color: '#a1a1aa', fontFamily: 'monospace' }}>
+                {simulatedTopics[activeTopicIndex].credits}
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginBottom: '16px' }}>
             {simulatedTopics[activeTopicIndex].scenes.map((sceneText, sIdx) => (
-              <div key={sIdx} style={{ padding: '14px', background: '#141824', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ fontSize: '11px', color: '#4f46e5', fontWeight: 700, marginBottom: '4px' }}>Scene Beat 0{sIdx + 1}</div>
-                <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5 }}>{sceneText}</div>
+              <div key={sIdx} style={{ padding: '12px', background: '#09090b', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '10px', color: '#a1a1aa', fontFamily: 'monospace', fontWeight: 600, marginBottom: '4px' }}>
+                  SCENE 0{sIdx + 1} BEAT
+                </div>
+                <div style={{ fontSize: '11px', color: '#d4d4d8', lineHeight: 1.5 }}>
+                  {sceneText}
+                </div>
               </div>
             ))}
           </div>
 
-          <div style={{ padding: '12px 16px', background: '#08090d', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ padding: '10px 14px', background: '#09090b', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <div>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>High-CTR YouTube Title: </span>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+              <span style={{ fontSize: '10px', color: '#71717a', fontFamily: 'monospace' }}>SUGGESTED TITLE: </span>
+              <span style={{ fontSize: '12px', fontWeight: 500, color: '#f4f4f5' }}>
                 {simulatedTopics[activeTopicIndex].suggestedTitle}
               </span>
             </div>
-            <Link href="/signup" style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}>
+            <Link href="/signup" style={{ fontSize: '11px', fontWeight: 600, color: '#ffffff', textDecoration: 'none', fontFamily: 'monospace' }}>
               Create This Video Free ➔
             </Link>
           </div>
@@ -626,79 +687,80 @@ export function LandingPage() {
       {/* ───────────────────────────────────────────────────────────
           5. ROI & SAVINGS CALCULATOR
       ─────────────────────────────────────────────────────────── */}
-      <section id="calculator" style={{ maxWidth: '1180px', margin: '0 auto', padding: '40px 24px 80px' }}>
-        <div style={{ background: '#0d0f17', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '36px 32px' }}>
-          <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 32px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-              ROI Calculator
+      <section id="calculator" style={{ maxWidth: '1100px', margin: '0 auto', padding: '36px 20px' }}>
+        <div style={{ background: '#121215', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', padding: '28px' }}>
+          <div style={{ textAlign: 'center', maxWidth: '540px', margin: '0 auto 24px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', marginBottom: '4px' }}>
+              ROI CALCULATOR
             </div>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em' }}>
-              Calculate your monthly production savings.
+            <h2 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.9rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
+              Monthly Production Savings
             </h2>
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
-              See how much you save compared to hiring video editors and subscribing to 6 fragmented SaaS tools.
+            <p style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '4px' }}>
+              Compare autonomous pipeline costs against traditional freelancer video editing rates.
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginBottom: '36px' }}>
-            <label style={{ fontSize: '14px', fontWeight: 600, color: '#cbd5e1' }}>
-              How many videos do you publish per month?
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 500, color: '#a1a1aa', fontFamily: 'monospace' }}>
+              VIDEOS PUBLISHED PER MONTH
             </label>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {[4, 8, 16, 24, 30, 60].map((count) => (
                 <button
                   key={count}
                   type="button"
                   onClick={() => setVideosPerMonth(count)}
                   style={{
-                    padding: '8px 18px',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: 700,
+                    padding: '6px 14px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    fontWeight: 600,
                     cursor: 'pointer',
-                    background: videosPerMonth === count ? '#4f46e5' : '#141824',
-                    color: videosPerMonth === count ? '#fff' : '#94a3b8',
-                    border: `1px solid ${videosPerMonth === count ? '#4f46e5' : 'rgba(255, 255, 255, 0.1)'}`,
-                    transition: 'all 0.15s ease',
+                    background: videosPerMonth === count ? '#ffffff' : '#18181b',
+                    color: videosPerMonth === count ? '#09090b' : '#a1a1aa',
+                    border: videosPerMonth === count ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                    transition: 'all 0.12s ease',
                   }}
                 >
-                  {count} Videos {count === 30 ? '(Daily)' : ''}
+                  {count} {count === 30 ? '(Daily)' : 'Vids'}
                 </button>
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-            <div style={{ padding: '20px', background: '#121520', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              <div style={{ fontSize: '12px', color: '#f43f5e', fontWeight: 600 }}>Traditional Freelancers + Tool Sprawl</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', margin: '8px 0 4px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+            <div style={{ padding: '16px', background: '#09090b', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ fontSize: '10px', color: '#ef4444', fontFamily: 'monospace', textTransform: 'uppercase' }}>FREELANCERS + TOOL STACK</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#f4f4f5', margin: '6px 0 2px', fontFamily: 'monospace' }}>
                 ${traditionalCost.toLocaleString()}
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>/mo</span>
+                <span style={{ fontSize: '11px', color: '#71717a', fontWeight: 400 }}>/mo</span>
               </div>
-              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
-                $125/video editing fees + ElevenLabs, Midjourney, Canva, Buffer subscriptions.
+              <p style={{ fontSize: '11px', color: '#71717a', lineHeight: 1.4, margin: 0 }}>
+                $125/video editing fees + voiceover, stock B-roll, and scheduling tool subscriptions.
               </p>
             </div>
 
-            <div style={{ padding: '20px', background: '#121520', borderRadius: '8px', border: '1px solid rgba(79, 70, 229, 0.4)' }}>
-              <div style={{ fontSize: '12px', color: '#4f46e5', fontWeight: 600 }}>AutoVideo.ai All-In-One Studio</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', margin: '8px 0 4px' }}>
+            <div style={{ padding: '16px', background: '#09090b', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+              <div style={{ fontSize: '10px', color: '#f4f4f5', fontFamily: 'monospace', textTransform: 'uppercase' }}>AUTOVIDEO.AI PIPELINE</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#f4f4f5', margin: '6px 0 2px', fontFamily: 'monospace' }}>
                 ${autoVideoCost}
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>/mo</span>
+                <span style={{ fontSize: '11px', color: '#71717a', fontWeight: 400 }}>/mo</span>
               </div>
-              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
-                Unlimited rendering, neural voices, 1080p FFmpeg export, and YouTube scheduling included.
+              <p style={{ fontSize: '11px', color: '#71717a', lineHeight: 1.4, margin: 0 }}>
+                1080p FFmpeg compositor, neural voices, and direct YouTube auto-publishing included.
               </p>
             </div>
 
-            <div style={{ padding: '20px', background: '#121520', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
-              <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 600 }}>Net Monthly Savings</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#10b981', margin: '8px 0 4px' }}>
+            <div style={{ padding: '16px', background: '#09090b', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              <div style={{ fontSize: '10px', color: '#10b981', fontFamily: 'monospace', textTransform: 'uppercase' }}>NET MONTHLY SAVINGS</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#10b981', margin: '6px 0 2px', fontFamily: 'monospace' }}>
                 +${netSavings.toLocaleString()}
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>/mo</span>
+                <span style={{ fontSize: '11px', color: '#71717a', fontWeight: 400 }}>/mo</span>
               </div>
-              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
-                Plus approximately <strong>{hoursSaved} hours</strong> of manual editing time saved every month!
+              <p style={{ fontSize: '11px', color: '#71717a', lineHeight: 1.4, margin: 0 }}>
+                Plus approximately <strong>{hoursSaved} hours</strong> of manual editing saved each month.
               </p>
             </div>
           </div>
@@ -706,181 +768,149 @@ export function LandingPage() {
       </section>
 
       {/* ───────────────────────────────────────────────────────────
-          6. CAPABILITIES & EDITORIAL SECTIONS
+          6. CORE CAPABILITIES (Feature Bento Cards)
       ─────────────────────────────────────────────────────────── */}
-      <section id="capabilities" style={{ maxWidth: '1180px', margin: '0 auto', padding: '48px 24px 96px', display: 'flex', flexDirection: 'column', gap: '96px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '48px', alignItems: 'center' }} className="studio-responsive-grid">
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-              01 • CREATE
-            </div>
-            <h3 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '16px' }}>
-              Write retention-focused scripts without starting from scratch.
-            </h3>
-            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '20px' }}>
-              AutoVideo structures scripts designed specifically for viewer retention. Every script is divided into distinct scenes with pacing notes, visual suggestions, and natural-sounding voiceover lines.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> 40+ neural voices with natural cadence
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> Built-in Copilot for 1-click hook optimization
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> Multi-scene decomposition with timestamps
-              </div>
-            </div>
+      <section id="capabilities" style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 20px' }}>
+        <div style={{ textAlign: 'center', maxWidth: '580px', margin: '0 auto 32px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', marginBottom: '6px' }}>
+            PRODUCTION CAPABILITIES
           </div>
-
-          <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '24px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '8px' }}>
-              Script Editor • Scene 1 Hook (00:00 - 00:18)
-            </div>
-            <p style={{ fontSize: '13px', color: '#f8fafc', lineHeight: 1.6, background: '#141824', padding: '14px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              "What if the silicon chips powering modern computing are hitting a fundamental physical limit? In 2026, neuromorphic architecture is rewriting how machines think."
-            </p>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <span style={{ fontSize: '11px', padding: '3px 8px', background: '#1c2233', color: '#94a3b8', borderRadius: '4px' }}>Voice: Adam (Neural)</span>
-              <span style={{ fontSize: '11px', padding: '3px 8px', background: '#1c2233', color: '#94a3b8', borderRadius: '4px' }}>Pacing: 142 wpm</span>
-            </div>
-          </div>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
+            Built for Serious YouTube Channels
+          </h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '48px', alignItems: 'center' }} className="studio-responsive-grid">
-          <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1' }}>1080p FFmpeg Engine</span>
-              <span style={{ fontSize: '11px', color: '#10b981', fontFamily: 'var(--font-mono)' }}>1920x1080 • CFR 30fps</span>
-            </div>
-            <div style={{ padding: '16px', background: '#08090d', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>Video Composition Pipeline</div>
-              <div style={{ fontSize: '12px', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
-                [Video B-Roll 1080p] + [Voiceover AAC] + [Dynamic Subtitles SRT] $\to$ Output.mp4
-              </div>
-              <div style={{ marginTop: '12px', fontSize: '11px', color: '#10b981' }}>
-                ✓ Frame-accurate subtitle timestamps burned
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-              02 • EDIT & COMPOSE
-            </div>
-            <h3 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '16px' }}>
-              Broadcast-quality 1080p rendering. No video editing software needed.
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+          <div className="card" style={{ padding: '24px', background: '#121215', borderColor: 'rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '10px', color: '#a1a1aa', fontFamily: 'monospace' }}>01 • SCRIPT & HOOKS</div>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', margin: 0 }}>
+              Retention-Engineered Scriptwriting
             </h3>
-            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '20px' }}>
-              Our native server-side FFmpeg pipeline composites B-roll footage, mixes voice tracks with background music, and burns high-visibility captions at 30 frames per second.
+            <p style={{ fontSize: '12px', color: '#71717a', lineHeight: 1.5, margin: 0 }}>
+              AutoVideo divides video topics into concise narrative beats with pacing notes, visual suggestions, and high-retention hook phrasing.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> 1080p Full HD H.264 FastStart MP4
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> Word-level dynamic subtitle synchronization
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> High-CTR custom thumbnail generator
-              </div>
+            <div style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: 'monospace', marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              ✓ 40+ Neural Voices • Hook Copilot
             </div>
           </div>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '48px', alignItems: 'center' }} className="studio-responsive-grid">
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-              03 • PUBLISH
-            </div>
-            <h3 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '16px' }}>
-              30-day autonomous scheduling directly to your YouTube channel.
+          <div className="card" style={{ padding: '24px', background: '#121215', borderColor: 'rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '10px', color: '#a1a1aa', fontFamily: 'monospace' }}>02 • COMPOSITION</div>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', margin: 0 }}>
+              1080p FFmpeg Server Compositor
             </h3>
-            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '20px' }}>
-              Connect your YouTube channel once using official Google OAuth 2.0. AutoVideo uploads videos, attaches custom metadata, and schedules publication according to your release calendar.
+            <p style={{ fontSize: '12px', color: '#71717a', lineHeight: 1.5, margin: 0 }}>
+              Server-side rendering matches B-roll video footage, mixes speech audio with background tracks, and burns synchronized captions at 30fps CFR.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> Official YouTube Data API v3 integration
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> Private, Unlisted, Public, and Scheduled releases
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981' }}>✓</span> Background scheduler with automatic lease recovery
-              </div>
+            <div style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: 'monospace', marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              ✓ 1080p H.264 FastStart • SRT Sync
             </div>
           </div>
 
-          <div style={{ background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1' }}>Release Calendar</span>
-              <span style={{ fontSize: '11px', color: '#4f46e5' }}>30-Day Autopilot</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ padding: '10px 12px', background: '#141824', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#fff' }}>Mon: Quantum Computing Explained</span>
-                <span style={{ fontSize: '10px', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>Published</span>
-              </div>
-              <div style={{ padding: '10px 12px', background: '#141824', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#fff' }}>Wed: Neuromorphic AI Breakthroughs</span>
-                <span style={{ fontSize: '10px', color: '#4f46e5', background: 'rgba(79, 70, 229, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>Scheduled (8 PM)</span>
-              </div>
-              <div style={{ padding: '10px 12px', background: '#141824', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#fff' }}>Fri: Top 5 AI Robotics Startups</span>
-                <span style={{ fontSize: '10px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>Queued for Render</span>
-              </div>
+          <div className="card" style={{ padding: '24px', background: '#121215', borderColor: 'rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '10px', color: '#a1a1aa', fontFamily: 'monospace' }}>03 • DISTRIBUTION</div>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', margin: 0 }}>
+              Autonomous 30-Day Autopilot
+            </h3>
+            <p style={{ fontSize: '12px', color: '#71717a', lineHeight: 1.5, margin: 0 }}>
+              Connect your YouTube channel once using official Google OAuth 2.0. AutoVideo uploads videos and manages publication according to your release calendar.
+            </p>
+            <div style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: 'monospace', marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              ✓ YouTube Data API v3 • Retry Recovery
             </div>
           </div>
         </div>
       </section>
 
       {/* ───────────────────────────────────────────────────────────
-          7. PRICING PACKAGES
+          7. PRICING (3-Column Clean Grid)
       ─────────────────────────────────────────────────────────── */}
-      <section id="pricing" style={{ maxWidth: '1180px', margin: '0 auto', padding: '48px 24px 96px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em' }}>
+      <section id="pricing" style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', marginBottom: '6px' }}>
+            SUBSCRIPTION PLANS
+          </div>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
             Transparent Pricing
           </h2>
-          <p style={{ fontSize: '14px', color: '#94a3b8', margin: '8px auto 24px', maxWidth: '500px' }}>
+          <p style={{ fontSize: '13px', color: '#a1a1aa', margin: '6px auto 18px', maxWidth: '480px' }}>
             Every plan includes 1080p video rendering, neural voiceovers, and YouTube auto-publishing.
           </p>
 
-          <div style={{ display: 'inline-flex', alignItems: 'center', background: '#121520', padding: '4px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          {/* Billing Switcher */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', background: '#121215', padding: '3px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <button
               type="button"
               onClick={() => setBillingCycle('monthly')}
-              className="btn btn-sm"
-              style={{ borderRadius: '4px', background: billingCycle === 'monthly' ? '#1c2233' : 'transparent', color: billingCycle === 'monthly' ? '#fff' : '#94a3b8' }}
+              style={{
+                padding: '4px 12px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                background: billingCycle === 'monthly' ? '#27272a' : 'transparent',
+                color: billingCycle === 'monthly' ? '#f4f4f5' : '#71717a',
+              }}
             >
               Monthly
             </button>
             <button
               type="button"
               onClick={() => setBillingCycle('annual')}
-              className="btn btn-sm"
-              style={{ borderRadius: '4px', background: billingCycle === 'annual' ? '#1c2233' : 'transparent', color: billingCycle === 'annual' ? '#fff' : '#94a3b8' }}
+              style={{
+                padding: '4px 12px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                background: billingCycle === 'annual' ? '#27272a' : 'transparent',
+                color: billingCycle === 'annual' ? '#f4f4f5' : '#71717a',
+              }}
             >
-              Annual <span style={{ color: '#10b981', fontSize: '11px', fontWeight: 600 }}>(Save 20%)</span>
+              Annual (Save 20%)
             </button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
           {[
-            { name: 'Starter', price: billingCycle === 'annual' ? '$15' : '$19', vids: '~8 Full Videos/mo', credits: '500 Credits/mo', desc: 'For creators launching their first channel.' },
-            { name: 'Pro Creator', price: billingCycle === 'annual' ? '$39' : '$49', vids: '~24 Full Videos/mo', credits: '1,500 Credits/mo', desc: 'For channels posting consistent daily content.', popular: true },
-            { name: 'Scale', price: billingCycle === 'annual' ? '$79' : '$99', vids: '~60 Full Videos/mo', credits: '4,000 Credits/mo', desc: 'For multi-channel operators and publishers.' },
-            { name: 'Agency', price: billingCycle === 'annual' ? '$159' : '$199', vids: '~160 Full Videos/mo', credits: '10,000 Credits/mo', desc: 'For digital marketing agencies managing brands.' },
+            {
+              name: 'Starter',
+              price: billingCycle === 'annual' ? '$15' : '$19',
+              vids: '~8 Full Videos/mo',
+              credits: '500 Credits/mo',
+              desc: 'For creators establishing their first automated YouTube channel.',
+              popular: false,
+            },
+            {
+              name: 'Pro Creator',
+              price: billingCycle === 'annual' ? '$39' : '$49',
+              vids: '~24 Full Videos/mo',
+              credits: '1,500 Credits/mo',
+              desc: 'For active channels maintaining a consistent schedule.',
+              popular: true,
+            },
+            {
+              name: 'Scale',
+              price: billingCycle === 'annual' ? '$79' : '$99',
+              vids: '~60 Full Videos/mo',
+              credits: '4,000 Credits/mo',
+              desc: 'For multi-channel operators scaling daily content output.',
+              popular: false,
+            },
           ].map((p) => (
             <div
               key={p.name}
+              className="card"
               style={{
                 padding: '24px',
                 borderRadius: '8px',
-                background: p.popular ? '#121522' : '#0d0f17',
-                border: `1px solid ${p.popular ? 'rgba(79, 70, 229, 0.6)' : 'rgba(255, 255, 255, 0.08)'}`,
+                background: '#121215',
+                borderColor: p.popular ? '#ffffff' : 'rgba(255, 255, 255, 0.08)',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
@@ -888,35 +918,40 @@ export function LandingPage() {
             >
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{p.name}</h3>
+                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', margin: 0 }}>{p.name}</h3>
                   {p.popular && (
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#4f46e5', background: 'rgba(79, 70, 229, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#09090b', background: '#ffffff', padding: '1px 6px', borderRadius: '3px', fontFamily: 'monospace' }}>
                       POPULAR
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', margin: '12px 0 2px', letterSpacing: '-0.02em' }}>
-                  {p.price}<span style={{ fontSize: '13px', color: '#64748b', fontWeight: 400 }}>/mo</span>
+
+                <div style={{ fontSize: '26px', fontWeight: 700, color: '#f4f4f5', margin: '10px 0 2px', fontFamily: 'monospace', letterSpacing: '-0.02em' }}>
+                  {p.price}<span style={{ fontSize: '12px', color: '#71717a', fontWeight: 400 }}>/mo</span>
                 </div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5', marginBottom: '8px' }}>{p.vids}</div>
-                <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '16px' }}>{p.desc}</p>
-                <div style={{ fontSize: '11px', color: '#64748b', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '12px' }}>
-                  Includes: {p.credits} • 1080p Export • YouTube Publishing
+
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#a1a1aa', fontFamily: 'monospace', marginBottom: '8px' }}>
+                  {p.vids}
+                </div>
+
+                <p style={{ fontSize: '12px', color: '#71717a', lineHeight: 1.5, marginBottom: '16px' }}>
+                  {p.desc}
+                </p>
+
+                <div style={{ fontSize: '11px', color: '#71717a', fontFamily: 'monospace', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '10px' }}>
+                  Includes: {p.credits} • 1080p Export • YouTube Autopilot
                 </div>
               </div>
 
               <Link
                 href="/signup"
+                className={p.popular ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
                 style={{
-                  marginTop: '20px',
-                  padding: '10px 0',
+                  marginTop: '18px',
                   textAlign: 'center',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: 600,
-                  color: '#fff',
-                  background: p.popular ? '#4f46e5' : 'rgba(255, 255, 255, 0.08)',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
+                  height: '32px',
                 }}
               >
                 Get Started ➔
@@ -927,11 +962,14 @@ export function LandingPage() {
       </section>
 
       {/* ───────────────────────────────────────────────────────────
-          8. CLEAN FAQ
+          8. FREQUENTLY ASKED QUESTIONS
       ─────────────────────────────────────────────────────────── */}
-      <section id="faq" style={{ maxWidth: '800px', margin: '0 auto', padding: '48px 24px 96px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em' }}>
+      <section id="faq" style={{ maxWidth: '760px', margin: '0 auto', padding: '36px 20px 64px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', marginBottom: '4px' }}>
+            DOCUMENTATION
+          </div>
+          <h2 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.9rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
             Frequently Asked Questions
           </h2>
         </div>
@@ -944,26 +982,26 @@ export function LandingPage() {
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 style={{
                   width: '100%',
-                  padding: '18px 0',
+                  padding: '14px 0',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   background: 'transparent',
                   border: 'none',
-                  color: '#fff',
-                  fontSize: '15px',
+                  color: '#f4f4f5',
+                  fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
                 <span>{f.q}</span>
-                <span style={{ fontSize: '16px', color: '#4f46e5', marginLeft: '12px' }}>
+                <span style={{ fontSize: '14px', color: '#71717a', fontFamily: 'monospace', marginLeft: '10px' }}>
                   {openFaq === i ? '−' : '+'}
                 </span>
               </button>
               {openFaq === i && (
-                <div style={{ paddingBottom: '18px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.6 }}>
+                <div style={{ paddingBottom: '14px', fontSize: '12px', color: '#a1a1aa', lineHeight: 1.6 }}>
                   {f.a}
                 </div>
               )}
@@ -973,39 +1011,40 @@ export function LandingPage() {
       </section>
 
       {/* ───────────────────────────────────────────────────────────
-          9. CONFIDENT CLOSING STATEMENT
+          9. CLOSING CALL TO ACTION
       ─────────────────────────────────────────────────────────── */}
-      <section style={{ maxWidth: '1180px', margin: '0 auto', padding: '24px 24px 80px' }}>
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px 20px 60px' }}>
         <div
           style={{
-            padding: '48px 32px',
-            background: '#0d0f17',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '10px',
+            padding: '36px 24px',
+            background: '#121215',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '8px',
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '16px',
+            gap: '12px',
           }}
         >
-          <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.025em' }}>
+          <h2 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', margin: 0 }}>
             Ready to automate your next video?
           </h2>
-          <p style={{ fontSize: '14px', color: '#94a3b8', maxWidth: '520px', lineHeight: 1.6 }}>
-            Start creating with AutoVideo. 500 free credits included, no credit card required.
+          <p style={{ fontSize: '13px', color: '#a1a1aa', maxWidth: '460px', lineHeight: 1.5, margin: 0 }}>
+            Start creating with AutoVideo. 500 free credits included with no credit card required.
           </p>
           <Link
             href="/signup"
             style={{
-              marginTop: '8px',
-              padding: '13px 28px',
-              fontSize: '14px',
+              marginTop: '6px',
+              padding: '10px 22px',
+              fontSize: '13px',
               fontWeight: 600,
-              color: '#fff',
-              background: '#4f46e5',
+              color: '#09090b',
+              background: '#ffffff',
               borderRadius: '6px',
               textDecoration: 'none',
+              border: '1px solid #ffffff',
             }}
           >
             Start Creating Free ➔
@@ -1019,26 +1058,27 @@ export function LandingPage() {
       <footer
         style={{
           borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '36px 28px',
-          maxWidth: '1180px',
+          padding: '24px 20px',
+          maxWidth: '1100px',
           margin: '0 auto',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '16px',
-          fontSize: '12px',
-          color: '#64748b',
+          gap: '12px',
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          color: '#71717a',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 700, color: '#cbd5e1' }}>AutoVideo.ai</span>
+          <span style={{ fontWeight: 600, color: '#f4f4f5' }}>AutoVideo.ai</span>
           <span>© 2026 AutoVideo SaaS. All rights reserved.</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-          <Link href="/login" style={{ color: '#94a3b8' }}>Sign In</Link>
-          <Link href="/signup" style={{ color: '#94a3b8' }}>Register</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <Link href="/login" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Sign In</Link>
+          <Link href="/signup" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Register</Link>
         </div>
       </footer>
     </div>
