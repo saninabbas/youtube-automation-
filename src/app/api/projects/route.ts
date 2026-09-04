@@ -63,10 +63,22 @@ export async function POST(request: Request) {
       VALUES (?, ?, '', '', ?, 1, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
     `).run(userId, user?.email || 'creator@autovideo.local', user?.name || 'Creator', now, now);
 
-    // Verify channel
+    // Verify or auto-provision channel in container DB
     let channel = db
       .prepare('SELECT * FROM channels WHERE id = ?')
       .get(channel_id) as Channel | undefined;
+
+    if (!channel) {
+      db.prepare(`
+        INSERT OR IGNORE INTO channels (
+          id, user_id, name, niche, language, voice, voice_speed,
+          target_duration_minutes, visual_style, subtitle_style, intro_style, outro_cta,
+          publishing_platform, content_rules, publishing_days, publishing_time, timezone,
+          default_visibility, auto_publish, created_at, updated_at
+        ) VALUES (?, ?, 'Creator Channel', 'AI & Technology', 'en', 'en-US-ChristopherNeural', '1.0x', 5, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Dramatic Question', 'Subscribe to the channel and leave your thoughts below', 'YouTube', 'Engaging, clear, professional tone', '["Monday","Wednesday","Friday"]', '14:00', 'UTC', 'PRIVATE', 0, ?, ?)
+      `).run(channel_id, userId, now, now);
+      channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channel_id) as Channel | undefined;
+    }
 
     if (!channel) {
       return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
