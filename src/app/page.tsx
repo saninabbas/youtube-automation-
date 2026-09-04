@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LandingPage } from '@/components/LandingPage';
+import { useToast } from '@/components/Toast';
 
 export default function HomePage() {
   const router = useRouter();
+  const toast = useToast();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [credits, setCredits] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
@@ -57,17 +59,22 @@ export default function HomePage() {
 
   const handleQuickCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickTopic.trim() || creating) return;
+    if (!quickTopic.trim()) {
+      toast.warning('Please enter a video topic prompt');
+      return;
+    }
+    if (creating) return;
 
     try {
       setCreating(true);
-      // Use existing channel or create default
+      toast.info('Starting AI video generation pipeline... ⚡');
+
       let targetChannelId = channels[0]?.id;
       if (!targetChannelId) {
         const cRes = await fetch('/api/channels', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'My AI Studio', niche: 'AI & Tech', target_duration_minutes: 3 }),
+          body: JSON.stringify({ name: 'Studio Persona', niche: 'AI & Tech', target_duration_minutes: 3 }),
         });
         if (cRes.ok) {
           const cData = await cRes.json();
@@ -79,19 +86,22 @@ export default function HomePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          channel_id: targetChannelId,
+          channel_id: targetChannelId || 'default_channel',
           topic: quickTopic.trim(),
           preset: quickPreset === 'SHORT' ? 'SHORT' : 'STANDARD',
           target_length_minutes: quickPreset === 'SHORT' ? 1 : quickPreset === 'DOCUMENTARY' ? 8 : 3,
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.projectId) {
+        toast.success('Video queued successfully! Opening Studio... ✨');
         router.push(`/content/${data.projectId}`);
+      } else {
+        throw new Error(data.error || 'Failed to initialize project');
       }
-    } catch (err) {
-      console.error('Creation failed:', err);
+    } catch (err: any) {
+      toast.error(err.message || 'Video creation failed');
     } finally {
       setCreating(false);
     }
