@@ -396,13 +396,13 @@ export default function SuperAdminPage() {
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{p.desc}</div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '340px' }}>
                       <input
                         type="password"
                         placeholder="Enter API Key / Token"
                         defaultValue={credentials[p.id] || ''}
                         className="form-input"
-                        style={{ width: '220px', fontSize: '12px', padding: '6px 10px' }}
+                        style={{ flex: 1, minWidth: '180px', fontSize: '12px', padding: '8px 12px' }}
                         onBlur={(e) => {
                           if (e.target.value && !e.target.value.includes('•••')) {
                             handleSaveKey(p.id, e.target.value.trim());
@@ -418,6 +418,7 @@ export default function SuperAdminPage() {
                           }
                         }}
                         className="btn btn-secondary btn-sm"
+                        style={{ padding: '0 14px', height: '36px' }}
                       >
                         {savingKey === p.id ? 'Saving...' : 'Save'}
                       </button>
@@ -452,13 +453,13 @@ export default function SuperAdminPage() {
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{p.desc}</div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '340px' }}>
                       <input
                         type="password"
                         placeholder="Enter API Key"
                         defaultValue={credentials[p.id] || ''}
                         className="form-input"
-                        style={{ width: '220px', fontSize: '12px', padding: '6px 10px' }}
+                        style={{ flex: 1, minWidth: '180px', fontSize: '12px', padding: '8px 12px' }}
                         onBlur={(e) => {
                           if (e.target.value && !e.target.value.includes('•••')) {
                             handleSaveKey(p.id, e.target.value.trim());
@@ -474,6 +475,7 @@ export default function SuperAdminPage() {
                           }
                         }}
                         className="btn btn-secondary btn-sm"
+                        style={{ padding: '0 14px', height: '36px' }}
                       >
                         {savingKey === p.id ? 'Saving...' : 'Save'}
                       </button>

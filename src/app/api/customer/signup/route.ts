@@ -33,35 +33,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'An account with this email address already exists. Please sign in.' }, { status: 409 });
     }
 
-    const userId = crypto.randomUUID();
-    const { hash, salt } = hashPassword(password);
+    const userId = getUserIdFromEmail(cleanEmail);
+    const salt = getEmailSalt(cleanEmail);
+    const { hash } = hashPassword(password, salt);
     const verificationToken = crypto.randomBytes(24).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 3600 * 1000).toISOString(); // 24h
+    const verificationExpires = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
     const now = new Date().toISOString();
 
-    // Insert user
+    // Insert user with instant active status (email_verified: 1)
     db.prepare(`
-      INSERT INTO users (
+      INSERT OR REPLACE INTO users (
         id, email, password_hash, salt, name, email_verified,
         verification_token, verification_token_expires, role, status,
         onboarding_completed, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, 'CUSTOMER', 'ACTIVE', 0, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, 1, ?, ?, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
     `).run(userId, cleanEmail, hash, salt, name.trim(), verificationToken, verificationExpires, now, now);
 
     // Initialize 500 free credits
     db.prepare(`
-      INSERT INTO user_credits (user_id, balance, tier, subscription_status, monthly_allowance, renews_at, updated_at)
+      INSERT OR REPLACE INTO user_credits (user_id, balance, tier, subscription_status, monthly_allowance, renews_at, updated_at)
       VALUES (?, 500, 'CREATOR', 'ACTIVE', 500, ?, ?)
     `).run(userId, new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(), now);
 
-    // Send verification email
-    const emailData = buildVerificationEmail(name.trim(), verificationToken);
-    await sendEmail({
-      to: cleanEmail,
-      subject: emailData.subject,
-      text: emailData.text,
-      html: emailData.html,
-    });
+    // Auto-provision a default starter channel for creator
+    db.prepare(`
+      INSERT OR IGNORE INTO channels (id, user_id, name, niche, language, voice, target_duration_minutes, visual_style, subtitle_style, intro_style, outro_cta, publishing_platform, content_rules, created_at, updated_at)
+      VALUES (?, ?, ?, 'AI & Tech', 'en', 'en-US-ChristopherNeural', 3, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Hook', 'Subscribe for more breakdowns', 'YouTube', 'Professional studio pacing', ?, ?)
+    `).run(`chan_${userId.substring(4)}`, userId, `${name.trim()} Studio`, now, now);
 
     // Create session
     const userAgent = req.headers.get('user-agent') || undefined;
@@ -71,17 +69,16 @@ export async function POST(req: Request) {
       id: userId,
       email: cleanEmail,
       name: name.trim(),
-      email_verified: 0,
+      email_verified: 1,
       role: 'CUSTOMER',
-      onboarding_completed: 0,
+      onboarding_completed: 1,
     };
 
     const res = NextResponse.json(
       {
         success: true,
-        message: 'Account created successfully. Please verify your email.',
+        message: 'Account created successfully. Welcome to AutoVideo!',
         user,
-        verificationToken,
       },
       { status: 201 }
     );

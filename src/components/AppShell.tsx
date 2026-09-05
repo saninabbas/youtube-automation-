@@ -210,13 +210,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <button
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => {
+              if (window.innerWidth <= 1024) {
+                setMobileOpen(false);
+              } else {
+                setCollapsed(!collapsed);
+              }
+            }}
             className="btn btn-ghost btn-icon"
             style={{ width: '28px', height: '28px', color: 'var(--text-muted)' }}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {collapsed ? <polyline points="9 18 15 12 9 6" /> : <polyline points="15 18 9 12 15 6" />}
+              {mobileOpen ? (
+                <path d="M18 6L6 18M6 6l12 12" />
+              ) : collapsed ? (
+                <polyline points="9 18 15 12 9 6" />
+              ) : (
+                <polyline points="15 18 9 12 15 6" />
+              )}
             </svg>
           </button>
         </div>
@@ -224,19 +236,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-nav">
           {navSections.map((sec, idx) => (
             <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {!collapsed && <div className="nav-section-title">{sec.title}</div>}
+              {(!collapsed || mobileOpen) && <div className="nav-section-title">{sec.title}</div>}
               {sec.items.map((item, itemIdx) => {
                 const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
                 return (
                   <Link
                     key={itemIdx}
                     href={item.href}
+                    onClick={() => setMobileOpen(false)}
                     className={`nav-item ${isActive ? 'active' : ''}`}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed && !mobileOpen ? item.label : undefined}
                   >
                     <span style={{ color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>{item.icon}</span>
-                    {!collapsed && <span>{item.label}</span>}
-                    {!collapsed && item.badge && <span className="nav-item-badge">{item.badge}</span>}
+                    {(!collapsed || mobileOpen) && <span>{item.label}</span>}
+                    {(!collapsed || mobileOpen) && item.badge && <span className="nav-item-badge">{item.badge}</span>}
                   </Link>
                 );
               })}
@@ -249,7 +262,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="avatar-circle">
               {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'C'}
             </div>
-            {!collapsed && (
+            {(!collapsed || mobileOpen) && (
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {currentUser?.name || 'Creator Workspace'}
@@ -268,11 +281,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ───────────────────────────────────────────────────────────── */}
       <div className="main-wrapper">
         <header className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
-              onClick={() => setMobileOpen(true)}
-              className="btn btn-ghost btn-icon"
-              style={{ display: 'none' }}
+              type="button"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="btn btn-ghost btn-icon mobile-menu-btn"
               title="Open mobile menu"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

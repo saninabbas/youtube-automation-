@@ -16,11 +16,22 @@ export interface User {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 1. CRYPTOGRAPHIC PASSWORD HASHING (SCRYPT + SALT)
+// 1. CRYPTOGRAPHIC PASSWORD HASHING (SCRYPT + DETERMINISTIC SALT)
 // ─────────────────────────────────────────────────────────────
 
-export function hashPassword(password: string): { hash: string; salt: string } {
-  const salt = crypto.randomBytes(16).toString('hex');
+const AUTH_SECRET = process.env.ADMIN_SECRET || 'autovideo_saas_secure_fallback_secret_key_2026';
+
+export function getEmailSalt(email: string): string {
+  return crypto.createHmac('sha256', AUTH_SECRET).update(email.toLowerCase().trim()).digest('hex').slice(0, 32);
+}
+
+export function getUserIdFromEmail(email: string): string {
+  const hash = crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').slice(0, 16);
+  return `usr_${hash}`;
+}
+
+export function hashPassword(password: string, customSalt?: string): { hash: string; salt: string } {
+  const salt = customSalt || crypto.randomBytes(16).toString('hex');
   const derivedKey = crypto.scryptSync(password, salt, 64);
   return {
     hash: derivedKey.toString('hex'),
@@ -48,8 +59,6 @@ export function verifyPassword(password: string, storedHash: string, salt: strin
 
 export const SESSION_TOKEN_COOKIE = 'auth_session_token';
 export const SESSION_COOKIE = 'auth_session_token';
-
-const AUTH_SECRET = process.env.ADMIN_SECRET || 'autovideo_saas_secure_fallback_secret_key_2026';
 
 export function signToken(userId: string, expiresTimestamp: number): string {
   const data = `${userId}.${expiresTimestamp}`;
