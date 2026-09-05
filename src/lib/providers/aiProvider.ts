@@ -684,12 +684,12 @@ class DefaultAiProvider implements AiProvider {
 
     const prompt = `You are a professional video script writer and director for channel "${params.channelName}" (Niche: ${params.niche}, Language: ${params.language}, Visual Style: ${params.visualStyle || 'Cinematic'}).
 Write an engaging, deep video script for the topic: "${params.topic}".
-TARGET DURATION: Exactly ${params.targetLengthMinutes} minutes (The spoken narration MUST contain approximately ${targetWordCount} total words to fill this duration at 138 words per minute).
-Adhere to these editorial rules: ${params.contentRules || 'Engaging, clear, professional delivery'}.
+TARGET DURATION: Exactly ${params.targetLengthMinutes} minutes (Spoken narration MUST contain approximately ${targetWordCount} total words to fill this duration at 138 words per minute).
+Adhere to editorial rules: ${params.contentRules || 'Engaging, clear, professional delivery'}.
 Intro Hook Style: ${params.introStyle || 'High-Impact Dramatic Question'}.
 Outro CTA: ${params.outroCta || 'Subscribe and hit the bell'}.
 
-Respond strictly with valid JSON with this schema:
+You must return valid JSON strictly conforming to this schema:
 {
   "title": "${params.topic}",
   "hook": "Compelling hook (~30-50 words)",
@@ -700,7 +700,7 @@ Respond strictly with valid JSON with this schema:
       "subsections": [
         {
           "subheading": "Point Title",
-          "narration": "Detailed substantive spoken narration (~60-100 words)...",
+          "narration": "Detailed spoken narration (~60-100 words)...",
           "visualPrompt": "Cinematic visual description for point",
           "visualSubject": "Core subject",
           "environment": "Physical setting",
@@ -719,20 +719,34 @@ Respond strictly with valid JSON with this schema:
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json' },
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.7,
+        },
       }),
     });
 
     if (!res.ok) {
-      throw new Error(`Gemini API error: ${res.statusText}`);
+      const errText = await res.text();
+      throw new Error(`Gemini API error (${res.status}): ${errText}`);
     }
 
     const data = await res.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    const parsed: ScriptStructure = JSON.parse(rawText);
+    const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawContent) {
+      throw new Error('Gemini returned empty response');
+    }
+
+    const parsed: ScriptStructure = JSON.parse(rawContent);
 
     const narrationParts: string[] = [parsed.hook, parsed.introduction];
     for (const sec of parsed.sections) {
