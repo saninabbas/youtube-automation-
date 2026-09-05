@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { verifyPassword, createSession, checkRateLimit, setSessionCookie } from '@/lib/auth';
+import { verifyPassword, hashPassword, createSession, checkRateLimit, setSessionCookie, getUserIdFromEmail, getEmailSalt } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 

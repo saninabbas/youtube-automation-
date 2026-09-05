@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getDb } from '@/lib/db';
-import { hashPassword, createSession, checkRateLimit, setSessionCookie, sendEmail, buildVerificationEmail } from '@/lib/auth';
+import { hashPassword, createSession, checkRateLimit, setSessionCookie, sendEmail, buildVerificationEmail, getUserIdFromEmail, getEmailSalt } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
