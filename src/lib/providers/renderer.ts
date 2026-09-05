@@ -2,7 +2,7 @@ import { execFile } from 'child_process';
 import util from 'util';
 import path from 'path';
 import fs from 'fs';
-import { storage } from '../storage';
+import { storage, getTempDir } from '../storage';
 import { getFfmpegPath } from './videoProvider';
 
 const execFileAsync = util.promisify(execFile);
@@ -48,10 +48,7 @@ export class LocalFfmpegRenderer implements VideoRenderer {
     const { projectId, clipFilePaths, audioFilePath, subtitleFilePath, totalDurationSec } = params;
     const ffmpegPath = getFfmpegPath();
 
-    const tempDir = path.join(process.cwd(), 'temp', projectId);
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
+    const tempDir = getTempDir(projectId);
 
     // 1. Create concat list
     const concatListPath = path.join(tempDir, 'concat_list.txt');

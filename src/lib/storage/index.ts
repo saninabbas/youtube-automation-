@@ -224,3 +224,13 @@ function createStorageProvider(): StorageProvider {
 }
 
 export const storage: StorageProvider = createStorageProvider();
+
+export function getTempDir(sub?: string): string {
+  const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const base = isServerless ? path.join('/tmp', 'temp') : path.join(process.cwd(), 'temp');
+  const target = sub ? path.join(base, sub) : base;
+  if (!fs.existsSync(target)) {
+    fs.mkdirSync(target, { recursive: true });
+  }
+  return target;
+}

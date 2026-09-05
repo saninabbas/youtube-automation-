@@ -4,6 +4,7 @@ import { videoWorker, PipelineStage, PIPELINE_STAGES } from '@/lib/queue/worker'
 import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
