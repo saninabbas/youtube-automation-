@@ -414,6 +414,49 @@ export default function VideoStudioPage({ params }: { params?: any }) {
         </div>
       </div>
 
+      {/* ERROR DIAGNOSTICS BANNER */}
+      {(project.status === 'FAILED' || project.error_message) && (
+        <div
+          style={{
+            padding: '14px 18px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>⚠️</span>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#fca5a5' }}>
+                Generation Paused ({project.current_stage || 'PIPELINE'} Stage)
+              </div>
+              <div style={{ fontSize: '12px', color: '#f87171' }}>
+                {project.error_message || 'An error occurred during stage execution. Click retry to re-run pipeline with fallback engine.'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => handleGenerateVideo(project.current_stage || 'SCRIPT')}
+            disabled={isGeneratingVideo}
+            className="btn btn-sm"
+            style={{
+              background: '#ef4444',
+              color: '#fff',
+              fontWeight: 600,
+              padding: '6px 14px',
+              fontSize: '12px',
+            }}
+          >
+            🔄 Retry Generation
+          </button>
+        </div>
+      )}
+
       {/* 2. THREE-PANE VIDEO STUDIO WORKSPACE */}
       <div className="studio-workspace">
         {/* LEFT PANE: Scene Cuts List */}

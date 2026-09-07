@@ -39,6 +39,22 @@ export async function POST(request: Request, { params }: { params: any }) {
     // Execute pipeline synchronously on serverless to guarantee completion
     await videoWorker.processPipeline(id, retryStage);
 
+    const updatedProject = db
+      .prepare('SELECT * FROM content_projects WHERE id = ?')
+      .get(id) as ContentProject | undefined;
+
+    if (updatedProject?.status === 'FAILED') {
+      return NextResponse.json(
+        {
+          error: updatedProject.error_message || `Generation failed during stage ${updatedProject.current_stage}`,
+          status: 'FAILED',
+          stage: updatedProject.current_stage,
+          projectId: id,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: `Video generated successfully from stage ${retryStage}`,

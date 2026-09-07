@@ -706,11 +706,20 @@ export function deductUserCredits(userId: string = DEFAULT_USER_ID, amount: numb
   if (current.balance < amount) return false;
 
   const newBalance = current.balance - amount;
-  db.prepare('UPDATE user_credits SET balance = ?, updated_at = ? WHERE user_id = ?').run(newBalance, new Date().toISOString(), userId);
-  db.prepare(`
-    INSERT INTO credit_transactions (id, user_id, amount, balance_after, type, description, project_id, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(Math.random().toString(36).substring(2), userId, -amount, newBalance, type, description, projectId || null, new Date().toISOString());
+  try {
+    db.prepare(`
+      INSERT INTO user_credits (user_id, balance, tier, subscription_status, monthly_allowance, updated_at)
+      VALUES (?, ?, 'CREATOR', 'ACTIVE', 500, ?)
+      ON CONFLICT(user_id) DO UPDATE SET balance = excluded.balance, updated_at = excluded.updated_at
+    `).run(userId, newBalance, new Date().toISOString());
+
+    db.prepare(`
+      INSERT INTO credit_transactions (id, user_id, amount, balance_after, type, description, project_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(Math.random().toString(36).substring(2), userId, -amount, newBalance, type, description, projectId || null, new Date().toISOString());
+  } catch (err) {
+    console.warn('[deductUserCredits] Error:', err);
+  }
 
   return true;
 }
