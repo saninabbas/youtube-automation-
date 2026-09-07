@@ -9,12 +9,27 @@ export async function GET(request: Request, { params }: { params: any }) {
   try {
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
+    if (!id) {
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
+    }
+
     const user = await getCurrentUser(request);
     const userId = user ? user.id : DEFAULT_USER_ID;
-
     const db = getDb();
+    const now = new Date().toISOString();
 
-    // Multi-tenant check: project retrieval with channel fallback
+    // 1. Ensure user has a valid channel in database
+    let userChannel = db.prepare('SELECT id FROM channels WHERE user_id = ? LIMIT 1').get(userId) as { id: string } | undefined;
+    if (!userChannel) {
+      userChannel = db.prepare('SELECT id FROM channels LIMIT 1').get() as { id: string } | undefined;
+    }
+    const channelId = userChannel ? userChannel.id : `chan_${userId.substring(4)}`;
+    db.prepare(`
+      INSERT OR IGNORE INTO channels (id, user_id, name, niche, language, voice, target_duration_minutes, visual_style, subtitle_style, intro_style, outro_cta, publishing_platform, content_rules, created_at, updated_at)
+      VALUES (?, ?, 'Creator Studio', 'AI & Tech', 'en', 'en-US-ChristopherNeural', 3, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Hook', 'Subscribe for more breakdowns', 'YouTube', 'Professional studio pacing', ?, ?)
+    `).run(channelId, userId, now, now);
+
+    // 2. Fetch project
     let project = db
       .prepare(
         `SELECT p.*, 
@@ -28,36 +43,26 @@ export async function GET(request: Request, { params }: { params: any }) {
                 COALESCE(c.default_visibility, 'PRIVATE') as channel_default_visibility
          FROM content_projects p 
          LEFT JOIN channels c ON p.channel_id = c.id 
-         WHERE p.id = ? AND (p.user_id = ? OR p.user_id = 'usr_customer_default' OR p.user_id IS NULL OR ? = 'usr_admin')`
+         WHERE p.id = ?`
       )
-      .get(id, userId, userId) as (ContentProject & {
-        channel_name: string;
-        channel_niche: string;
-        channel_voice: string;
-        channel_voice_speed: string;
-        channel_visual_style: string;
-        channel_subtitle_style: string;
-        channel_platform: string;
-        channel_default_visibility: string;
-      }) | undefined;
+      .get(id) as any;
 
-    // If project was lost during a serverless cold restart, auto-recover it
+    // 3. Auto-recover if missing from cold reset
     if (!project) {
-      const now = new Date().toISOString();
       const defaultTopic = 'Natural Ways to Lower Blood Pressure After 50';
       db.prepare(`
-        INSERT OR IGNORE INTO content_projects (
+        INSERT OR REPLACE INTO content_projects (
           id, user_id, channel_id, topic, target_length_minutes, preset,
           language, platform, visibility, status, current_stage,
           publishing_status, auto_publish, created_at, updated_at
-        ) VALUES (?, ?, 'chan_default', ?, 3, 'STANDARD', 'en', 'YouTube', 'PRIVATE', 'PENDING', 'SCRIPT', 'READY', 0, ?, ?)
-      `).run(id, userId, defaultTopic, now, now);
+        ) VALUES (?, ?, ?, ?, 3, 'STANDARD', 'en', 'YouTube', 'PRIVATE', 'DRAFT', 'SCRIPT', 'READY', 0, ?, ?)
+      `).run(id, userId, channelId, defaultTopic, now, now);
 
       project = db
         .prepare(
           `SELECT p.*, 
                   COALESCE(c.name, 'Creator Studio') as channel_name, 
-                  COALESCE(c.niche, 'Health & Wellness') as channel_niche, 
+                  COALESCE(c.niche, 'AI & Tech') as channel_niche, 
                   COALESCE(c.voice, 'en-US-ChristopherNeural') as channel_voice,
                   COALESCE(c.voice_speed, '1.0x') as channel_voice_speed, 
                   COALESCE(c.visual_style, 'Cinematic High-Contrast') as channel_visual_style,
