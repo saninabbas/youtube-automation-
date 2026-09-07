@@ -4,9 +4,10 @@ import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: any }) {
   try {
-    const { id } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
     const user = await getCurrentUser(request);
     if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
@@ -25,9 +26,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: any }) {
   try {
-    const { id } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
     const user = await getCurrentUser(request);
     if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 

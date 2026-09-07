@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 
 interface StageInfo {
@@ -84,8 +85,9 @@ interface ProjectData {
   };
 }
 
-export default function VideoStudioPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function VideoStudioPage({ params }: { params?: any }) {
+  const routeParams = useParams();
+  const id = (routeParams?.id as string) || (params?.id as string) || '';
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const toast = useToast();
 

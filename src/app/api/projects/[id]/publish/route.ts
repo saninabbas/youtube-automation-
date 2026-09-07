@@ -7,9 +7,10 @@ import { getCurrentUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: any }) {
   try {
-    const { id } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
     const user = await getCurrentUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
