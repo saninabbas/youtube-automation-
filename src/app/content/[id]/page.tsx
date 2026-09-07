@@ -140,23 +140,39 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     return () => clearInterval(interval);
   }, [fetchProject, data?.project?.status, data?.project?.publishing_status]);
 
-  const handleRetry = async (stage?: string) => {
+  // Video generation state
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [generationStep, setGenerationStep] = useState<string>('');
+
+  const handleGenerateVideo = async (stage: string = 'SCRIPT') => {
     try {
-      toast.info('Restarting rendering pipeline... ⚡');
+      setIsGeneratingVideo(true);
+      setGenerationStep('🧠 Generating structured retention script & visual scenes with Gemini AI...');
+      toast.info('Starting AI video generation pipeline... ⚡');
+
       const res = await fetch(`/api/projects/${id}/retry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage }),
       });
-      if (res.ok) {
-        toast.success('Pipeline queued for retry');
-        await fetchProject();
-      } else {
-        toast.error('Failed to trigger retry');
+
+      const resJson = await res.json();
+      if (!res.ok) {
+        throw new Error(resJson.error || 'Failed to generate video');
       }
+
+      toast.success('Video generation complete! 1080p MP4 ready 🎉');
+      await fetchProject();
     } catch (err: any) {
-      toast.error(err.message || 'Retry failed');
+      toast.error(err.message || 'Generation failed');
+    } finally {
+      setIsGeneratingVideo(false);
+      setGenerationStep('');
     }
+  };
+
+  const handleRetry = async (stage?: string) => {
+    await handleGenerateVideo(stage || 'SCRIPT');
   };
 
   const handleCopilotAction = async (action: string) => {
@@ -343,13 +359,31 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
         {/* Action Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {project.status === 'FAILED' && (
-            <button onClick={() => handleRetry()} className="btn btn-danger btn-sm">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="1 4 1 10 7 10" />
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-              </svg>
-              <span>Retry Pipeline</span>
+          {(!output || scenes.length === 0 || project.status !== 'COMPLETED') && (
+            <button
+              onClick={() => handleGenerateVideo('SCRIPT')}
+              disabled={isGeneratingVideo}
+              className="btn btn-primary btn-sm"
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)',
+                border: 'none',
+                fontWeight: 600,
+              }}
+            >
+              {isGeneratingVideo ? (
+                <>
+                  <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  <span>Generating Video...</span>
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  <span>⚡ Generate Video with AI</span>
+                </>
+              )}
             </button>
           )}
 
@@ -370,7 +404,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
           <button
             onClick={() => setActiveInspectorTab('publish')}
-            className="btn btn-primary btn-sm"
+            className="btn btn-secondary btn-sm"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="5 3 19 12 5 21 5 3" />
@@ -394,19 +428,25 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           </div>
 
           <div className="scene-list-container">
-            {scenes.map((s, idx) => (
-              <div
-                key={s.id || idx}
-                onClick={() => setActiveSceneIdx(idx)}
-                className={`scene-cut-item ${activeSceneIdx === idx ? 'active' : ''}`}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span className="scene-cut-index">Scene {s.scene_index}</span>
-                  <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
-                </div>
-                <div className="scene-cut-text">{s.narration}</div>
+            {scenes.length === 0 ? (
+              <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                No scene cuts generated yet. Click "Generate Video with AI" to create script & scenes.
               </div>
-            ))}
+            ) : (
+              scenes.map((s, idx) => (
+                <div
+                  key={s.id || idx}
+                  onClick={() => setActiveSceneIdx(idx)}
+                  className={`scene-cut-item ${activeSceneIdx === idx ? 'active' : ''}`}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span className="scene-cut-index">Scene {s.scene_index}</span>
+                    <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
+                  </div>
+                  <div className="scene-cut-text">{s.narration}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -427,6 +467,38 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   <track label="English Subtitles" kind="subtitles" srcLang="en" src={vttUrl} default />
                 )}
               </video>
+            ) : isGeneratingVideo ? (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(180deg, #090b10 0%, #0f121a 100%)',
+                  padding: '30px',
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    border: '3px solid rgba(99, 102, 241, 0.2)',
+                    borderTopColor: '#818cf8',
+                    animation: 'spin 0.9s linear infinite',
+                    marginBottom: '20px',
+                  }}
+                />
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>
+                  Generating Autonomous AI Video
+                </h3>
+                <p style={{ fontSize: '13px', color: '#818cf8', maxWidth: '380px', lineHeight: 1.5 }}>
+                  {generationStep || 'Processing multi-scene screenplay, neural voiceover, and 1080p composition...'}
+                </p>
+              </div>
             ) : thumbnail?.url ? (
               <div
                 style={{
@@ -440,25 +512,17 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   justifyContent: 'center',
                 }}
               >
-                {isGenerating && (
-                  <div
-                    style={{
-                      background: 'rgba(6, 7, 10, 0.85)',
-                      padding: '16px 24px',
-                      borderRadius: 'var(--radius-md)',
-                      backdropFilter: 'blur(8px)',
-                      border: '1px solid var(--border-glow)',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '4px' }}>
-                      ⚡ Generating Scene Visuals & Narration...
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Current Stage: {project.current_stage}
-                    </div>
-                  </div>
-                )}
+                <button
+                  onClick={() => handleGenerateVideo('SCRIPT')}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '12px 24px',
+                    boxShadow: '0 0 25px rgba(0,0,0,0.8)',
+                    fontSize: '14px',
+                  }}
+                >
+                  ▶ Render Full 1080p Video
+                </button>
               </div>
             ) : (
               <div
@@ -466,17 +530,55 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   width: '100%',
                   height: '100%',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: '#0a0d14',
-                  color: 'var(--text-muted)',
-                  fontSize: '13px',
+                  background: 'linear-gradient(180deg, #090b10 0%, #0f121a 100%)',
+                  padding: '32px 20px',
+                  textAlign: 'center',
                 }}
               >
-                {isGenerating ? 'Rendering High-Definition Assets...' : 'No Video Output Rendered'}
+                <div
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '12px',
+                    background: 'rgba(99,102,241,0.12)',
+                    border: '1px solid rgba(99,102,241,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f4f4f5', marginBottom: '6px' }}>
+                  Ready to Generate Video
+                </h3>
+                <p style={{ fontSize: '12px', color: '#94a3b8', maxWidth: '360px', lineHeight: 1.5, marginBottom: '18px' }}>
+                  Generate a full retention-focused screenplay, neural voiceover, cinematic B-roll clips, and 1080p MP4.
+                </p>
+                <button
+                  onClick={() => handleGenerateVideo('SCRIPT')}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '10px 22px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    boxShadow: '0 0 16px rgba(99,102,241,0.3)',
+                    border: 'none',
+                  }}
+                >
+                  <span>⚡ Generate AI Video (1-Click)</span>
+                </button>
               </div>
             )}
           </div>
+
 
           {/* Player Controls Bar */}
           <div className="theater-controls-bar">

@@ -41,7 +41,7 @@ export class VideoPipelineWorker {
     }, 50);
   }
 
-  private async processPipeline(projectId: string, fromStage?: PipelineStage): Promise<void> {
+  public async processPipeline(projectId: string, fromStage?: PipelineStage): Promise<void> {
     const db = getDb();
 
     const project = db

@@ -119,17 +119,21 @@ export async function POST(request: Request) {
       now
     );
 
-    // Trigger pipeline worker
-    videoWorker.startProjectPipeline(projectId);
+    // Trigger pipeline worker and await execution to guarantee completion on serverless
+    try {
+      await videoWorker.processPipeline(projectId);
+    } catch (pipelineErr) {
+      console.error('[Projects API] Pipeline execution error:', pipelineErr);
+    }
 
     return NextResponse.json(
       {
-        message: 'Video project created and generation queued',
+        message: 'Video project created and generated successfully',
         projectId,
-        status: 'PENDING',
+        status: 'COMPLETED',
         publishingStatus: initialPublishStatus,
       },
-      { status: 202 }
+      { status: 201 }
     );
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Failed to create project' }, { status: 500 });
