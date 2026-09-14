@@ -41,7 +41,7 @@ export class VideoPipelineWorker {
     }, 50);
   }
 
-  public async processPipeline(projectId: string, fromStage?: PipelineStage): Promise<void> {
+  public async processPipeline(projectId: string, fromStage?: PipelineStage, singleStageOnly: boolean = false): Promise<void> {
     const db = getDb();
 
     const project = db
@@ -100,8 +100,9 @@ export class VideoPipelineWorker {
     ).run('PROCESSING', PIPELINE_STAGES[startIndex], now, projectId);
 
     const pipelineStartTime = Date.now();
+    const endIndex = singleStageOnly ? Math.min(startIndex + 1, PIPELINE_STAGES.length) : PIPELINE_STAGES.length;
 
-    for (let i = startIndex; i < PIPELINE_STAGES.length; i++) {
+    for (let i = startIndex; i < endIndex; i++) {
       const stage = PIPELINE_STAGES[i];
       const stageStartTime = new Date().toISOString();
 
@@ -137,6 +138,15 @@ export class VideoPipelineWorker {
 
         return; // Halt pipeline on failure
       }
+    }
+
+    // If only executing a single intermediate stage, update next stage and return early
+    if (singleStageOnly && endIndex < PIPELINE_STAGES.length) {
+      const nextStage = PIPELINE_STAGES[endIndex];
+      db.prepare(
+        'UPDATE content_projects SET status = ?, current_stage = ?, updated_at = ? WHERE id = ?'
+      ).run('PROCESSING', nextStage, new Date().toISOString(), projectId);
+      return;
     }
 
     // Collect telemetry upon completion
@@ -231,17 +241,28 @@ export class VideoPipelineWorker {
       }
 
       case 'VOICE': {
-        const scriptAsset = db
+        let scriptAsset = db
           .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'script' ORDER BY created_at DESC LIMIT 1")
           .get(project.id) as GeneratedAsset | undefined;
 
         if (!scriptAsset) {
-          throw new Error('Script asset missing for voice synthesis');
+          await this.executeStage('SCRIPT', project, channel);
+          scriptAsset = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'script' ORDER BY created_at DESC LIMIT 1")
+            .get(project.id) as GeneratedAsset | undefined;
         }
 
-        const scriptData = await storage.getObject(scriptAsset.storage_key);
+        let scriptData = scriptAsset ? await storage.getObject(scriptAsset.storage_key) : null;
         if (!scriptData) {
-          throw new Error('Script data missing from storage');
+          await this.executeStage('SCRIPT', project, channel);
+          scriptAsset = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'script' ORDER BY created_at DESC LIMIT 1")
+            .get(project.id) as GeneratedAsset | undefined;
+          scriptData = scriptAsset ? await storage.getObject(scriptAsset.storage_key) : null;
+        }
+
+        if (!scriptData) {
+          throw new Error('Script data could not be retrieved');
         }
 
         const script: ScriptStructure = JSON.parse(scriptData.toString('utf8'));
@@ -285,15 +306,26 @@ export class VideoPipelineWorker {
       }
 
       case 'SCENES': {
-        const scriptAsset = db
+        let scriptAsset = db
           .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'script' ORDER BY created_at DESC LIMIT 1")
           .get(project.id) as GeneratedAsset | undefined;
 
         if (!scriptAsset) {
-          throw new Error('Script asset missing for scene generation');
+          await this.executeStage('SCRIPT', project, channel);
+          scriptAsset = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'script' ORDER BY created_at DESC LIMIT 1")
+            .get(project.id) as GeneratedAsset | undefined;
         }
 
-        const scriptData = await storage.getObject(scriptAsset.storage_key);
+        let scriptData = scriptAsset ? await storage.getObject(scriptAsset.storage_key) : null;
+        if (!scriptData) {
+          await this.executeStage('SCRIPT', project, channel);
+          scriptAsset = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'script' ORDER BY created_at DESC LIMIT 1")
+            .get(project.id) as GeneratedAsset | undefined;
+          scriptData = scriptAsset ? await storage.getObject(scriptAsset.storage_key) : null;
+        }
+
         if (!scriptData) {
           throw new Error('Script content could not be read from storage');
         }
@@ -354,9 +386,14 @@ export class VideoPipelineWorker {
       }
 
       case 'VIDEO': {
-        const scenes = db
+        let scenes = db
           .prepare('SELECT * FROM video_scenes WHERE project_id = ? ORDER BY scene_index ASC')
           .all(project.id) as VideoScene[];
+
+        if (scenes.length === 0) {
+          await this.executeStage('SCENES', project, channel);
+          scenes = db.prepare('SELECT * FROM video_scenes WHERE project_id = ? ORDER BY scene_index ASC').all(project.id) as VideoScene[];
+        }
 
         if (scenes.length === 0) {
           throw new Error('No scenes found for video clip generation');
@@ -365,22 +402,27 @@ export class VideoPipelineWorker {
         // Remove old clip assets on retry
         db.prepare("DELETE FROM generated_assets WHERE project_id = ? AND asset_type = 'clip'").run(project.id);
 
-        for (const scene of scenes) {
-          const clips = await videoProvider.generateVideoClipsForScene({
-            projectId: project.id,
-            sceneId: scene.id,
-            sceneIndex: scene.scene_index,
-            visualPrompt: scene.visual_prompt,
-            durationSec: scene.estimated_duration_sec,
-            niche: channel.niche,
-            visualStyle: channel.visual_style,
-            environment: scene.environment || undefined,
-            cameraMovement: scene.camera_movement || undefined,
-            lighting: scene.lighting || undefined,
-            colorStyle: scene.color_style || undefined,
-            continuityNotes: scene.continuity_notes || undefined,
-          });
+        const sceneClipsResults = await Promise.all(
+          scenes.map(async (scene) => {
+            const clips = await videoProvider.generateVideoClipsForScene({
+              projectId: project.id,
+              sceneId: scene.id,
+              sceneIndex: scene.scene_index,
+              visualPrompt: scene.visual_prompt,
+              durationSec: scene.estimated_duration_sec,
+              niche: channel.niche,
+              visualStyle: channel.visual_style,
+              environment: scene.environment || undefined,
+              cameraMovement: scene.camera_movement || undefined,
+              lighting: scene.lighting || undefined,
+              colorStyle: scene.color_style || undefined,
+              continuityNotes: scene.continuity_notes || undefined,
+            });
+            return { scene, clips };
+          })
+        );
 
+        for (const { scene, clips } of sceneClipsResults) {
           for (const clip of clips) {
             db.prepare(
               `INSERT INTO generated_assets (id, project_id, scene_id, asset_type, storage_key, url, duration_sec, metadata_json, created_at)
@@ -402,9 +444,14 @@ export class VideoPipelineWorker {
       }
 
       case 'SUBTITLES': {
-        const scenes = db
+        let scenes = db
           .prepare('SELECT * FROM video_scenes WHERE project_id = ? ORDER BY scene_index ASC')
           .all(project.id) as VideoScene[];
+
+        if (scenes.length === 0) {
+          await this.executeStage('SCENES', project, channel);
+          scenes = db.prepare('SELECT * FROM video_scenes WHERE project_id = ? ORDER BY scene_index ASC').all(project.id) as VideoScene[];
+        }
 
         const cues = subtitleProvider.generateCues(
           scenes.map((s) => ({
@@ -441,17 +488,31 @@ export class VideoPipelineWorker {
       }
 
       case 'FINAL_VIDEO': {
-        const clipAssets = db
+        let clipAssets = db
           .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'clip' ORDER BY created_at ASC")
           .all(project.id) as GeneratedAsset[];
+
+        if (clipAssets.length === 0) {
+          await this.executeStage('VIDEO', project, channel);
+          clipAssets = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'clip' ORDER BY created_at ASC")
+            .all(project.id) as GeneratedAsset[];
+        }
 
         if (clipAssets.length === 0) {
           throw new Error('No video clips found for final video composition');
         }
 
-        const audioAsset = db
+        let audioAsset = db
           .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'audio' ORDER BY created_at DESC LIMIT 1")
           .get(project.id) as GeneratedAsset | undefined;
+
+        if (!audioAsset) {
+          await this.executeStage('VOICE', project, channel);
+          audioAsset = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'audio' ORDER BY created_at DESC LIMIT 1")
+            .get(project.id) as GeneratedAsset | undefined;
+        }
 
         if (!audioAsset) {
           throw new Error('Voiceover audio missing for final video composition');

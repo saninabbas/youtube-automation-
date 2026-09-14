@@ -55,6 +55,7 @@ export class StockVideoEngine {
     try {
       const url = `https://coverr.co/api/videos?query=${encodeURIComponent(query)}&page=1`;
       const res = await fetch(url, {
+        signal: AbortSignal.timeout(2000),
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'application/json',

@@ -81,14 +81,15 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     }
 
     const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-    const sentenceLimit = isServerless ? 8 : 30;
+    const targetSentences = sentences.slice(0, isServerless ? 3 : 15);
     const audioBuffers: Buffer[] = [];
-    for (const sentence of sentences.slice(0, sentenceLimit)) {
-      if (!sentence.trim()) continue;
+
+    const fetchPromises = targetSentences.map(async (sentence) => {
+      if (!sentence.trim()) return null;
       try {
         const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(sentence)}`;
         const res = await fetch(url, {
-          signal: AbortSignal.timeout(3000),
+          signal: AbortSignal.timeout(2500),
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           },
@@ -96,10 +97,15 @@ class MultiEngineVoiceProvider implements VoiceProvider {
 
         if (res.ok) {
           const arrayBuf = await res.arrayBuffer();
-          audioBuffers.push(Buffer.from(arrayBuf));
-          await this.sleep(30);
+          return Buffer.from(arrayBuf);
         }
       } catch {}
+      return null;
+    });
+
+    const results = await Promise.all(fetchPromises);
+    for (const b of results) {
+      if (b) audioBuffers.push(b);
     }
 
     if (audioBuffers.length === 0) {

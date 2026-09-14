@@ -49,18 +49,24 @@ export async function POST(request: Request, { params }: { params: any }) {
     }
 
     let retryStage: PipelineStage = 'SCRIPT';
+    let singleStageOnly = false;
 
     try {
       const body = await request.json();
-      if (body && body.stage && PIPELINE_STAGES.includes(body.stage)) {
-        retryStage = body.stage;
+      if (body) {
+        if (body.stage && PIPELINE_STAGES.includes(body.stage)) {
+          retryStage = body.stage;
+        }
+        if (typeof body.singleStageOnly === 'boolean') {
+          singleStageOnly = body.singleStageOnly;
+        }
       }
     } catch {
       // Body not provided, default to SCRIPT
     }
 
     // Execute pipeline synchronously on serverless to guarantee completion
-    await videoWorker.processPipeline(id, retryStage);
+    await videoWorker.processPipeline(id, retryStage, singleStageOnly);
 
     const updatedProject = db
       .prepare('SELECT * FROM content_projects WHERE id = ?')

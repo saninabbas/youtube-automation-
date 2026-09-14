@@ -144,30 +144,46 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [generationStep, setGenerationStep] = useState<string>('');
 
-  const handleGenerateVideo = async (stage: string = 'SCRIPT') => {
+  const handleGenerateVideo = async (startStage: string = 'SCRIPT') => {
     try {
       setIsGeneratingVideo(true);
-      setGenerationStep('🧠 Generating structured retention script & visual scenes with Gemini AI...');
       toast.info('Starting AI video generation pipeline... ⚡');
 
-      const res = await fetch(`/api/projects/${id}/retry`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage }),
-      });
+      const pipelineStages: Array<{ stage: string; label: string }> = [
+        { stage: 'SCRIPT', label: '🧠 Generating structured script with AI...' },
+        { stage: 'VOICE', label: '🎙️ Synthesizing studio voiceover narration...' },
+        { stage: 'SCENES', label: '📐 Calibrating visual scene storyboard...' },
+        { stage: 'VIDEO', label: '🎬 Creating 1080p cinematic video clips...' },
+        { stage: 'SUBTITLES', label: '📝 Generating synchronized subtitle captions...' },
+        { stage: 'FINAL_VIDEO', label: '🎞️ Assembling final 1080p MP4 composition...' },
+        { stage: 'THUMBNAIL', label: '🎨 Generating high-CTR video thumbnail...' },
+      ];
 
-      const resJson = await res.json();
-      if (!res.ok) {
-        throw new Error(resJson.error || 'Failed to generate video');
+      const startIdx = pipelineStages.findIndex((s) => s.stage === startStage);
+      const executionStages = startIdx >= 0 ? pipelineStages.slice(startIdx) : pipelineStages;
+
+      for (const item of executionStages) {
+        setGenerationStep(item.label);
+        const res = await fetch(`/api/projects/${id}/retry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stage: item.stage, singleStageOnly: true }),
+        });
+
+        const resJson = await res.json();
+        if (!res.ok) {
+          throw new Error(resJson.error || `Failed during ${item.stage} stage`);
+        }
+        await fetchProject();
       }
 
       toast.success('Video generation complete! 1080p MP4 ready 🎉');
-      await fetchProject();
     } catch (err: any) {
       toast.error(err.message || 'Generation failed');
     } finally {
       setIsGeneratingVideo(false);
       setGenerationStep('');
+      await fetchProject();
     }
   };
 
