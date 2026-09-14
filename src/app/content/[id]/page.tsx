@@ -348,7 +348,11 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const { project, stages, scenes, output, thumbnail, metadata } = data;
   const isGenerating = project.status === 'PROCESSING' || project.status === 'PENDING';
   const activeScene = scenes[activeSceneIdx] || scenes[0];
-  const finalVideoUrl = output?.url && output.url.startsWith('http') ? output.url : output ? `/api/assets/${output.storage_key}` : null;
+  const finalVideoUrl = output?.url && output.url.startsWith('http')
+    ? output.url
+    : output
+    ? `/api/assets/${output.storage_key}?topic=${encodeURIComponent(project.topic)}`
+    : null;
   const srtAsset = data.assets.find((a) => a.asset_type === 'subtitles');
   const vttUrl = srtAsset ? `/api/assets/subtitles/${project.id}/captions.vtt` : null;
 
@@ -493,7 +497,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
           {output && (
             <a
-              href={`/api/assets/${output.storage_key}`}
+              href={`/api/assets/${output.storage_key}?topic=${encodeURIComponent(project.topic)}`}
               download={`${project.topic.replace(/[^a-zA-Z0-9]/g, '_')}.mp4`}
               className="btn btn-secondary btn-sm"
             >

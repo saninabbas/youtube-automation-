@@ -44,13 +44,17 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
       try {
         const parts = key.split('/');
         const projectId = parts.length > 1 ? parts[1] : '';
-        if (projectId) {
-          const db = getDb();
-          const proj = db.prepare('SELECT topic FROM content_projects WHERE id = ?').get(projectId) as any;
-          const topicUrl = getTopicVideoCdnUrl(proj?.topic || '');
-          if (topicUrl) {
-            return NextResponse.redirect(topicUrl, 307);
-          }
+        let topic = request.nextUrl.searchParams.get('topic') || '';
+        if (!topic && projectId) {
+          try {
+            const db = getDb();
+            const proj = db.prepare('SELECT topic FROM content_projects WHERE id = ?').get(projectId) as any;
+            topic = proj?.topic || '';
+          } catch (_) {}
+        }
+        const topicUrl = getTopicVideoCdnUrl(topic);
+        if (topicUrl) {
+          return NextResponse.redirect(topicUrl, 307);
         }
       } catch (topicErr) {
         console.warn('Topic video redirect error:', topicErr);
