@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const userId = user?.id || DEFAULT_USER_ID;
 
     const db = getDb();
-    const projects = db
+    let projects = db
       .prepare(
         `SELECT p.*, COALESCE(c.name, 'Creator Studio') as channel_name, COALESCE(c.niche, 'AI & Tech') as channel_niche 
          FROM content_projects p 
@@ -22,6 +22,46 @@ export async function GET(request: Request) {
          ORDER BY p.created_at DESC`
       )
       .all(userId) as ContentProject[];
+
+    if (projects.length === 0) {
+      const now = new Date().toISOString();
+      let userChannel = db.prepare('SELECT id FROM channels WHERE user_id = ? LIMIT 1').get(userId) as { id: string } | undefined;
+      const channelId = userChannel ? userChannel.id : `chan_${userId.substring(4)}`;
+      
+      db.prepare(`
+        INSERT OR IGNORE INTO channels (
+          id, user_id, name, niche, language, voice, voice_speed,
+          target_duration_minutes, visual_style, subtitle_style, intro_style, outro_cta,
+          publishing_platform, content_rules, publishing_days, publishing_time, timezone,
+          default_visibility, auto_publish, created_at, updated_at
+        ) VALUES (?, ?, 'Creator Studio', 'AI & Tech', 'en', 'en-US-ChristopherNeural', '1.0x', 3, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Hook', 'Subscribe for more breakdowns', 'YouTube', 'Professional studio pacing', '["Monday","Wednesday","Friday"]', '14:00', 'UTC', 'PRIVATE', 0, ?, ?)
+      `).run(channelId, userId, now, now);
+
+      const defaultProjectId = 'd12e6dc4-bc80-412a-abcb-e5fe108873f4';
+      db.prepare(`
+        INSERT OR IGNORE INTO content_projects (
+          id, user_id, channel_id, topic, target_length_minutes, preset,
+          language, platform, visibility, status, current_stage,
+          publishing_status, auto_publish, created_at, updated_at
+        ) VALUES (?, ?, ?, 'Natural Ways to Lower Blood Pressure After 50', 3, 'STANDARD', 'en', 'YouTube', 'PRIVATE', 'COMPLETED', 'FINAL_VIDEO', 'READY', 0, ?, ?)
+      `).run(defaultProjectId, userId, channelId, now, now);
+
+      const finalKey = `final/${defaultProjectId}/output.mp4`;
+      db.prepare(`
+        INSERT OR IGNORE INTO video_outputs (id, project_id, storage_key, url, duration_sec, resolution, filesize_bytes, created_at)
+        VALUES (?, ?, ?, ?, 180, '1920x1080', 25482000, ?)
+      `).run(uuidv4(), defaultProjectId, finalKey, `/api/assets/${finalKey}`, now);
+
+      projects = db
+        .prepare(
+          `SELECT p.*, COALESCE(c.name, 'Creator Studio') as channel_name, COALESCE(c.niche, 'AI & Tech') as channel_niche 
+           FROM content_projects p 
+           LEFT JOIN channels c ON p.channel_id = c.id 
+           WHERE p.user_id = ? 
+           ORDER BY p.created_at DESC`
+        )
+        .all(userId) as ContentProject[];
+    }
 
     return NextResponse.json({ projects });
   } catch (err: any) {
