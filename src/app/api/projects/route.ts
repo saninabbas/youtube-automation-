@@ -15,9 +15,9 @@ export async function GET(request: Request) {
     const db = getDb();
     const projects = db
       .prepare(
-        `SELECT p.*, c.name as channel_name, c.niche as channel_niche 
+        `SELECT p.*, COALESCE(c.name, 'Creator Studio') as channel_name, COALESCE(c.niche, 'AI & Tech') as channel_niche 
          FROM content_projects p 
-         JOIN channels c ON p.channel_id = c.id 
+         LEFT JOIN channels c ON p.channel_id = c.id 
          WHERE p.user_id = ? 
          ORDER BY p.created_at DESC`
       )
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const userId = user?.id || DEFAULT_USER_ID;
 
     const body = await request.json();
-    const {
+    let {
       channel_id,
       topic,
       preset = 'STANDARD',
@@ -48,15 +48,17 @@ export async function POST(request: Request) {
       auto_publish = 0,
     } = body;
 
+    const db = getDb();
+    const now = new Date().toISOString();
+
+    // Auto-resolve channel_id if missing
     if (!channel_id) {
-      return NextResponse.json({ error: 'Channel is required' }, { status: 400 });
+      const existing = db.prepare('SELECT id FROM channels WHERE user_id = ? LIMIT 1').get(userId) as { id: string } | undefined;
+      channel_id = existing ? existing.id : `chan_${userId.substring(4)}`;
     }
     if (!topic || !topic.trim()) {
       return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
     }
-
-    const db = getDb();
-    const now = new Date().toISOString();
 
     // Ensure user record exists
     db.prepare(`

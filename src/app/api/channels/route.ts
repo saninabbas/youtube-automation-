@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const userId = user?.id || DEFAULT_USER_ID;
 
     const db = getDb();
-    const channels = db
+    let channels = db
       .prepare(
         `SELECT c.*, COUNT(p.id) as video_count 
          FROM channels c 
@@ -23,6 +23,30 @@ export async function GET(request: Request) {
          ORDER BY c.created_at DESC`
       )
       .all(userId) as Channel[];
+
+    if (channels.length === 0) {
+      const now = new Date().toISOString();
+      const defaultChanId = `chan_${userId.substring(4)}`;
+      db.prepare(`
+        INSERT OR IGNORE INTO channels (
+          id, user_id, name, niche, language, voice, voice_speed,
+          target_duration_minutes, visual_style, subtitle_style, intro_style, outro_cta,
+          publishing_platform, content_rules, publishing_days, publishing_time, timezone,
+          default_visibility, auto_publish, created_at, updated_at
+        ) VALUES (?, ?, 'Creator Studio', 'AI & Tech', 'en', 'en-US-ChristopherNeural', '1.0x', 5, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Dramatic Question', 'Subscribe to the channel and leave your thoughts below', 'YouTube', 'Engaging, clear, professional tone', '["Monday","Wednesday","Friday"]', '14:00', 'UTC', 'PRIVATE', 0, ?, ?)
+      `).run(defaultChanId, userId, now, now);
+
+      channels = db
+        .prepare(
+          `SELECT c.*, COUNT(p.id) as video_count 
+           FROM channels c 
+           LEFT JOIN content_projects p ON c.id = p.channel_id 
+           WHERE c.user_id = ? 
+           GROUP BY c.id 
+           ORDER BY c.created_at DESC`
+        )
+        .all(userId) as Channel[];
+    }
 
     return NextResponse.json({ channels });
   } catch (err: any) {
