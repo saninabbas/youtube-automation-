@@ -245,3 +245,46 @@ export async function GET(request: Request, { params }: { params: any }) {
     return NextResponse.json({ error: err.message || 'Failed to fetch project details' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request, { params }: { params: any }) {
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
+    if (!id) return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
+
+    const user = await getCurrentUser(request);
+    const userId = user ? user.id : DEFAULT_USER_ID;
+    const body = await request.json();
+    const { topic, channel_id, target_length_minutes } = body;
+
+    const db = getDb();
+    const now = new Date().toISOString();
+
+    if (topic && topic.trim()) {
+      db.prepare(`
+        UPDATE content_projects 
+        SET topic = ?, status = 'DRAFT', current_stage = 'SCRIPT', metadata_json = NULL, updated_at = ? 
+        WHERE id = ?
+      `).run(topic.trim(), now, id);
+
+      // Clean old scenes, outputs, and jobs so new topic generates fresh
+      db.prepare('DELETE FROM video_scenes WHERE project_id = ?').run(id);
+      db.prepare('DELETE FROM video_outputs WHERE project_id = ?').run(id);
+      db.prepare('DELETE FROM video_jobs WHERE project_id = ?').run(id);
+      db.prepare("DELETE FROM generated_assets WHERE project_id = ? AND asset_type IN ('script', 'voice', 'scenes', 'video', 'final_video', 'subtitles', 'thumbnail')").run(id);
+    }
+
+    if (channel_id) {
+      db.prepare('UPDATE content_projects SET channel_id = ?, updated_at = ? WHERE id = ?').run(channel_id, now, id);
+    }
+
+    if (target_length_minutes) {
+      db.prepare('UPDATE content_projects SET target_length_minutes = ?, updated_at = ? WHERE id = ?').run(Number(target_length_minutes), now, id);
+    }
+
+    const updated = db.prepare('SELECT * FROM content_projects WHERE id = ?').get(id);
+    return NextResponse.json({ success: true, project: updated });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Failed to update project' }, { status: 500 });
+  }
+}

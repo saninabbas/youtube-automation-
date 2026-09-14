@@ -143,6 +143,32 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   // Video generation state
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [generationStep, setGenerationStep] = useState<string>('');
+  const [isEditingTopic, setIsEditingTopic] = useState(false);
+  const [editedTopic, setEditedTopic] = useState('');
+  const [savingTopic, setSavingTopic] = useState(false);
+
+  const handleSaveTopic = async () => {
+    if (!editedTopic.trim() || savingTopic) return;
+    try {
+      setSavingTopic(true);
+      toast.info('Updating topic and generating fresh video pipeline... 🚀');
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: editedTopic.trim() }),
+      });
+      const resJson = await res.json();
+      if (!res.ok) throw new Error(resJson.error || 'Failed to update topic');
+      setIsEditingTopic(false);
+      toast.success('Topic updated! Starting video generation... ✨');
+      await fetchProject();
+      handleGenerateVideo('SCRIPT');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save topic');
+    } finally {
+      setSavingTopic(false);
+    }
+  };
 
   const handleGenerateVideo = async (startStage: string = 'SCRIPT') => {
     try {
@@ -358,50 +384,107 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               </span>
             </div>
 
-            <h1
-              style={{
-                fontSize: '16px',
-                fontWeight: 700,
-                color: '#fff',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {project.topic}
-            </h1>
+            {isEditingTopic ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  value={editedTopic}
+                  onChange={(e) => setEditedTopic(e.target.value)}
+                  placeholder="Enter new video topic or prompt..."
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '13px',
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid #6366f1',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    minWidth: '320px',
+                  }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveTopic}
+                  disabled={savingTopic || !editedTopic.trim()}
+                  className="btn btn-primary btn-sm"
+                  style={{ padding: '6px 12px', fontSize: '12px', background: '#6366f1' }}
+                >
+                  {savingTopic ? 'Saving...' : 'Save & Generate Video'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingTopic(false)}
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '6px 8px', fontSize: '12px' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h1
+                  style={{
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: '#fff',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {project.topic}
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditedTopic(project.topic);
+                    setIsEditingTopic(true);
+                  }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '2px 6px', fontSize: '11px', color: 'var(--text-muted)' }}
+                  title="Change this video topic"
+                >
+                  ✏️ Edit Topic
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Action Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {(!output || scenes.length === 0 || project.status !== 'COMPLETED') && (
-            <button
-              onClick={() => handleGenerateVideo('SCRIPT')}
-              disabled={isGeneratingVideo}
-              className="btn btn-primary btn-sm"
-              style={{
-                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)',
-                border: 'none',
-                fontWeight: 600,
-              }}
-            >
-              {isGeneratingVideo ? (
-                <>
-                  <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  <span>Generating Video...</span>
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                  <span>⚡ Generate Video with AI</span>
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => handleGenerateVideo('SCRIPT')}
+            disabled={isGeneratingVideo}
+            className="btn btn-primary btn-sm"
+            style={{
+              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+              boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)',
+              border: 'none',
+              fontWeight: 600,
+            }}
+          >
+            {isGeneratingVideo ? (
+              <>
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <span>Generating Video...</span>
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                <span>{output && project.status === 'COMPLETED' ? '⚡ Re-Generate with AI' : '⚡ Generate Video with AI'}</span>
+              </>
+            )}
+          </button>
+
+          <Link
+            href="/content/new"
+            className="btn btn-secondary btn-sm"
+          >
+            + Create New Video
+          </Link>
 
           {output && (
             <a

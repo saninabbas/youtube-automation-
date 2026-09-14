@@ -408,6 +408,56 @@ function CreateVideoWizardContent() {
                     </select>
                   </div>
                 )}
+
+                {/* PRIMARY ACTION CTA IN STEP 1 - DIRECTLY ACCESSIBLE */}
+                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(99, 102, 241, 0.05)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting || !topic.trim()}
+                    className="btn btn-primary"
+                    style={{
+                      width: '100%',
+                      padding: '14px 20px',
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                      boxShadow: '0 0 24px rgba(99, 102, 241, 0.45)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: topic.trim() && !submitting ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    {submitting ? (
+                      <>
+                        <span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        <span>Initializing AI Video Pipeline...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡ Generate 1080p Video Now</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Selected: <strong>{format === 'SHORT_VERTICAL' ? '9:16 Shorts' : '16:9 Landscape'}</strong> • {durationMinutes}m
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveStep(2)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '12px' }}
+                    >
+                      Customize Settings ➔
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -463,6 +513,25 @@ function CreateVideoWizardContent() {
                   </div>
                 ))}
               </div>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button type="button" onClick={() => setActiveStep(1)} className="btn btn-secondary btn-sm">
+                  ← Back to Topic
+                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" onClick={() => setActiveStep(3)} className="btn btn-secondary btn-sm">
+                    Next: Style ➔
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting || !topic.trim()}
+                    className="btn btn-primary btn-sm"
+                    style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', border: 'none', fontWeight: 600 }}
+                  >
+                    ⚡ Generate Video
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -510,6 +579,26 @@ function CreateVideoWizardContent() {
                     </span>
                   </div>
                 ))}
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button type="button" onClick={() => setActiveStep(2)} className="btn btn-secondary btn-sm">
+                  ← Back to Format
+                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" onClick={() => setActiveStep(4)} className="btn btn-secondary btn-sm">
+                    Next: Voice ➔
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting || !topic.trim()}
+                    className="btn btn-primary btn-sm"
+                    style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', border: 'none', fontWeight: 600 }}
+                  >
+                    ⚡ Generate Video
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -599,6 +688,29 @@ function CreateVideoWizardContent() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button type="button" onClick={() => setActiveStep(3)} className="btn btn-secondary btn-sm">
+                  ← Back to Style
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={submitting || !topic.trim()}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '10px 22px',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+                    border: 'none',
+                    cursor: topic.trim() && !submitting ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {submitting ? '⏳ Initializing Pipeline...' : '⚡ Generate 1080p Video Now'}
+                </button>
               </div>
             </div>
           )}
