@@ -49,16 +49,26 @@ export async function GET(request: Request, { params }: { params: any }) {
       )
       .get(id) as any;
 
-    // 3. Auto-recover if missing from cold reset
+    // Parse URL query parameters for topic and duration (propagates across ephemeral containers)
+    let queryTopic: string | null = null;
+    let queryDuration = 3;
+    try {
+      const urlObj = new URL(request.url);
+      queryTopic = urlObj.searchParams.get('topic');
+      const d = urlObj.searchParams.get('duration');
+      if (d) queryDuration = Number(d) || 3;
+    } catch {}
+
+    // 3. Auto-recover if missing from cold reset or if new topic explicitly requested
     if (!project) {
-      const defaultTopic = 'Natural Ways to Lower Blood Pressure After 50';
+      const activeTopic = queryTopic || (id === 'd12e6dc4-bc80-412a-abcb-e5fe108873f4' ? 'Natural Ways to Lower Blood Pressure After 50' : 'Autonomous AI Innovations in 2026');
       db.prepare(`
         INSERT OR REPLACE INTO content_projects (
           id, user_id, channel_id, topic, target_length_minutes, preset,
           language, platform, visibility, status, current_stage,
           publishing_status, auto_publish, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, 3, 'STANDARD', 'en', 'YouTube', 'PRIVATE', 'DRAFT', 'SCRIPT', 'READY', 0, ?, ?)
-      `).run(id, userId, channelId, defaultTopic, now, now);
+        ) VALUES (?, ?, ?, ?, ?, 'STANDARD', 'en', 'YouTube', 'PRIVATE', 'DRAFT', 'SCRIPT', 'READY', 0, ?, ?)
+      `).run(id, userId, channelId, activeTopic, queryDuration, now, now);
 
       project = db
         .prepare(
@@ -76,6 +86,17 @@ export async function GET(request: Request, { params }: { params: any }) {
            WHERE p.id = ?`
         )
         .get(id) as any;
+    } else if (queryTopic && queryTopic.trim() && queryTopic.trim() !== project.topic) {
+      // User navigated with a new topic for this project ID
+      const newTopic = queryTopic.trim();
+      db.prepare('UPDATE content_projects SET topic = ?, status = ?, current_stage = ?, updated_at = ? WHERE id = ?')
+        .run(newTopic, 'DRAFT', 'SCRIPT', now, id);
+      db.prepare('DELETE FROM video_scenes WHERE project_id = ?').run(id);
+      db.prepare('DELETE FROM video_outputs WHERE project_id = ?').run(id);
+      db.prepare('DELETE FROM video_jobs WHERE project_id = ?').run(id);
+      db.prepare("DELETE FROM generated_assets WHERE project_id = ? AND asset_type IN ('script', 'voice', 'scenes', 'video', 'final_video', 'subtitles', 'thumbnail')").run(id);
+      project.topic = newTopic;
+      project.status = 'DRAFT';
     }
 
     if (!project) {

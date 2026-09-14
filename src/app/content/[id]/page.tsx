@@ -116,7 +116,8 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
   const fetchProject = useCallback(async () => {
     try {
-      const res = await fetch(`/api/projects/${id}`);
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const res = await fetch(`/api/projects/${id}${search}`);
       if (!res.ok) throw new Error('Project not found or access denied');
       const json = await res.json();
       setData(json);
@@ -159,6 +160,10 @@ export default function VideoStudioPage({ params }: { params?: any }) {
       });
       const resJson = await res.json();
       if (!res.ok) throw new Error(resJson.error || 'Failed to update topic');
+      if (typeof window !== 'undefined') {
+        const newUrl = `${window.location.pathname}?topic=${encodeURIComponent(editedTopic.trim())}`;
+        window.history.replaceState({}, '', newUrl);
+      }
       setIsEditingTopic(false);
       toast.success('Topic updated! Starting video generation... ✨');
       await fetchProject();
@@ -343,7 +348,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const { project, stages, scenes, output, thumbnail, metadata } = data;
   const isGenerating = project.status === 'PROCESSING' || project.status === 'PENDING';
   const activeScene = scenes[activeSceneIdx] || scenes[0];
-  const finalVideoUrl = output ? `/api/assets/${output.storage_key}` : null;
+  const finalVideoUrl = output?.url && output.url.startsWith('http') ? output.url : output ? `/api/assets/${output.storage_key}` : null;
   const srtAsset = data.assets.find((a) => a.asset_type === 'subtitles');
   const vttUrl = srtAsset ? `/api/assets/subtitles/${project.id}/captions.vtt` : null;
 

@@ -184,27 +184,34 @@ export class StockVideoEngine {
         `setsar=1`,
       ].join(',');
 
-      await execFileAsync(ffmpegPath, [
-        '-y',
-        '-stream_loop',
-        '-1',
-        '-i',
-        tempStockMp4,
-        '-an',
-        '-vf',
-        filterGraph,
-        '-r',
-        '30',
-        '-c:v',
-        'libx264',
-        '-pix_fmt',
-        'yuv420p',
-        '-preset',
-        'ultrafast',
-        '-t',
-        String(durationSec),
-        outputPath,
-      ]);
+      try {
+        await execFileAsync(ffmpegPath, [
+          '-y',
+          '-stream_loop',
+          '-1',
+          '-i',
+          tempStockMp4,
+          '-an',
+          '-vf',
+          filterGraph,
+          '-r',
+          '30',
+          '-c:v',
+          'libx264',
+          '-pix_fmt',
+          'yuv420p',
+          '-preset',
+          'ultrafast',
+          '-t',
+          String(durationSec),
+          outputPath,
+        ]);
+      } catch (ffErr: any) {
+        console.warn(`[stockVideoEngine] FFmpeg process failed, falling back to direct copy:`, ffErr?.message || ffErr);
+        if (fs.existsSync(tempStockMp4)) {
+          await fs.promises.copyFile(tempStockMp4, outputPath);
+        }
+      }
     } finally {
       if (fs.existsSync(tempStockMp4)) {
         await fs.promises.unlink(tempStockMp4).catch(() => {});

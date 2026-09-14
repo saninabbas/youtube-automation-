@@ -229,7 +229,7 @@ function CreateVideoWizardContent() {
       }
 
       toast.success('Pipeline queued! Generating script & scenes... ✨');
-      router.push(`/content/${data.projectId}`);
+      router.push(`/content/${data.projectId}?topic=${encodeURIComponent(topic.trim())}&duration=${durationMinutes}`);
     } catch (err: any) {
       toast.error(err.message || 'Error queuing video generation');
       setSubmitting(false);

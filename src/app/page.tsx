@@ -96,7 +96,7 @@ export default function HomePage() {
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.projectId) {
         toast.success('Video queued successfully! Opening Studio... ✨');
-        router.push(`/content/${data.projectId}`);
+        router.push(`/content/${data.projectId}?topic=${encodeURIComponent(quickTopic.trim())}`);
       } else {
         throw new Error(data.error || 'Failed to initialize project');
       }
