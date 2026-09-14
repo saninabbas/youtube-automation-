@@ -119,18 +119,14 @@ export async function POST(request: Request) {
       now
     );
 
-    // Trigger pipeline worker and await execution to guarantee completion on serverless
-    try {
-      await videoWorker.processPipeline(projectId);
-    } catch (pipelineErr) {
-      console.error('[Projects API] Pipeline execution error:', pipelineErr);
-    }
+    // Launch pipeline in background (client Studio monitors and can trigger generation)
+    videoWorker.startProjectPipeline(projectId);
 
     return NextResponse.json(
       {
-        message: 'Video project created and generated successfully',
+        message: 'Video project created successfully',
         projectId,
-        status: 'COMPLETED',
+        status: 'DRAFT',
         publishingStatus: initialPublishStatus,
       },
       { status: 201 }

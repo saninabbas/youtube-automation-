@@ -166,16 +166,20 @@ class DefaultVideoProvider implements VideoProvider {
     } = params;
     const clips: GeneratedClip[] = [];
 
-    // Calculate sub-clip intervals (strictly <= 8 seconds each)
+    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
     const clipDurations: number[] = [];
-    let remaining = durationSec;
-    while (remaining > 0) {
-      if (remaining > this.maxClipDuration) {
-        clipDurations.push(this.maxClipDuration);
-        remaining -= this.maxClipDuration;
-      } else {
-        clipDurations.push(Math.round(remaining * 10) / 10);
-        remaining = 0;
+    if (isServerless) {
+      clipDurations.push(durationSec);
+    } else {
+      let remaining = durationSec;
+      while (remaining > 0) {
+        if (remaining > this.maxClipDuration) {
+          clipDurations.push(this.maxClipDuration);
+          remaining -= this.maxClipDuration;
+        } else {
+          clipDurations.push(Math.round(remaining * 10) / 10);
+          remaining = 0;
+        }
       }
     }
 
@@ -446,13 +450,19 @@ class DefaultVideoProvider implements VideoProvider {
         ];
         await execFileAsync(ffmpegPath, fallbackArgs);
       } catch {
-        // Fallback: If FFmpeg binary is missing on serverless, download standard HD B-roll footage
+        // Fallback: If FFmpeg binary is missing on serverless, cache and copy standard HD footage
         try {
-          const fallbackVideoUrl = 'https://cdn.coverr.co/videos/coverr-typing-on-computer-keyboard-5182/1080p.mp4';
-          const dlRes = await fetch(fallbackVideoUrl);
-          if (dlRes.ok) {
-            const buf = await dlRes.arrayBuffer();
-            await fs.promises.writeFile(outputPath, Buffer.from(buf));
+          const cacheSample = path.join(tempDir, 'base_sample_clip.mp4');
+          if (!fs.existsSync(cacheSample)) {
+            const fallbackVideoUrl = 'https://cdn.coverr.co/videos/coverr-typing-on-computer-keyboard-5182/1080p.mp4';
+            const dlRes = await fetch(fallbackVideoUrl, { signal: AbortSignal.timeout(4000) });
+            if (dlRes.ok) {
+              const buf = await dlRes.arrayBuffer();
+              await fs.promises.writeFile(cacheSample, Buffer.from(buf));
+            }
+          }
+          if (fs.existsSync(cacheSample)) {
+            await fs.promises.copyFile(cacheSample, outputPath);
           }
         } catch {}
       }

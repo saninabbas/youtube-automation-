@@ -719,6 +719,7 @@ You must return valid JSON strictly conforming to this schema:
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
+      signal: AbortSignal.timeout(6000),
       headers: {
         'Content-Type': 'application/json',
       },

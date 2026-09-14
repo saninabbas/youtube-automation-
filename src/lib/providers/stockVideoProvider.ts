@@ -170,8 +170,8 @@ export class StockVideoEngine {
     const tempStockMp4 = path.join(tempDir, `stock_dl_${sceneIndex}_${rand}.mp4`);
 
     try {
-      // 1. Download the real video clip
-      const res = await fetch(videoUrl);
+      // 1. Download the real video clip (with timeout)
+      const res = await fetch(videoUrl, { signal: AbortSignal.timeout(6000) });
       if (!res.ok) throw new Error(`Stock video download HTTP ${res.status}`);
       const arrayBuf = await res.arrayBuffer();
       await fs.promises.writeFile(tempStockMp4, Buffer.from(arrayBuf));

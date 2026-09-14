@@ -80,21 +80,26 @@ class MultiEngineVoiceProvider implements VoiceProvider {
       }
     }
 
+    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const sentenceLimit = isServerless ? 8 : 30;
     const audioBuffers: Buffer[] = [];
-    for (const sentence of sentences.slice(0, 30)) { // limit chunks for fast serverless execution
+    for (const sentence of sentences.slice(0, sentenceLimit)) {
       if (!sentence.trim()) continue;
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(sentence)}`;
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-      });
+      try {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(sentence)}`;
+        const res = await fetch(url, {
+          signal: AbortSignal.timeout(3000),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
 
-      if (res.ok) {
-        const arrayBuf = await res.arrayBuffer();
-        audioBuffers.push(Buffer.from(arrayBuf));
-        await this.sleep(40);
-      }
+        if (res.ok) {
+          const arrayBuf = await res.arrayBuffer();
+          audioBuffers.push(Buffer.from(arrayBuf));
+          await this.sleep(30);
+        }
+      } catch {}
     }
 
     if (audioBuffers.length === 0) {
