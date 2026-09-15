@@ -61,7 +61,10 @@ export async function GET(request: Request, { params }: { params: any }) {
 
     // 3. Auto-recover if missing from cold reset or if new topic explicitly requested
     if (!project) {
-      const activeTopic = queryTopic || (id === 'd12e6dc4-bc80-412a-abcb-e5fe108873f4' ? 'Natural Ways to Lower Blood Pressure After 50' : 'Autonomous AI Innovations in 2026');
+      if (!queryTopic || !queryTopic.trim()) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+      const activeTopic = queryTopic.trim().substring(0, 500);
       db.prepare(`
         INSERT OR REPLACE INTO content_projects (
           id, user_id, channel_id, topic, target_length_minutes, preset,

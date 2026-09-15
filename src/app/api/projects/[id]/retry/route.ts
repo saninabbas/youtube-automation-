@@ -16,12 +16,45 @@ export async function POST(request: Request, { params }: { params: any }) {
     const db = getDb();
     const now = new Date().toISOString();
 
+    let retryStage: PipelineStage = 'SCRIPT';
+    let singleStageOnly = false;
+    let bodyTopic: string | null = null;
+
+    try {
+      const body = await request.json();
+      if (body) {
+        if (body.topic && typeof body.topic === 'string') {
+          bodyTopic = body.topic.trim().substring(0, 500);
+        }
+        if (body.stage && PIPELINE_STAGES.includes(body.stage)) {
+          retryStage = body.stage;
+        }
+        if (typeof body.singleStageOnly === 'boolean') {
+          singleStageOnly = body.singleStageOnly;
+        }
+      }
+    } catch {
+      // Body not provided or empty
+    }
+
     let project = db
       .prepare('SELECT * FROM content_projects WHERE id = ?')
       .get(id) as ContentProject | undefined;
 
     // Auto-recover project and channel on serverless cold starts
     if (!project) {
+      let queryTopic: string | null = bodyTopic;
+      if (!queryTopic) {
+        try {
+          const urlObj = new URL(request.url);
+          queryTopic = urlObj.searchParams.get('topic');
+        } catch {}
+      }
+
+      if (!queryTopic || !queryTopic.trim()) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+
       let userChannel = db.prepare('SELECT id FROM channels WHERE user_id = ? LIMIT 1').get(userId) as { id: string } | undefined;
       if (!userChannel) {
         userChannel = db.prepare('SELECT id FROM channels LIMIT 1').get() as { id: string } | undefined;
@@ -32,37 +65,22 @@ export async function POST(request: Request, { params }: { params: any }) {
         VALUES (?, ?, 'Creator Studio', 'AI & Tech', 'en', 'en-US-ChristopherNeural', 3, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Hook', 'Subscribe for more breakdowns', 'YouTube', 'Professional studio pacing', ?, ?)
       `).run(channelId, userId, now, now);
 
-      const defaultTopic = 'Natural Ways to Lower Blood Pressure After 50';
       db.prepare(`
         INSERT OR REPLACE INTO content_projects (
           id, user_id, channel_id, topic, target_length_minutes, preset,
           language, platform, visibility, status, current_stage,
           publishing_status, auto_publish, created_at, updated_at
         ) VALUES (?, ?, ?, ?, 3, 'STANDARD', 'en', 'YouTube', 'PRIVATE', 'DRAFT', 'SCRIPT', 'READY', 0, ?, ?)
-      `).run(id, userId, channelId, defaultTopic, now, now);
+      `).run(id, userId, channelId, queryTopic.trim().substring(0, 500), now, now);
 
       project = db.prepare('SELECT * FROM content_projects WHERE id = ?').get(id) as ContentProject | undefined;
+    } else if (bodyTopic && bodyTopic !== project.topic) {
+      db.prepare('UPDATE content_projects SET topic = ?, updated_at = ? WHERE id = ?').run(bodyTopic, now, id);
+      project.topic = bodyTopic;
     }
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
-
-    let retryStage: PipelineStage = 'SCRIPT';
-    let singleStageOnly = false;
-
-    try {
-      const body = await request.json();
-      if (body) {
-        if (body.stage && PIPELINE_STAGES.includes(body.stage)) {
-          retryStage = body.stage;
-        }
-        if (typeof body.singleStageOnly === 'boolean') {
-          singleStageOnly = body.singleStageOnly;
-        }
-      }
-    } catch {
-      // Body not provided, default to SCRIPT
     }
 
     // Execute pipeline synchronously on serverless to guarantee completion

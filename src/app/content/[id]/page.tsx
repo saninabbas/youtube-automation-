@@ -195,10 +195,11 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
       for (const item of executionStages) {
         setGenerationStep(item.label);
-        const res = await fetch(`/api/projects/${id}/retry`, {
+        const search = typeof window !== 'undefined' ? window.location.search : '';
+        const res = await fetch(`/api/projects/${id}/retry${search}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ stage: item.stage, singleStageOnly: true }),
+          body: JSON.stringify({ stage: item.stage, singleStageOnly: true, topic: data?.project?.topic }),
         });
 
         const resJson = await res.json();

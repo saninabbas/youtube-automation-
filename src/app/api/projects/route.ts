@@ -28,6 +28,7 @@ export async function GET(request: Request) {
       let userChannel = db.prepare('SELECT id FROM channels WHERE user_id = ? LIMIT 1').get(userId) as { id: string } | undefined;
       const channelId = userChannel ? userChannel.id : `chan_${userId.substring(4)}`;
       
+      // Seed default channel so channel relations are always intact
       db.prepare(`
         INSERT OR IGNORE INTO channels (
           id, user_id, name, niche, language, voice, voice_speed,
@@ -37,30 +38,7 @@ export async function GET(request: Request) {
         ) VALUES (?, ?, 'Creator Studio', 'AI & Tech', 'en', 'en-US-ChristopherNeural', '1.0x', 3, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Hook', 'Subscribe for more breakdowns', 'YouTube', 'Professional studio pacing', '["Monday","Wednesday","Friday"]', '14:00', 'UTC', 'PRIVATE', 0, ?, ?)
       `).run(channelId, userId, now, now);
 
-      const defaultProjectId = 'd12e6dc4-bc80-412a-abcb-e5fe108873f4';
-      db.prepare(`
-        INSERT OR IGNORE INTO content_projects (
-          id, user_id, channel_id, topic, target_length_minutes, preset,
-          language, platform, visibility, status, current_stage,
-          publishing_status, auto_publish, created_at, updated_at
-        ) VALUES (?, ?, ?, 'Natural Ways to Lower Blood Pressure After 50', 3, 'STANDARD', 'en', 'YouTube', 'PRIVATE', 'COMPLETED', 'FINAL_VIDEO', 'READY', 0, ?, ?)
-      `).run(defaultProjectId, userId, channelId, now, now);
-
-      const finalKey = `final/${defaultProjectId}/output.mp4`;
-      db.prepare(`
-        INSERT OR IGNORE INTO video_outputs (id, project_id, storage_key, url, duration_sec, resolution, filesize_bytes, created_at)
-        VALUES (?, ?, ?, ?, 180, '1920x1080', 25482000, ?)
-      `).run(uuidv4(), defaultProjectId, finalKey, `/api/assets/${finalKey}`, now);
-
-      projects = db
-        .prepare(
-          `SELECT p.*, COALESCE(c.name, 'Creator Studio') as channel_name, COALESCE(c.niche, 'AI & Tech') as channel_niche 
-           FROM content_projects p 
-           LEFT JOIN channels c ON p.channel_id = c.id 
-           WHERE p.user_id = ? 
-           ORDER BY p.created_at DESC`
-        )
-        .all(userId) as ContentProject[];
+      return NextResponse.json({ projects: [] });
     }
 
     return NextResponse.json({ projects });
@@ -96,9 +74,10 @@ export async function POST(request: Request) {
       const existing = db.prepare('SELECT id FROM channels WHERE user_id = ? LIMIT 1').get(userId) as { id: string } | undefined;
       channel_id = existing ? existing.id : `chan_${userId.substring(4)}`;
     }
-    if (!topic || !topic.trim()) {
-      return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+    if (!topic || typeof topic !== 'string' || !topic.trim()) {
+      return NextResponse.json({ error: 'Topic is required and cannot be empty' }, { status: 400 });
     }
+    const cleanTopic = topic.trim().substring(0, 500);
 
     // Ensure user record exists
     db.prepare(`
@@ -146,7 +125,7 @@ export async function POST(request: Request) {
       projectId,
       userId,
       channel_id,
-      topic.trim(),
+      cleanTopic,
       Number(target_length_minutes) || 5,
       preset,
       language || channel.language,

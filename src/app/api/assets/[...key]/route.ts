@@ -5,28 +5,194 @@ import { storage } from '@/lib/storage';
 import { getDb } from '@/lib/db';
 
 export function getTopicVideoCdnUrl(topic: string = ''): string {
-  const t = topic.toLowerCase();
-  if (t.includes('blood') || t.includes('pressure') || t.includes('heart') || t.includes('cardio') || t.includes('doctor') || t.includes('health') || t.includes('aging') || t.includes('50') || t.includes('body')) {
-    return 'https://cdn.coverr.co/videos/coverr-premium-morning-yoga-practice-in-park/1080p.mp4';
-  }
-  if (t.includes('money') || t.includes('wealth') || t.includes('broke') || t.includes('rich') || t.includes('finance') || t.includes('stock') || t.includes('crypto') || t.includes('bitcoin') || t.includes('business')) {
-    return 'https://cdn.coverr.co/videos/coverr-a-man-analyzing-the-stock-market-5128/1080p.mp4';
-  }
-  if (t.includes('food') || t.includes('diet') || t.includes('nutrition') || t.includes('weight') || t.includes('meal') || t.includes('cook')) {
-    return 'https://cdn.coverr.co/videos/coverr-preparing-a-meal-4339/1080p.mp4';
-  }
-  if (t.includes('space') || t.includes('black hole') || t.includes('universe') || t.includes('stars') || t.includes('galaxy') || t.includes('planet')) {
+  const normalized = ` ${topic.toLowerCase().replace(/[^a-z0-9]/g, ' ')} `;
+  const hasWord = (w: string) => normalized.includes(` ${w} `);
+  const hasAnyWord = (words: string[]) => words.some((w) => normalized.includes(` ${w} `));
+
+  // 1. Space / Stars / Galaxy / Astronomy / Physics
+  if (
+    hasAnyWord([
+      'space',
+      'galaxy',
+      'galaxies',
+      'universe',
+      'astronomy',
+      'astrophysics',
+      'blackhole',
+      'nasa',
+      'cosmos',
+      'cosmic',
+      'planet',
+      'planets',
+      'star',
+      'stars',
+      'physics',
+      'telescope',
+      'spacex',
+      'astronomical',
+    ]) ||
+    normalized.includes(' black hole ') ||
+    normalized.includes(' solar system ')
+  ) {
     return 'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4';
   }
-  if (t.includes('stoic') || t.includes('mind') || t.includes('overthinking') || t.includes('discipline') || t.includes('marcus') || t.includes('psychology')) {
+
+  // 2. Crypto / Stocks / Money / Wealth / Finance / Business
+  if (
+    hasAnyWord([
+      'money',
+      'wealth',
+      'wealthy',
+      'broke',
+      'rich',
+      'finance',
+      'financial',
+      'stock',
+      'stocks',
+      'crypto',
+      'cryptocurrency',
+      'bitcoin',
+      'btc',
+      'ethereum',
+      'eth',
+      'blockchain',
+      'invest',
+      'investing',
+      'investment',
+      'investor',
+      'trading',
+      'trader',
+      'business',
+      'economy',
+      'economic',
+      'cashflow',
+      'dollars',
+    ]) ||
+    normalized.includes(' passive income ') ||
+    normalized.includes(' build wealth ')
+  ) {
+    return 'https://cdn.coverr.co/videos/coverr-a-man-analyzing-the-stock-market-5128/1080p.mp4';
+  }
+
+  // 3. Food / Nutrition / Diet / Cooking
+  if (
+    hasAnyWord([
+      'food',
+      'foods',
+      'diet',
+      'diets',
+      'nutrition',
+      'nutritious',
+      'nutrient',
+      'nutrients',
+      'meal',
+      'meals',
+      'recipe',
+      'recipes',
+      'cook',
+      'cooking',
+      'eating',
+      'eat',
+      'superfood',
+      'superfoods',
+    ])
+  ) {
+    return 'https://cdn.coverr.co/videos/coverr-preparing-a-meal-4339/1080p.mp4';
+  }
+
+  // 4. Health / Wellness / Aging / Fitness / Medical
+  if (
+    hasAnyWord([
+      'health',
+      'healthy',
+      'wellness',
+      'longevity',
+      'vitality',
+      'medical',
+      'doctor',
+      'cardio',
+      'heart',
+      'aging',
+      'fitness',
+      'workout',
+      'exercise',
+      'yoga',
+      'cholesterol',
+      'disease',
+    ]) ||
+    normalized.includes(' blood pressure ') ||
+    normalized.includes(' over 50 ') ||
+    normalized.includes(' after 50 ')
+  ) {
+    return 'https://cdn.coverr.co/videos/coverr-premium-morning-yoga-practice-in-park/1080p.mp4';
+  }
+
+  // 5. Mindset / Stoic / Psychology / Philosophy / Discipline
+  if (
+    hasAnyWord([
+      'stoic',
+      'stoicism',
+      'mindset',
+      'psychology',
+      'psychological',
+      'discipline',
+      'habits',
+      'habit',
+      'marcus',
+      'seneca',
+      'epictetus',
+      'philosophy',
+      'philosophical',
+      'overthinking',
+      'mindfulness',
+      'meditation',
+      'mental',
+    ])
+  ) {
     return 'https://cdn.coverr.co/videos/coverr-walking-in-nature/1080p.mp4';
   }
-  if (t.includes('plane') || t.includes('flight') || t.includes('mystery') || t.includes('vanish') || t.includes('history')) {
+
+  // 6. Airplane / Aviation / Travel / History / Mystery
+  if (
+    hasAnyWord([
+      'plane',
+      'airplane',
+      'aviation',
+      'flight',
+      'airport',
+      'mystery',
+      'mysteries',
+      'vanish',
+      'vanished',
+      'history',
+      'historical',
+      'ancient',
+      'pyramid',
+      'pyramids',
+      'bermuda',
+    ])
+  ) {
     return 'https://cdn.coverr.co/videos/coverr-airport-in-israel-5641/1080p.mp4';
   }
-  if (t.includes('phone') || t.includes('app') || t.includes('search') || t.includes('mobile')) {
+
+  // 7. Smartphone / Apps / Search / Social Media
+  if (
+    hasAnyWord([
+      'phone',
+      'smartphone',
+      'mobile',
+      'app',
+      'apps',
+      'instagram',
+      'tiktok',
+      'youtube',
+      'search',
+      'algorithm',
+    ])
+  ) {
     return 'https://cdn.coverr.co/videos/coverr-google-search-on-a-smartphone-243/1080p.mp4';
   }
+
   // Default dynamic AI & Tech / Cinematic motion
   return 'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4';
 }
