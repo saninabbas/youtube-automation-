@@ -26,6 +26,9 @@ export function getSceneVideoCdnUrl(
       'astronomy',
       'astrophysics',
       'blackhole',
+      'blackholes',
+      'hole',
+      'holes',
       'nasa',
       'cosmos',
       'cosmic',
@@ -37,9 +40,18 @@ export function getSceneVideoCdnUrl(
       'telescope',
       'spacex',
       'astronomical',
+      'gravity',
+      'spacetime',
+      'interstellar',
+      'mars',
+      'moon',
+      'lunar',
+      'solar',
+      'orbit',
+      'orbital',
     ]) ||
-    normalized.includes(' black hole ') ||
-    normalized.includes(' solar system ')
+    normalized.includes('black hole') ||
+    normalized.includes('solar system')
   ) {
     clipList = [
       'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
