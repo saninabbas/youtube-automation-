@@ -103,6 +103,11 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const [duration, setDuration] = useState(0);
   const [showCc, setShowCc] = useState(true);
 
+  // Multi-Scene Cinematic Engine state
+  const [playbackMode, setPlaybackMode] = useState<'MULTI_SCENE_AUTO' | 'SOLO_SCENE'>('MULTI_SCENE_AUTO');
+  const [rerollMap, setRerollMap] = useState<Record<number, number>>({});
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // Copilot state
   const [copilotLoading, setCopilotLoading] = useState(false);
   const [copilotResult, setCopilotResult] = useState<string | null>(null);
@@ -288,35 +293,142 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     }
   };
 
+  const scenes = data?.scenes || [];
+  const project = data?.project;
+
+  // Computed scene timeline with exact start and end seconds
+  const sceneTimeline = React.useMemo(() => {
+    let accumulated = 0;
+    return scenes.map((s, idx) => {
+      const start = accumulated;
+      const dur = Math.max(4, s.estimated_duration_sec || 8);
+      accumulated += dur;
+      return {
+        ...s,
+        index: idx,
+        startTime: start,
+        endTime: accumulated,
+        duration: dur,
+      };
+    });
+  }, [scenes]);
+
+  const totalCompositionDuration = React.useMemo(() => {
+    if (sceneTimeline.length === 0) return duration || 60;
+    return sceneTimeline[sceneTimeline.length - 1].endTime;
+  }, [sceneTimeline, duration]);
+
+  // Which scene is currently active based on playback position
+  const activeTimelineScene = React.useMemo(() => {
+    if (sceneTimeline.length === 0) return null;
+    const found = sceneTimeline.find(
+      (st) => currentTime >= st.startTime && currentTime < st.endTime
+    );
+    return found || sceneTimeline[sceneTimeline.length - 1];
+  }, [sceneTimeline, currentTime]);
+
+  const displayedScene = playbackMode === 'SOLO_SCENE'
+    ? (scenes[activeSceneIdx] || scenes[0])
+    : (activeTimelineScene || scenes[activeSceneIdx] || scenes[0]);
+
+  const displayedSceneNum = displayedScene?.scene_index || (activeSceneIdx + 1);
+  const currentReroll = rerollMap[displayedSceneNum] || 0;
+
+  // Final / active 1080p video URL
+  const finalVideoUrl = data?.output?.url && data.output.url.startsWith('http')
+    ? data.output.url
+    : data?.output && project
+    ? `/api/assets/${data.output.storage_key}?topic=${encodeURIComponent(project.topic)}`
+    : null;
+
+  // Active clip URL for the displayed scene (cuts dynamically in MULTI_SCENE_AUTO mode)
+  const activeVideoUrl = displayedScene && project?.id
+    ? `/api/assets/clips/${project.id}/scene_${displayedSceneNum}_clip_1.mp4?topic=${encodeURIComponent(project.topic)}&scene=${displayedSceneNum}&r=${currentReroll}&prompt=${encodeURIComponent(displayedScene.visual_prompt || '')}`
+    : finalVideoUrl;
+
+  const audioAsset = data?.assets?.find((a) => a.asset_type === 'audio');
+  const audioUrl = audioAsset && project?.id ? `/api/assets/${audioAsset.storage_key}` : null;
+  const srtAsset = data?.assets?.find((a) => a.asset_type === 'subtitles');
+  const vttUrl = srtAsset && project?.id ? `/api/assets/subtitles/${project.id}/captions.vtt` : null;
+
+  // Toggle play/pause synchronized between audio and video
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
+    if (isPlaying) {
+      if (videoRef.current) videoRef.current.pause();
+      if (audioRef.current) audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      if (videoRef.current) {
+        videoRef.current.play().catch(() => {});
       }
-      setIsPlaying(!isPlaying);
+      if (audioRef.current) {
+        audioRef.current.currentTime = currentTime;
+        audioRef.current.play().catch(() => {});
+      }
+      setIsPlaying(true);
     }
   };
 
+  // Synchronized playback ticker across all scene cuts
+  useEffect(() => {
+    if (!isPlaying) return;
+    const tick = setInterval(() => {
+      setCurrentTime((prev) => {
+        let next = prev + 0.25;
+        if (audioRef.current && !audioRef.current.paused && audioRef.current.currentTime > 0) {
+          next = audioRef.current.currentTime;
+        }
+        if (next >= totalCompositionDuration) {
+          setIsPlaying(false);
+          if (videoRef.current) videoRef.current.pause();
+          if (audioRef.current) audioRef.current.pause();
+          return 0;
+        }
+        return next;
+      });
+    }, 250);
+    return () => clearInterval(tick);
+  }, [isPlaying, totalCompositionDuration]);
+
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
+    if (videoRef.current && playbackMode === 'SOLO_SCENE') {
       setCurrentTime(videoRef.current.currentTime);
     }
   };
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setDuration(videoRef.current.duration);
+      setDuration(totalCompositionDuration || videoRef.current.duration);
     }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
     }
+    if (videoRef.current) {
+      videoRef.current.currentTime = time % (videoRef.current.duration || 10);
+    }
+  };
+
+  const handleSelectScene = (idx: number) => {
+    setActiveSceneIdx(idx);
+    if (playbackMode === 'MULTI_SCENE_AUTO' && sceneTimeline[idx]) {
+      const targetTime = sceneTimeline[idx].startTime;
+      setCurrentTime(targetTime);
+      if (audioRef.current) audioRef.current.currentTime = targetTime;
+    }
+  };
+
+  const handleRerollActiveScene = () => {
+    const sNum = displayedScene?.scene_index || (activeSceneIdx + 1);
+    setRerollMap((prev) => ({
+      ...prev,
+      [sNum]: (prev[sNum] || 0) + 1,
+    }));
+    toast.success(`Scene ${sNum} visual switched to alternate 1080p shot! ✨`);
   };
 
   const formatTime = (secs: number) => {
@@ -333,7 +445,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     );
   }
 
-  if (error || !data) {
+  if (error || !data || !project) {
     return (
       <div className="content-container" style={{ padding: '80px 0', textAlign: 'center' }}>
         <div style={{ color: 'var(--status-error)', fontSize: '15px', marginBottom: '14px' }}>
@@ -346,16 +458,9 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     );
   }
 
-  const { project, stages, scenes, output, thumbnail, metadata } = data;
+  const { stages, output, thumbnail, metadata } = data;
   const isGenerating = project.status === 'PROCESSING' || project.status === 'PENDING';
-  const activeScene = scenes[activeSceneIdx] || scenes[0];
-  const finalVideoUrl = output?.url && output.url.startsWith('http')
-    ? output.url
-    : output
-    ? `/api/assets/${output.storage_key}?topic=${encodeURIComponent(project.topic)}`
-    : null;
-  const srtAsset = data.assets.find((a) => a.asset_type === 'subtitles');
-  const vttUrl = srtAsset ? `/api/assets/subtitles/${project.id}/captions.vtt` : null;
+  const activeScene = displayedScene || scenes[0];
 
   return (
     <div className="content-container" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -588,11 +693,18 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               scenes.map((s, idx) => (
                 <div
                   key={s.id || idx}
-                  onClick={() => setActiveSceneIdx(idx)}
-                  className={`scene-cut-item ${activeSceneIdx === idx ? 'active' : ''}`}
+                  onClick={() => handleSelectScene(idx)}
+                  className={`scene-cut-item ${(displayedSceneNum === s.scene_index) ? 'active' : ''}`}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span className="scene-cut-index">Scene {s.scene_index}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="scene-cut-index">Scene {s.scene_index}</span>
+                      {rerollMap[s.scene_index] ? (
+                        <span style={{ fontSize: '9px', background: '#4f46e5', color: '#fff', padding: '1px 5px', borderRadius: '4px' }}>
+                          v{rerollMap[s.scene_index] + 1}
+                        </span>
+                      ) : null}
+                    </div>
                     <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
                   </div>
                   <div className="scene-cut-text">{s.narration}</div>
@@ -604,21 +716,143 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
         {/* CENTER PANE: 1080p Theater Player & Timeline */}
         <div className="studio-theater-column">
-          <div className="theater-screen">
-            {finalVideoUrl ? (
-              <video
-                ref={videoRef}
-                src={finalVideoUrl}
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
-                className="theater-video"
-                crossOrigin="anonymous"
+          {/* Multi-Scene Engine Mode Switcher Bar */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => setPlaybackMode('MULTI_SCENE_AUTO')}
+                className={`btn btn-sm ${playbackMode === 'MULTI_SCENE_AUTO' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
               >
-                {showCc && vttUrl && (
-                  <track label="English Subtitles" kind="subtitles" srcLang="en" src={vttUrl} default />
+                🎬 Full Multi-Scene Composition
+              </button>
+              <button
+                onClick={() => setPlaybackMode('SOLO_SCENE')}
+                className={`btn btn-sm ${playbackMode === 'SOLO_SCENE' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
+              >
+                🔍 Solo Scene {displayedSceneNum} Preview
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', color: '#a1a1aa', fontFamily: 'var(--font-mono)' }}>
+                VEO 3 / CINEMA-PRO • 1080P 60FPS
+              </span>
+              <button
+                onClick={handleRerollActiveScene}
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '11px', padding: '3px 8px', height: '26px', color: '#818cf8' }}
+                title="Switch this scene's footage to an alternate 1080p shot"
+              >
+                🔄 Re-roll B-Roll
+              </button>
+            </div>
+          </div>
+
+          <div className="theater-screen" style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* Background continuous narration audio */}
+            {audioUrl && <audio ref={audioRef} src={audioUrl} preload="auto" />}
+
+            {/* Scene info banner overlay */}
+            {displayedScene && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  zIndex: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(9, 11, 16, 0.85)',
+                  backdropFilter: 'blur(10px)',
+                  padding: '5px 12px',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#fff',
+                }}
+              >
+                <span style={{ color: '#818cf8' }}>● REC</span>
+                <span>Scene {displayedSceneNum} / {scenes.length || 1}</span>
+                <span style={{ color: '#71717a' }}>|</span>
+                <span style={{ color: '#e4e4e7', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {displayedScene.camera_movement || 'Cinematic Push'}
+                </span>
+              </div>
+            )}
+
+            {activeVideoUrl ? (
+              <>
+                <video
+                  key={`${displayedSceneNum}-${currentReroll}`}
+                  ref={videoRef}
+                  src={activeVideoUrl}
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onEnded={() => {
+                    if (playbackMode === 'SOLO_SCENE') {
+                      if (videoRef.current) {
+                        videoRef.current.currentTime = 0;
+                        videoRef.current.play().catch(() => {});
+                      }
+                    }
+                  }}
+                  className="theater-video"
+                  crossOrigin="anonymous"
+                  autoPlay={isPlaying}
+                  loop={playbackMode === 'SOLO_SCENE'}
+                  playsInline
+                />
+
+                {/* Subtitle Caption Overlay */}
+                {showCc && displayedScene && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      left: '16px',
+                      right: '16px',
+                      textAlign: 'center',
+                      pointerEvents: 'none',
+                      zIndex: 20,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'inline-block',
+                        background: 'rgba(0, 0, 0, 0.75)',
+                        backdropFilter: 'blur(12px)',
+                        border: '1px solid rgba(255, 255, 255, 0.18)',
+                        borderRadius: '8px',
+                        padding: '8px 18px',
+                        color: '#ffffff',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        letterSpacing: '0.015em',
+                        lineHeight: 1.4,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
+                        maxWidth: '90%',
+                      }}
+                    >
+                      {displayedScene.subtitle_text || displayedScene.narration}
+                    </div>
+                  </div>
                 )}
-              </video>
+              </>
             ) : isGeneratingVideo ? (
               <div
                 style={{
@@ -731,13 +965,12 @@ export default function VideoStudioPage({ params }: { params?: any }) {
             )}
           </div>
 
-
           {/* Player Controls Bar */}
           <div className="theater-controls-bar">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
                 onClick={togglePlay}
-                disabled={!finalVideoUrl}
+                disabled={!activeVideoUrl && !finalVideoUrl}
                 className="btn btn-secondary btn-sm"
                 style={{ padding: '6px 12px' }}
               >
@@ -745,7 +978,11 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               </button>
 
               <span className="time-display">
-                {formatTime(currentTime)} / {formatTime(duration)}
+                {formatTime(currentTime)} / {formatTime(totalCompositionDuration)}
+              </span>
+
+              <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600, marginLeft: '4px' }}>
+                Scene {displayedSceneNum}
               </span>
             </div>
 
@@ -763,30 +1000,31 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           {/* Timeline Scrubber */}
           <div className="studio-timeline-container">
             <div className="timeline-header">
-              <span>Multi-Scene Timeline Scrubber</span>
-              <span>{scenes.length} Scene Blocks</span>
+              <span>Multi-Scene Timeline Scrubber ({formatTime(currentTime)} / {formatTime(totalCompositionDuration)})</span>
+              <span>{scenes.length} Scene Blocks • Auto Scene Cuts</span>
             </div>
 
             <input
               type="range"
               min="0"
-              max={duration || 100}
+              max={totalCompositionDuration || 100}
+              step="0.1"
               value={currentTime}
               onChange={handleSeek}
-              disabled={!finalVideoUrl}
+              disabled={!activeVideoUrl && !finalVideoUrl}
               className="timeline-scrubber-track"
             />
 
             <div className="timeline-scenes-track">
-              {scenes.map((s, idx) => (
+              {sceneTimeline.map((s) => (
                 <div
-                  key={s.id || idx}
-                  onClick={() => setActiveSceneIdx(idx)}
-                  className={`timeline-scene-block ${activeSceneIdx === idx ? 'active' : ''}`}
-                  style={{ flex: Math.max(1, s.estimated_duration_sec) }}
-                  title={`Scene ${s.scene_index} (${s.estimated_duration_sec}s)`}
+                  key={s.id || s.index}
+                  onClick={() => handleSelectScene(s.index)}
+                  className={`timeline-scene-block ${(displayedSceneNum === s.scene_index) ? 'active' : ''}`}
+                  style={{ flex: Math.max(1, s.duration) }}
+                  title={`Scene ${s.scene_index} (${s.duration}s): ${s.narration.substring(0, 45)}...`}
                 >
-                  S{s.scene_index} ({s.estimated_duration_sec}s)
+                  S{s.scene_index} ({s.duration}s)
                 </div>
               ))}
             </div>
@@ -832,6 +1070,15 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {activeInspectorTab === 'scene' && activeScene ? (
               <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>
+                    Scene {displayedSceneNum} Inspector
+                  </span>
+                  <span style={{ fontSize: '10px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', padding: '2px 6px', borderRadius: '4px' }}>
+                    Veo 3 Pro
+                  </span>
+                </div>
+
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Visual Synthesis Prompt</label>
                   <textarea
@@ -877,13 +1124,22 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   />
                 </div>
 
-                <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button
-                    onClick={() => handleRetry('VIDEO')}
+                    onClick={handleRerollActiveScene}
+                    className="btn btn-primary btn-sm"
+                    style={{ width: '100%', background: '#4f46e5', color: '#fff', fontWeight: 600 }}
+                  >
+                    🔄 Re-roll Scene Visual (Change B-Roll Footage)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPlaybackMode(playbackMode === 'SOLO_SCENE' ? 'MULTI_SCENE_AUTO' : 'SOLO_SCENE');
+                    }}
                     className="btn btn-secondary btn-sm"
                     style={{ width: '100%' }}
                   >
-                    🔄 Regenerate Scene Visuals
+                    {playbackMode === 'SOLO_SCENE' ? '🎬 Back to Full Composition' : `🔍 Solo Preview Scene ${displayedSceneNum}`}
                   </button>
                 </div>
               </>

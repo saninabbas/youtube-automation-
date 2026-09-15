@@ -4,12 +4,19 @@ import fs from 'fs';
 import { storage } from '@/lib/storage';
 import { getDb } from '@/lib/db';
 
-export function getTopicVideoCdnUrl(topic: string = ''): string {
-  const normalized = ` ${topic.toLowerCase().replace(/[^a-z0-9]/g, ' ')} `;
+export function getSceneVideoCdnUrl(
+  topic: string = '',
+  sceneIndex: number = 1,
+  reroll: number = 0,
+  prompt: string = ''
+): string {
+  const normalized = ` ${(topic + ' ' + prompt).toLowerCase().replace(/[^a-z0-9]/g, ' ')} `;
   const hasWord = (w: string) => normalized.includes(` ${w} `);
   const hasAnyWord = (words: string[]) => words.some((w) => normalized.includes(` ${w} `));
 
-  // 1. Space / Stars / Galaxy / Astronomy / Physics
+  let clipList: string[];
+
+  // 1. Space / Stars / Galaxy / Universe / Astronomy / Physics / Sci-Fi
   if (
     hasAnyWord([
       'space',
@@ -34,11 +41,18 @@ export function getTopicVideoCdnUrl(topic: string = ''): string {
     normalized.includes(' black hole ') ||
     normalized.includes(' solar system ')
   ) {
-    return 'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4';
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-bioluminescent-plankton-illuminate-the-waves-on-a-tropical-beach/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-foamy-ocean-waves-at-night-2122/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-ai-generated-art-of-enchanted-forest-unicorns-gathering/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4',
+    ];
   }
-
   // 2. Crypto / Stocks / Money / Wealth / Finance / Business
-  if (
+  else if (
     hasAnyWord([
       'money',
       'wealth',
@@ -71,11 +85,18 @@ export function getTopicVideoCdnUrl(topic: string = ''): string {
     normalized.includes(' passive income ') ||
     normalized.includes(' build wealth ')
   ) {
-    return 'https://cdn.coverr.co/videos/coverr-a-man-analyzing-the-stock-market-5128/1080p.mp4';
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-a-man-analyzing-the-stock-market-5128/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-analyzing-cryptocurrency-trends-3453/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-premium-trading-on-a-cryptocurrency-platform-4028/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-crypto-wallet-5213/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-close-up-of-coin-s-fall-1447/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-calculating-expenses-with-cash-and-calculator/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+    ];
   }
-
   // 3. Food / Nutrition / Diet / Cooking
-  if (
+  else if (
     hasAnyWord([
       'food',
       'foods',
@@ -97,11 +118,18 @@ export function getTopicVideoCdnUrl(topic: string = ''): string {
       'superfoods',
     ])
   ) {
-    return 'https://cdn.coverr.co/videos/coverr-preparing-a-meal-4339/1080p.mp4';
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-preparing-a-meal-4339/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-cooking-pot-over-the-fire-3907/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-cooking-pot-on-the-stove-4646/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-early-morning-stretching-routine/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-woman-standing-in-the-tall-grass-9769/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-motivated-runner-working-out-in-park/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-girl-running-in-a-forest-3856/1080p.mp4',
+    ];
   }
-
-  // 4. Health / Wellness / Aging / Fitness / Medical
-  if (
+  // 4. Health / Wellness / Aging / Fitness / Medical / Longevity
+  else if (
     hasAnyWord([
       'health',
       'healthy',
@@ -124,11 +152,18 @@ export function getTopicVideoCdnUrl(topic: string = ''): string {
     normalized.includes(' over 50 ') ||
     normalized.includes(' after 50 ')
   ) {
-    return 'https://cdn.coverr.co/videos/coverr-premium-morning-yoga-practice-in-park/1080p.mp4';
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-premium-morning-yoga-practice-in-park/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-motivated-runner-working-out-in-park/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-urban-park-yoga-session/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-early-morning-stretching-routine/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-preparing-a-meal-4339/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-woman-standing-in-the-tall-grass-9769/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-girl-running-in-a-forest-3856/1080p.mp4',
+    ];
   }
-
   // 5. Mindset / Stoic / Psychology / Philosophy / Discipline
-  if (
+  else if (
     hasAnyWord([
       'stoic',
       'stoicism',
@@ -149,11 +184,18 @@ export function getTopicVideoCdnUrl(topic: string = ''): string {
       'mental',
     ])
   ) {
-    return 'https://cdn.coverr.co/videos/coverr-walking-in-nature/1080p.mp4';
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-woman-standing-in-the-tall-grass-9769/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-girl-running-in-a-forest-3856/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-early-morning-stretching-routine/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-motivated-runner-working-out-in-park/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-foamy-ocean-waves-at-night-2122/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+    ];
   }
-
   // 6. Airplane / Aviation / Travel / History / Mystery
-  if (
+  else if (
     hasAnyWord([
       'plane',
       'airplane',
@@ -172,29 +214,36 @@ export function getTopicVideoCdnUrl(topic: string = ''): string {
       'bermuda',
     ])
   ) {
-    return 'https://cdn.coverr.co/videos/coverr-airport-in-israel-5641/1080p.mp4';
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-airport-in-israel-5641/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-view-from-plane-window-8020/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-planes-heading-to-the-runway-8804/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-foamy-ocean-waves-at-night-2122/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
+    ];
+  }
+  // 7. Technology / AI / Software / Future (Default)
+  else {
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-woman-coding-8692/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-premium-smart-lock-door-opening-close-up/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-freelancer-enjoying-natures-office/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-premium-touching-digital-tablet-screen/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-google-search-on-a-smartphone-243/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
+    ];
   }
 
-  // 7. Smartphone / Apps / Search / Social Media
-  if (
-    hasAnyWord([
-      'phone',
-      'smartphone',
-      'mobile',
-      'app',
-      'apps',
-      'instagram',
-      'tiktok',
-      'youtube',
-      'search',
-      'algorithm',
-    ])
-  ) {
-    return 'https://cdn.coverr.co/videos/coverr-google-search-on-a-smartphone-243/1080p.mp4';
-  }
+  const safeIdx = Math.max(0, sceneIndex - 1);
+  const pickedIndex = (safeIdx + reroll) % clipList.length;
+  return clipList[pickedIndex];
+}
 
-  // Default dynamic AI & Tech / Cinematic motion
-  return 'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4';
+export function getTopicVideoCdnUrl(topic: string = ''): string {
+  return getSceneVideoCdnUrl(topic, 1, 0);
 }
 
 export async function GET(request: NextRequest, { params }: { params: any }) {
@@ -205,12 +254,25 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
     const ext = path.extname(key).toLowerCase();
     let filePath = storage.getFilePath(key);
 
-    // If MP4 requested and missing locally, redirect to topic-matched 1080p CDN video
+    // If MP4 requested and missing locally, redirect to topic & scene matched 1080p CDN video
     if (ext === '.mp4' && !fs.existsSync(filePath)) {
       try {
         const parts = key.split('/');
         const projectId = parts.length > 1 ? parts[1] : '';
         let topic = request.nextUrl.searchParams.get('topic') || '';
+        const sceneQuery = request.nextUrl.searchParams.get('scene');
+        const rerollQuery = request.nextUrl.searchParams.get('r') || request.nextUrl.searchParams.get('reroll') || '0';
+        const promptQuery = request.nextUrl.searchParams.get('prompt') || '';
+
+        let sceneIdx = sceneQuery ? parseInt(sceneQuery, 10) : 1;
+        const reroll = parseInt(rerollQuery, 10) || 0;
+
+        // Check if scene index is in the path e.g. scene_2_clip_1.mp4
+        const sceneMatch = key.match(/scene_(\d+)/i);
+        if (sceneMatch) {
+          sceneIdx = parseInt(sceneMatch[1], 10);
+        }
+
         if (!topic && projectId) {
           try {
             const db = getDb();
@@ -218,9 +280,10 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
             topic = proj?.topic || '';
           } catch (_) {}
         }
-        const topicUrl = getTopicVideoCdnUrl(topic);
-        if (topicUrl) {
-          return NextResponse.redirect(topicUrl, 307);
+
+        const sceneVideoUrl = getSceneVideoCdnUrl(topic, sceneIdx, reroll, promptQuery);
+        if (sceneVideoUrl) {
+          return NextResponse.redirect(sceneVideoUrl, 307);
         }
       } catch (topicErr) {
         console.warn('Topic video redirect error:', topicErr);
