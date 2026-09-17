@@ -170,6 +170,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     },
   ];
 
+  const isStudioPage = Boolean(pathname?.startsWith('/content/') && pathname !== '/content' && pathname !== '/content/new');
+
   return (
     <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Mobile Drawer Backdrop */}
@@ -189,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* ─────────────────────────────────────────────────────────────
           SIDEBAR NAVIGATION
       ───────────────────────────────────────────────────────────── */}
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+      <aside className={`sidebar ${collapsed ? 'collapsed sidebar-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <Link href="/" className="sidebar-brand">
             <div className="brand-icon-box">
@@ -427,7 +429,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="content-container">{children}</main>
+        <main className={`content-container ${isStudioPage ? 'studio-main-container' : ''}`}>{children}</main>
       </div>
     </div>
   );

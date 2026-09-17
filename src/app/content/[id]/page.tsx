@@ -95,7 +95,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSceneIdx, setActiveSceneIdx] = useState(0);
-  const [activeInspectorTab, setActiveInspectorTab] = useState<'scene' | 'copilot' | 'metadata' | 'publish'>('scene');
+  const [activeInspectorTab, setActiveInspectorTab] = useState<'scenes' | 'scene' | 'copilot' | 'metadata' | 'publish'>('scene');
   const [mobileStudioTab, setMobileStudioTab] = useState<'scenes' | 'inspector' | 'copilot' | 'publish'>('scenes');
 
   // Video Player state
@@ -479,7 +479,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
   if (loading) {
     return (
-      <div className="content-container" style={{ padding: '80px 0', textAlign: 'center' }}>
+      <div className="studio-page-layout" style={{ padding: '80px 0', textAlign: 'center' }}>
         <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Loading AutoVideo Studio...</div>
       </div>
     );
@@ -487,7 +487,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
   if (error || !data || !project) {
     return (
-      <div className="content-container" style={{ padding: '80px 0', textAlign: 'center' }}>
+      <div className="studio-page-layout" style={{ padding: '80px 0', textAlign: 'center' }}>
         <div style={{ color: 'var(--status-error)', fontSize: '15px', marginBottom: '14px' }}>
           ⚠️ {error || 'Project not found'}
         </div>
@@ -503,7 +503,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const activeScene = displayedScene || scenes[0];
 
   return (
-    <div className="content-container" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+    <div className="studio-page-layout" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* 1. STUDIO TOP CONTROL BAR */}
       <div
         style={{
@@ -1140,14 +1140,24 @@ export default function VideoStudioPage({ params }: { params?: any }) {
         <div className={`studio-pane studio-pane-right ${mobileStudioTab === 'scenes' ? 'studio-pane-mobile-hidden' : ''}`}>
           {/* Tab Switcher */}
           <div className="pane-header" style={{ padding: '8px 12px' }}>
-            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '4px', width: '100%', overflowX: 'auto' }}>
+              <button
+                onClick={() => {
+                  setActiveInspectorTab('scenes');
+                  setMobileStudioTab('scenes');
+                }}
+                className={`btn btn-sm studio-tabs-scenes-btn ${activeInspectorTab === 'scenes' ? 'btn-secondary' : 'btn-ghost'}`}
+                style={{ flex: 1, fontSize: '11px', whiteSpace: 'nowrap' }}
+              >
+                🎬 Scenes
+              </button>
               <button
                 onClick={() => {
                   setActiveInspectorTab('scene');
                   setMobileStudioTab('inspector');
                 }}
                 className={`btn btn-sm ${activeInspectorTab === 'scene' ? 'btn-secondary' : 'btn-ghost'}`}
-                style={{ flex: 1, fontSize: '11px' }}
+                style={{ flex: 1, fontSize: '11px', whiteSpace: 'nowrap' }}
               >
                 AI Scene
               </button>
@@ -1157,7 +1167,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   setMobileStudioTab('copilot');
                 }}
                 className={`btn btn-sm ${activeInspectorTab === 'copilot' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ flex: 1, fontSize: '11px', background: activeInspectorTab === 'copilot' ? 'var(--gradient-brand)' : 'transparent', color: '#fff' }}
+                style={{ flex: 1, fontSize: '11px', background: activeInspectorTab === 'copilot' ? 'var(--gradient-brand)' : 'transparent', color: '#fff', whiteSpace: 'nowrap' }}
               >
                 ⚡ Copilot
               </button>
@@ -1167,7 +1177,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   setMobileStudioTab('inspector');
                 }}
                 className={`btn btn-sm ${activeInspectorTab === 'metadata' ? 'btn-secondary' : 'btn-ghost'}`}
-                style={{ flex: 1, fontSize: '11px' }}
+                style={{ flex: 1, fontSize: '11px', whiteSpace: 'nowrap' }}
               >
                 Metadata
               </button>
@@ -1177,7 +1187,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   setMobileStudioTab('publish');
                 }}
                 className={`btn btn-sm ${activeInspectorTab === 'publish' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ flex: 1, fontSize: '11px' }}
+                style={{ flex: 1, fontSize: '11px', whiteSpace: 'nowrap' }}
               >
                 Publish
               </button>
@@ -1185,7 +1195,44 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {activeInspectorTab === 'scene' && activeScene ? (
+            {activeInspectorTab === 'scenes' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>
+                    Scene Cuts ({scenes.length})
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    ~{Math.round(scenes.reduce((acc, s) => acc + s.estimated_duration_sec, 0))}s Total
+                  </span>
+                </div>
+                {scenes.length === 0 ? (
+                  <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                    No scene cuts generated yet.
+                  </div>
+                ) : (
+                  scenes.map((s, idx) => (
+                    <div
+                      key={s.id || idx}
+                      onClick={() => handleSelectScene(idx)}
+                      className={`scene-cut-item ${(displayedSceneNum === s.scene_index) ? 'active' : ''}`}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="scene-cut-index">Scene {s.scene_index}</span>
+                          {rerollMap[s.scene_index] ? (
+                            <span style={{ fontSize: '9px', background: '#4f46e5', color: '#fff', padding: '1px 5px', borderRadius: '4px' }}>
+                              v{rerollMap[s.scene_index] + 1}
+                            </span>
+                          ) : null}
+                        </div>
+                        <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
+                      </div>
+                      <div className="scene-cut-text">{s.narration}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : activeInspectorTab === 'scene' && activeScene ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>

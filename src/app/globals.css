@@ -304,7 +304,9 @@ a {
   transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.sidebar-collapsed ~ .main-wrapper .topbar {
+.sidebar-collapsed ~ .main-wrapper .topbar,
+.sidebar.collapsed ~ .main-wrapper .topbar,
+.app-shell.sidebar-collapsed .main-wrapper .topbar {
   left: var(--sidebar-collapsed-width);
 }
 
@@ -386,7 +388,9 @@ a {
   transition: margin-left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.sidebar-collapsed ~ .main-wrapper {
+.sidebar-collapsed ~ .main-wrapper,
+.sidebar.collapsed ~ .main-wrapper,
+.app-shell.sidebar-collapsed .main-wrapper {
   margin-left: var(--sidebar-collapsed-width);
 }
 
@@ -396,6 +400,21 @@ a {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
+}
+
+.content-container.studio-main-container {
+  max-width: 100% !important;
+  padding: 16px 20px 48px !important;
+  width: 100% !important;
+}
+
+.studio-page-layout {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
 /* ───────────────────────────────────────────────────────────
@@ -685,9 +704,49 @@ a {
 .studio-workspace,
 .studio-grid {
   display: grid;
-  grid-template-columns: 280px 1fr 340px;
+  grid-template-columns: 260px minmax(0, 1fr) 340px;
   gap: 16px;
-  min-height: calc(100vh - var(--topbar-height) - 120px);
+  min-height: calc(100vh - var(--topbar-height) - 100px);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* ───────────────────────────────────────────────────────────
+   LAPTOPS & MEDIUM SCREENS (1025px to 1439px)
+   2-Column Responsive Studio: Hero Video Player + Tabbed Inspector
+   Guarantees 0 horizontal scroll and 0 clipping on 1280px / 1366px screens
+─────────────────────────────────────────────────────────── */
+@media (max-width: 1439px) and (min-width: 1025px) {
+  .studio-workspace,
+  .studio-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 340px !important;
+    gap: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .studio-pane-left {
+    display: none !important;
+  }
+
+  .studio-theater-column {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .studio-pane-right {
+    display: flex !important;
+    width: 340px !important;
+    max-width: 340px !important;
+    min-width: 0 !important;
+  }
+
+  .studio-tabs-scenes-btn {
+    display: inline-flex !important;
+  }
 }
 
 .studio-pane {
@@ -697,6 +756,7 @@ a {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .pane-header {
