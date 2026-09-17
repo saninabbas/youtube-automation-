@@ -356,15 +356,16 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const srtAsset = data?.assets?.find((a) => a.asset_type === 'subtitles');
   const vttUrl = srtAsset && project?.id ? `/api/assets/subtitles/${project.id}/captions.vtt` : null;
 
-  // Browser SpeechSynthesis fallback for guaranteed voice narration
+  // Browser SpeechSynthesis for guaranteed 100% audible voice narration
   const speakNarration = useCallback((text: string, lang: string = 'en') => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try {
       window.speechSynthesis.cancel();
       if (!text || !text.trim()) return;
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
+      utterance.rate = 0.95;
       utterance.pitch = 1.0;
+      utterance.volume = 1.0;
       const langMap: Record<string, string> = {
         ur: 'ur-PK',
         hi: 'hi-IN',
@@ -372,16 +373,47 @@ export default function VideoStudioPage({ params }: { params?: any }) {
         es: 'es-ES',
         fr: 'fr-FR',
         de: 'de-DE',
+        pt: 'pt-BR',
+        tr: 'tr-TR',
+        it: 'it-IT',
+        ja: 'ja-JP',
+        zh: 'zh-CN',
         en: 'en-US',
       };
       utterance.lang = langMap[lang] || lang || 'en-US';
+
+      // Pick matching regional voice in browser
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const langCode = utterance.lang.toLowerCase();
+        const prefix = langCode.split('-')[0];
+        const match =
+          voices.find((v) => v.lang.toLowerCase().replace('_', '-') === langCode) ||
+          voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
+        if (match) {
+          utterance.voice = match;
+        }
+      }
+
       window.speechSynthesis.speak(utterance);
     } catch (err) {
       console.warn('SpeechSynthesis error:', err);
     }
   }, []);
 
-  // Toggle play/pause synchronized between audio and video
+  // Preload speech synthesis voices on page mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const onVoices = () => window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = onVoices;
+      return () => {
+        window.speechSynthesis.onvoiceschanged = null;
+      };
+    }
+  }, []);
+
+  // Toggle play/pause synchronized between audio, narration, and video
   const togglePlay = () => {
     if (isPlaying) {
       if (videoRef.current) videoRef.current.pause();
@@ -394,20 +426,24 @@ export default function VideoStudioPage({ params }: { params?: any }) {
       if (videoRef.current) {
         videoRef.current.play().catch(() => {});
       }
+      // Speak the current scene narration immediately upon play
+      if (displayedScene?.narration) {
+        speakNarration(displayedScene.narration, project?.language || 'en');
+      }
       if (audioRef.current) {
         audioRef.current.currentTime = currentTime;
-        audioRef.current.play().catch((audioErr) => {
-          console.warn('HTML5 Audio playback prevented, falling back to Web Speech synthesis:', audioErr);
-          if (displayedScene?.narration) {
-            speakNarration(displayedScene.narration, project?.language || 'en');
-          }
-        });
-      } else if (displayedScene?.narration) {
-        speakNarration(displayedScene.narration, project?.language || 'en');
+        audioRef.current.play().catch(() => {});
       }
       setIsPlaying(true);
     }
   };
+
+  // Speak active scene narration whenever scene cuts transition during playback
+  useEffect(() => {
+    if (isPlaying && displayedScene?.narration) {
+      speakNarration(displayedScene.narration, project?.language || 'en');
+    }
+  }, [displayedSceneNum, isPlaying]);
 
   // Synchronized playback ticker across all scene cuts
   useEffect(() => {
@@ -860,6 +896,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   autoPlay={isPlaying}
                   loop={playbackMode === 'SOLO_SCENE'}
                   playsInline
+                  muted={true}
                 />
 
                 {/* Subtitle Caption Overlay */}
