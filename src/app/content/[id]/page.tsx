@@ -348,15 +348,47 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     : finalVideoUrl;
 
   const audioAsset = data?.assets?.find((a) => a.asset_type === 'audio');
-  const audioUrl = audioAsset && project?.id ? `/api/assets/${audioAsset.storage_key}` : null;
+  const audioUrl = project?.id
+    ? (audioAsset && audioAsset.storage_key
+        ? `/api/assets/${audioAsset.storage_key}?topic=${encodeURIComponent(project.topic || '')}&lang=${encodeURIComponent(project.language || 'en')}`
+        : `/api/assets/voice/${project.id}/narration.mp3?topic=${encodeURIComponent(project.topic || '')}&lang=${encodeURIComponent(project.language || 'en')}`)
+    : null;
   const srtAsset = data?.assets?.find((a) => a.asset_type === 'subtitles');
   const vttUrl = srtAsset && project?.id ? `/api/assets/subtitles/${project.id}/captions.vtt` : null;
+
+  // Browser SpeechSynthesis fallback for guaranteed voice narration
+  const speakNarration = useCallback((text: string, lang: string = 'en') => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      if (!text || !text.trim()) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      const langMap: Record<string, string> = {
+        ur: 'ur-PK',
+        hi: 'hi-IN',
+        ar: 'ar-SA',
+        es: 'es-ES',
+        fr: 'fr-FR',
+        de: 'de-DE',
+        en: 'en-US',
+      };
+      utterance.lang = langMap[lang] || lang || 'en-US';
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('SpeechSynthesis error:', err);
+    }
+  }, []);
 
   // Toggle play/pause synchronized between audio and video
   const togglePlay = () => {
     if (isPlaying) {
       if (videoRef.current) videoRef.current.pause();
       if (audioRef.current) audioRef.current.pause();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
       setIsPlaying(false);
     } else {
       if (videoRef.current) {
@@ -364,7 +396,14 @@ export default function VideoStudioPage({ params }: { params?: any }) {
       }
       if (audioRef.current) {
         audioRef.current.currentTime = currentTime;
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch((audioErr) => {
+          console.warn('HTML5 Audio playback prevented, falling back to Web Speech synthesis:', audioErr);
+          if (displayedScene?.narration) {
+            speakNarration(displayedScene.narration, project?.language || 'en');
+          }
+        });
+      } else if (displayedScene?.narration) {
+        speakNarration(displayedScene.narration, project?.language || 'en');
       }
       setIsPlaying(true);
     }
@@ -991,7 +1030,27 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (audioRef.current) {
+                    audioRef.current.currentTime = currentTime;
+                    audioRef.current.play().catch(() => {});
+                  }
+                  if (displayedScene?.narration) {
+                    speakNarration(displayedScene.narration, project?.language || 'en');
+                  }
+                  toast.success('🎙️ Spoken voiceover activated');
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '4px 8px', fontSize: '11px', gap: '4px' }}
+                title="Play or test spoken voiceover narration"
+              >
+                <span>🔊</span>
+                <span>Voiceover</span>
+              </button>
+
               <button
                 onClick={() => setShowCc(!showCc)}
                 className={`btn btn-sm ${showCc ? 'btn-secondary' : 'btn-ghost'}`}

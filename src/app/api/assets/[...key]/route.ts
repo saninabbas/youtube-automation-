@@ -478,9 +478,76 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
             await fs.promises.copyFile(sampleMp4, filePath);
           }
         } else if (ext === '.mp3' || ext === '.wav') {
-          const sampleMp3 = path.join(publicDir, 'sample.mp3');
-          if (fs.existsSync(sampleMp3)) {
-            await fs.promises.copyFile(sampleMp3, filePath);
+          // Dynamic Neural Voiceover Audio Synthesis
+          try {
+            const parts = key.split('/');
+            const projectId = parts.length > 1 ? parts[1] : '';
+            let lang = request.nextUrl.searchParams.get('lang') || 'en';
+            let narrationText = '';
+
+            if (projectId) {
+              try {
+                const db = getDb();
+                const proj = db.prepare('SELECT * FROM content_projects WHERE id = ?').get(projectId) as any;
+                if (proj) {
+                  lang = proj.language || lang;
+                  const scenes = db.prepare('SELECT narration FROM video_scenes WHERE project_id = ? ORDER BY scene_index ASC').all(projectId) as any[];
+                  if (scenes && scenes.length > 0) {
+                    narrationText = scenes.map((s: any) => s.narration).join('. ');
+                  } else if (proj.topic) {
+                    narrationText = `Welcome to our comprehensive breakdown of ${proj.topic}. Let us explore the core insights and analysis.`;
+                  }
+                }
+              } catch (_) {}
+            }
+
+            const queryTopic = request.nextUrl.searchParams.get('topic') || '';
+            if (!narrationText && queryTopic) {
+              narrationText = `Welcome to our video breakdown on ${queryTopic}. Let us dive into the key principles and takeaways.`;
+            }
+
+            if (!narrationText) {
+              narrationText = 'Welcome to this production breakdown. Let us explore the core key insights.';
+            }
+
+            // Split into clean sentence chunks for Google TTS
+            const sentences = narrationText.split(/(?<=[.?!])\s+/).filter(Boolean);
+            const audioChunks: Buffer[] = [];
+            const targetChunks = sentences.slice(0, 5);
+
+            for (const sentence of targetChunks) {
+              const clean = sentence.trim();
+              if (!clean) continue;
+              const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(clean.substring(0, 150))}`;
+              try {
+                const ttsRes = await fetch(ttsUrl, {
+                  signal: AbortSignal.timeout(3000),
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                  },
+                });
+                if (ttsRes.ok) {
+                  const ab = await ttsRes.arrayBuffer();
+                  audioChunks.push(Buffer.from(ab));
+                }
+              } catch (_) {}
+            }
+
+            if (audioChunks.length > 0) {
+              const fullAudio = Buffer.concat(audioChunks);
+              await fs.promises.writeFile(filePath, fullAudio);
+            } else {
+              const sampleMp3 = path.join(publicDir, 'sample.mp3');
+              if (fs.existsSync(sampleMp3)) {
+                await fs.promises.copyFile(sampleMp3, filePath);
+              }
+            }
+          } catch (ttsErr) {
+            console.warn('Dynamic voiceover synthesis error:', ttsErr);
+            const sampleMp3 = path.join(publicDir, 'sample.mp3');
+            if (fs.existsSync(sampleMp3)) {
+              await fs.promises.copyFile(sampleMp3, filePath);
+            }
           }
         } else if (ext === '.jpg' || ext === '.jpeg' || ext === '.png' || ext === '.webp') {
           const sampleThumb = path.join(publicDir, 'sample_thumb.jpg');

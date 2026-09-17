@@ -103,14 +103,57 @@ const STYLE_GALLERY = [
   },
 ];
 
-const VOICES_LIST = [
-  { id: 'en-US-ChristopherNeural', name: 'Christopher', gender: 'Male', tone: 'Authoritative, Deep, Cinematic', lang: 'English (US)' },
-  { id: 'en-US-GuyNeural', name: 'Guy', gender: 'Male', tone: 'Conversational, Engaging Storyteller', lang: 'English (US)' },
-  { id: 'en-US-JennyNeural', name: 'Jenny', gender: 'Female', tone: 'Warm, Articulate, Dynamic', lang: 'English (US)' },
-  { id: 'en-US-AriaNeural', name: 'Aria', gender: 'Female', tone: 'High-Energy, Expressive, Punchy', lang: 'English (US)' },
-  { id: 'en-GB-RyanNeural', name: 'Ryan', gender: 'Male', tone: 'British BBC, Sophisticated, Calm', lang: 'English (UK)' },
-  { id: 'en-GB-SoniaNeural', name: 'Sonia', gender: 'Female', tone: 'Clear, Intellectual, Documentary', lang: 'English (UK)' },
+export const LANGUAGES_LIST = [
+  { id: 'en', label: 'English (US / UK / Global)', flag: '🇺🇸' },
+  { id: 'ur', label: 'Urdu — اردو (نریشن اور اسکرپٹ)', flag: '🇵🇰' },
+  { id: 'hi', label: 'Hindi — हिन्दी (वॉयस और स्क्रिप्ट)', flag: '🇮🇳' },
+  { id: 'ar', label: 'Arabic — العربية (التعليق الصوتي)', flag: '🇸🇦' },
+  { id: 'es', label: 'Spanish — Español', flag: '🇪🇸' },
+  { id: 'fr', label: 'French — Français', flag: '🇫🇷' },
+  { id: 'de', label: 'German — Deutsch', flag: '🇩🇪' },
+  { id: 'pt', label: 'Portuguese — Português', flag: '🇧🇷' },
+  { id: 'tr', label: 'Turkish — Türkçe', flag: '🇹🇷' },
+  { id: 'it', label: 'Italian — Italiano', flag: '🇮🇹' },
+  { id: 'ja', label: 'Japanese — 日本語', flag: '🇯🇵' },
+  { id: 'zh', label: 'Chinese — 中文', flag: '🇨🇳' },
 ];
+
+export const VOICES_MAP: Record<string, Array<{ id: string; name: string; gender: string; tone: string; lang: string }>> = {
+  en: [
+    { id: 'en-US-ChristopherNeural', name: 'Christopher', gender: 'Male', tone: 'Authoritative, Deep, Cinematic', lang: 'English (US)' },
+    { id: 'en-US-GuyNeural', name: 'Guy', gender: 'Male', tone: 'Conversational, Engaging Storyteller', lang: 'English (US)' },
+    { id: 'en-US-JennyNeural', name: 'Jenny', gender: 'Female', tone: 'Warm, Articulate, Dynamic', lang: 'English (US)' },
+    { id: 'en-US-AriaNeural', name: 'Aria', gender: 'Female', tone: 'High-Energy, Expressive, Punchy', lang: 'English (US)' },
+    { id: 'en-GB-RyanNeural', name: 'Ryan', gender: 'Male', tone: 'British BBC, Sophisticated, Calm', lang: 'English (UK)' },
+    { id: 'en-GB-SoniaNeural', name: 'Sonia', gender: 'Female', tone: 'Clear, Intellectual, Documentary', lang: 'English (UK)' },
+  ],
+  ur: [
+    { id: 'ur-PK-AsadNeural', name: 'Asad (اسد)', gender: 'Male', tone: 'Authoritative, Urdu Storyteller, Deep', lang: 'Urdu (Pakistan)' },
+    { id: 'ur-PK-UzmaNeural', name: 'Uzma (عظمیٰ)', gender: 'Female', tone: 'Clear, Articulate, Documentary Style', lang: 'Urdu (Pakistan)' },
+    { id: 'ur-IN-SalmanNeural', name: 'Salman (سلمان)', gender: 'Male', tone: 'Conversational, Engaging, Warm', lang: 'Urdu (India)' },
+  ],
+  hi: [
+    { id: 'hi-IN-MadhurNeural', name: 'Madhur (मधुर)', gender: 'Male', tone: 'Clear, Authoritative Hindi Storyteller', lang: 'Hindi (India)' },
+    { id: 'hi-IN-SwaraNeural', name: 'Swara (स्वरा)', gender: 'Female', tone: 'Warm, Articulate, Documentary Narration', lang: 'Hindi (India)' },
+  ],
+  ar: [
+    { id: 'ar-SA-HamedNeural', name: 'Hamed (حامد)', gender: 'Male', tone: 'Deep, Classical Arabic Narrator', lang: 'Arabic (Saudi)' },
+    { id: 'ar-SA-ZariyahNeural', name: 'Zariyah (زارية)', gender: 'Female', tone: 'Eloquent, Documentary Pacing', lang: 'Arabic (Saudi)' },
+  ],
+  es: [
+    { id: 'es-ES-AlvaroNeural', name: 'Alvaro', gender: 'Male', tone: 'Dynamic, Expressive, European Spanish', lang: 'Spanish (Spain)' },
+    { id: 'es-MX-JorgeNeural', name: 'Jorge', gender: 'Male', tone: 'Warm, Engaging, Latin American', lang: 'Spanish (Mexico)' },
+  ],
+  fr: [
+    { id: 'fr-FR-HenriNeural', name: 'Henri', gender: 'Male', tone: 'Sophisticated, Documentary Narration', lang: 'French (France)' },
+    { id: 'fr-FR-DeniseNeural', name: 'Denise', gender: 'Female', tone: 'Clear, Articulate, Cinematic', lang: 'French (France)' },
+  ],
+  de: [
+    { id: 'de-DE-ConradNeural', name: 'Conrad', gender: 'Male', tone: 'Authoritative, Precise, Professional', lang: 'German (Germany)' },
+  ],
+};
+
+const DEFAULT_VOICES = VOICES_MAP.en;
 
 function CreateVideoWizardContent() {
   const router = useRouter();
@@ -604,60 +647,102 @@ function CreateVideoWizardContent() {
           {activeStep === 4 && (
             <div className="card" style={{ padding: '20px' }}>
               <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
-                Neural Voiceover & Narration
+                Neural Voiceover & Narration Language
               </h2>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Select AI voice synthesizer model and speech speed multiplier.
+                Select script & voiceover language, AI voice synthesizer model, and speech velocity.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                {VOICES_LIST.map((voc) => (
-                  <div
-                    key={voc.id}
-                    onClick={() => setVoice(voc.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      background: voice === voc.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
-                      border: voice === voc.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
-                      cursor: 'pointer',
-                      transition: 'all 0.12s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '6px',
-                          background: 'var(--bg-surface)',
-                          border: '1px solid var(--border-subtle)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '12px',
-                        }}
-                      >
-                        🎙️
-                      </div>
-                      <div>
-                        <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>
-                          {voc.name} ({voc.gender})
-                        </h3>
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          {voc.tone} • {voc.lang}
-                        </p>
-                      </div>
-                    </div>
+              {/* Language Selector */}
+              <div style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>🌐 Video Language & Locale</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>12 Languages Supported</span>
+                </label>
+                <select
+                  value={language}
+                  onChange={(e) => {
+                    const newLang = e.target.value;
+                    setLanguage(newLang);
+                    const available = VOICES_MAP[newLang] || DEFAULT_VOICES;
+                    if (available.length > 0) {
+                      setVoice(available[0].id);
+                    }
+                  }}
+                  className="form-input"
+                  style={{
+                    width: '100%',
+                    fontSize: '13px',
+                    padding: '10px 12px',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    color: '#f4f4f5',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {LANGUAGES_LIST.map((l) => (
+                    <option key={l.id} value={l.id} style={{ background: '#18181b', color: '#f4f4f5' }}>
+                      {l.flag} {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: voice === voc.id ? '#ffffff' : 'var(--text-dim)', fontWeight: 500 }}>
-                      {voice === voc.id ? 'Selected' : 'Select'}
-                    </span>
-                  </div>
-                ))}
+              {/* Voices List for Selected Language */}
+              <div style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ marginBottom: '6px' }}>
+                  Neural Voice Synthesizer ({VOICES_MAP[language]?.length || DEFAULT_VOICES.length} Available)
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(VOICES_MAP[language] || DEFAULT_VOICES).map((voc) => (
+                    <div
+                      key={voc.id}
+                      onClick={() => setVoice(voc.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: voice === voc.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
+                        border: voice === voc.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
+                        cursor: 'pointer',
+                        transition: 'all 0.12s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '6px',
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--border-subtle)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                          }}
+                        >
+                          🎙️
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>
+                            {voc.name} ({voc.gender})
+                          </h3>
+                          <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {voc.tone} • {voc.lang}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: voice === voc.id ? '#ffffff' : 'var(--text-dim)', fontWeight: 500 }}>
+                        {voice === voc.id ? '✓ Selected' : 'Select'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Speed multiplier */}
@@ -745,6 +830,12 @@ function CreateVideoWizardContent() {
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-muted)' }}>Scene Cuts</span>
               <span className="tabular-nums" style={{ color: 'var(--text-primary)' }}>~{estimatedScenes}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Language</span>
+              <span style={{ color: 'var(--text-primary)' }}>
+                {LANGUAGES_LIST.find((l) => l.id === language)?.flag} {LANGUAGES_LIST.find((l) => l.id === language)?.label.split('—')[0].split('(')[0].trim()}
+              </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-muted)' }}>Script Target</span>

@@ -188,6 +188,12 @@ export async function GET(request: Request, { params }: { params: any }) {
           VALUES (?, ?, 'final_video', ?, ?, 180, '{"resolution":"1920x1080"}', ?)
         `).run(uuidv4(), id, finalKey, `/api/assets/${finalKey}`, now);
 
+        const audioKey = `voice/${id}/narration.mp3`;
+        db.prepare(`
+          INSERT OR IGNORE INTO generated_assets (id, project_id, asset_type, storage_key, url, duration_sec, metadata_json, created_at)
+          VALUES (?, ?, 'audio', ?, ?, 180, '{"format":"mp3"}', ?)
+        `).run(uuidv4(), id, audioKey, `/api/assets/${audioKey}`, now);
+
         const metadata = aiProvider.generateMetadata({
           script,
           scenes: genScenes.map((s) => ({
