@@ -338,6 +338,21 @@ class DefaultAiProvider implements AiProvider {
     } else if (hasAnyWord(['health', 'healthy', 'wellness', 'longevity', 'vitality', 'cardio', 'fitness', 'exercise', 'aging'])) {
       domainFocus = 'cellular longevity protocols, metabolic resilience, and systemic vitality';
       defaultEnv = 'State-of-the-art sports science and longevity clinical suite';
+    } else if (hasAnyWord(['car', 'cars', 'supercar', 'supercars', 'bmw', 'ferrari', 'lamborghini', 'porsche', 'tesla', 'driving', 'automotive', 'racing', 'engine', 'vehicle', 'vehicles', 'speed'])) {
+      domainFocus = 'aerodynamic powertrain engineering, precision vehicle dynamics, and track-tested automotive performance';
+      defaultEnv = 'High-tech automotive aerodynamic design studio and sunlit mountain highway';
+    } else if (hasAnyWord(['ocean', 'sea', 'marine', 'water', 'deepsea', 'nature', 'wildlife', 'animals', 'animal', 'forest', 'plants', 'gardening', 'trees'])) {
+      domainFocus = 'marine biodiversity, abyssal ecosystem dynamics, and environmental conservation';
+      defaultEnv = 'Expansive coastal shoreline and bioluminescent oceanic depths';
+    } else if (hasAnyWord(['music', 'song', 'guitar', 'piano', 'sound', 'audio', 'beat', 'beats', 'track', 'art', 'dance', 'culture'])) {
+      domainFocus = 'acoustic resonance, harmonic composition, and creative expression';
+      defaultEnv = 'Modern acoustic mastering studio with warm ambient backlighting';
+    } else if (hasAnyWord(['architecture', 'building', 'buildings', 'skyscraper', 'house', 'houses', 'realestate', 'construction', 'city', 'urban'])) {
+      domainFocus = 'structural engineering aesthetics, spatial geometry, and sustainable architectural design';
+      defaultEnv = 'Architectural design pavilion overlooking a scenic modern skyline';
+    } else if (hasAnyWord(['plane', 'airplane', 'aviation', 'flight', 'mystery', 'mysteries', 'history', 'ancient', 'pyramid', 'bermuda'])) {
+      domainFocus = 'historical investigations, navigational anomalies, and aviation breakthroughs';
+      defaultEnv = 'Expansive aerial flight cockpit and historical exploration chamber';
     } else if (hasAnyWord(['ai', 'artificial intelligence', 'tech', 'technology', 'robot', 'robotics', 'neural', 'software', 'coding', 'computing'])) {
       domainFocus = 'frontier neural architectures, autonomous computing, and next-generation innovation';
       defaultEnv = 'Cutting-edge technology research laboratory with holographic interfaces';

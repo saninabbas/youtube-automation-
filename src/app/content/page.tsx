@@ -345,7 +345,7 @@ function ContentLibraryList() {
           </Link>
         </div>
       ) : viewMode === 'grid' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
           {sortedProjects.map((p) => {
             const isProcessing = p.status === 'PROCESSING' || p.status === 'PENDING' || p.publishing_status === 'UPLOADING';
             const isReady = p.status === 'COMPLETED';

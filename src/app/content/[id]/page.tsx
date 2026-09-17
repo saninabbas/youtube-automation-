@@ -96,6 +96,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const [error, setError] = useState<string | null>(null);
   const [activeSceneIdx, setActiveSceneIdx] = useState(0);
   const [activeInspectorTab, setActiveInspectorTab] = useState<'scene' | 'copilot' | 'metadata' | 'publish'>('scene');
+  const [mobileStudioTab, setMobileStudioTab] = useState<'scenes' | 'inspector' | 'copilot' | 'publish'>('scenes');
 
   // Video Player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -513,7 +514,9 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                     border: '1px solid #6366f1',
                     borderRadius: '6px',
                     color: '#fff',
-                    minWidth: '320px',
+                    width: '100%',
+                    maxWidth: '380px',
+                    minWidth: 0,
                   }}
                   autoFocus
                 />
@@ -536,13 +539,13 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
                 <h1
                   style={{
                     fontSize: '16px',
                     fontWeight: 700,
                     color: '#fff',
-                    whiteSpace: 'nowrap',
+                    maxWidth: '100%',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                   }}
@@ -567,7 +570,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={() => handleGenerateVideo('SCRIPT')}
             disabled={isGeneratingVideo}
@@ -673,8 +676,8 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
       {/* 2. THREE-PANE VIDEO STUDIO WORKSPACE */}
       <div className="studio-workspace">
-        {/* LEFT PANE: Scene Cuts List */}
-        <div className="studio-pane">
+        {/* LEFT PANE: Scene Cuts List (Hidden on mobile if other tab active) */}
+        <div className={`studio-pane studio-pane-left ${mobileStudioTab !== 'scenes' ? 'studio-pane-mobile-hidden' : ''}`}>
           <div className="pane-header">
             <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
               Scene Cuts ({scenes.length})
@@ -714,7 +717,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           </div>
         </div>
 
-        {/* CENTER PANE: 1080p Theater Player & Timeline */}
+        {/* CENTER PANE: 1080p Theater Player & Timeline (Pinned to top on mobile) */}
         <div className="studio-theater-column">
           {/* Multi-Scene Engine Mode Switcher Bar */}
           <div
@@ -722,6 +725,8 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
               padding: '8px 12px',
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-subtle)',
@@ -729,7 +734,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               fontSize: '12px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setPlaybackMode('MULTI_SCENE_AUTO')}
                 className={`btn btn-sm ${playbackMode === 'MULTI_SCENE_AUTO' ? 'btn-primary' : 'btn-ghost'}`}
@@ -1029,36 +1034,89 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               ))}
             </div>
           </div>
+
+          {/* Mobile Tab Navigator (Hidden on Desktop, Visible on Mobile <= 1024px) */}
+          <div className="studio-mobile-tabs">
+            <button
+              type="button"
+              onClick={() => setMobileStudioTab('scenes')}
+              className={mobileStudioTab === 'scenes' ? 'active' : ''}
+            >
+              🎬 Scene Cuts ({scenes.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileStudioTab('inspector');
+                setActiveInspectorTab('scene');
+              }}
+              className={mobileStudioTab === 'inspector' && activeInspectorTab === 'scene' ? 'active' : ''}
+            >
+              ⚙️ Inspector
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileStudioTab('copilot');
+                setActiveInspectorTab('copilot');
+              }}
+              className={mobileStudioTab === 'copilot' || (mobileStudioTab !== 'scenes' && activeInspectorTab === 'copilot') ? 'active' : ''}
+            >
+              ⚡ Copilot
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileStudioTab('publish');
+                setActiveInspectorTab('publish');
+              }}
+              className={mobileStudioTab === 'publish' || (mobileStudioTab !== 'scenes' && activeInspectorTab === 'publish') ? 'active' : ''}
+            >
+              🚀 Publish
+            </button>
+          </div>
         </div>
 
-        {/* RIGHT PANE: AI Inspector, AutoVideo Copilot & Publishing */}
-        <div className="studio-pane">
+        {/* RIGHT PANE: AI Inspector, AutoVideo Copilot & Publishing (Hidden on mobile if scenes tab is active) */}
+        <div className={`studio-pane studio-pane-right ${mobileStudioTab === 'scenes' ? 'studio-pane-mobile-hidden' : ''}`}>
           {/* Tab Switcher */}
           <div className="pane-header" style={{ padding: '8px 12px' }}>
             <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
               <button
-                onClick={() => setActiveInspectorTab('scene')}
+                onClick={() => {
+                  setActiveInspectorTab('scene');
+                  setMobileStudioTab('inspector');
+                }}
                 className={`btn btn-sm ${activeInspectorTab === 'scene' ? 'btn-secondary' : 'btn-ghost'}`}
                 style={{ flex: 1, fontSize: '11px' }}
               >
                 AI Scene
               </button>
               <button
-                onClick={() => setActiveInspectorTab('copilot')}
+                onClick={() => {
+                  setActiveInspectorTab('copilot');
+                  setMobileStudioTab('copilot');
+                }}
                 className={`btn btn-sm ${activeInspectorTab === 'copilot' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ flex: 1, fontSize: '11px', background: activeInspectorTab === 'copilot' ? 'var(--gradient-brand)' : 'transparent', color: '#fff' }}
               >
                 ⚡ Copilot
               </button>
               <button
-                onClick={() => setActiveInspectorTab('metadata')}
+                onClick={() => {
+                  setActiveInspectorTab('metadata');
+                  setMobileStudioTab('inspector');
+                }}
                 className={`btn btn-sm ${activeInspectorTab === 'metadata' ? 'btn-secondary' : 'btn-ghost'}`}
                 style={{ flex: 1, fontSize: '11px' }}
               >
                 Metadata
               </button>
               <button
-                onClick={() => setActiveInspectorTab('publish')}
+                onClick={() => {
+                  setActiveInspectorTab('publish');
+                  setMobileStudioTab('publish');
+                }}
                 className={`btn btn-sm ${activeInspectorTab === 'publish' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ flex: 1, fontSize: '11px' }}
               >

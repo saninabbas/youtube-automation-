@@ -260,16 +260,13 @@ function CreateVideoWizardContent() {
         </Link>
       </div>
 
-      {/* 3-Column Studio Wizard Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 290px', gap: '18px', alignItems: 'start' }}>
+      {/* 3-Column Studio Wizard Grid (Responsive 1-col on mobile) */}
+      <div className="create-wizard-grid">
         {/* LEFT: STEP NAVIGATION */}
         <div
-          className="card"
+          className="card wizard-step-nav"
           style={{
             padding: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '3px',
           }}
         >
           {[

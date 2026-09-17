@@ -236,7 +236,168 @@ export function getSceneVideoCdnUrl(
       'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
     ];
   }
-  // 7. Technology / AI / Software / Future (Default)
+  // 7. Cars / Automotive / Supercars / Driving / Vehicles / Racing
+  else if (
+    hasAnyWord([
+      'car',
+      'cars',
+      'supercar',
+      'supercars',
+      'bmw',
+      'ferrari',
+      'lamborghini',
+      'porsche',
+      'mercedes',
+      'audi',
+      'tesla',
+      'drive',
+      'driving',
+      'driver',
+      'highway',
+      'speed',
+      'racing',
+      'race',
+      'vehicle',
+      'vehicles',
+      'automobile',
+      'automotive',
+      'engine',
+      'motor',
+      'drift',
+      'drifting',
+      'speedometer',
+    ])
+  ) {
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-the-rear-of-a-bmw-m4-7342/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-cars-driving-on-the-highway-955/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-cars-driving-in-the-rain-at-night-2601/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-driving-on-amalfi-coast-1491/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
+    ];
+  }
+  // 8. Nature / Ocean / Marine / Wildlife / Animals / Deep Sea / Plants
+  else if (
+    hasAnyWord([
+      'nature',
+      'ocean',
+      'sea',
+      'marine',
+      'water',
+      'waves',
+      'beach',
+      'underwater',
+      'deepsea',
+      'animal',
+      'animals',
+      'wildlife',
+      'dog',
+      'dogs',
+      'pet',
+      'pets',
+      'forest',
+      'mountain',
+      'mountains',
+      'tree',
+      'trees',
+      'plant',
+      'plants',
+      'garden',
+      'gardening',
+      'earth',
+      'environment',
+      'wild',
+    ]) ||
+    normalized.includes(' deep sea ') ||
+    normalized.includes(' rain forest ')
+  ) {
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-foamy-ocean-waves-at-night-2122/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-bioluminescent-plankton-illuminate-the-waves-on-a-tropical-beach/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-walking-the-dogs-in-nature-4989/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-woman-standing-in-the-tall-grass-9769/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-girl-running-in-a-forest-3856/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-ai-generated-art-of-enchanted-forest-unicorns-gathering/1080p.mp4',
+    ];
+  }
+  // 9. Music / Audio / Guitar / Beats / Sound / Art / Culture
+  else if (
+    hasAnyWord([
+      'music',
+      'song',
+      'songs',
+      'guitar',
+      'piano',
+      'sound',
+      'audio',
+      'beat',
+      'beats',
+      'track',
+      'hiphop',
+      'melody',
+      'instrument',
+      'instruments',
+      'band',
+      'singing',
+      'singer',
+      'dance',
+      'dancing',
+      'art',
+      'artist',
+      'creative',
+      'culture',
+    ])
+  ) {
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-premium-a-man-playing-his-guitar-thoughtfully-5824/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-premium-sound-machine-8039/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-woman-standing-in-the-tall-grass-9769/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+    ];
+  }
+  // 10. Architecture / Real Estate / Buildings / Construction / Luxury / City
+  else if (
+    hasAnyWord([
+      'architecture',
+      'architectural',
+      'building',
+      'buildings',
+      'skyscraper',
+      'skyscrapers',
+      'house',
+      'houses',
+      'home',
+      'homes',
+      'mansion',
+      'realestate',
+      'property',
+      'construction',
+      'interior',
+      'monastery',
+      'cathedral',
+      'structure',
+      'structures',
+      'urban',
+    ]) ||
+    normalized.includes(' real estate ')
+  ) {
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-the-architecture-of-the-jeronimos-monastery-856/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-a-building-on-a-sunny-day-6311/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-town-square-in-spain-7775/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-driving-on-amalfi-coast-1491/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
+    ];
+  }
+  // 11. Technology / AI / Software / Future (Default)
   else {
     clipList = [
       'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4',
