@@ -4,7 +4,7 @@ import fs from 'fs';
 import { storage } from '@/lib/storage';
 import { getDb } from '@/lib/db';
 
-export function getSceneVideoCdnUrl(
+function getSceneVideoCdnUrl(
   topic: string = '',
   sceneIndex: number = 1,
   reroll: number = 0,
@@ -415,7 +415,7 @@ export function getSceneVideoCdnUrl(
   return clipList[pickedIndex];
 }
 
-export function getTopicVideoCdnUrl(topic: string = ''): string {
+function getTopicVideoCdnUrl(topic: string = ''): string {
   return getSceneVideoCdnUrl(topic, 1, 0);
 }
 

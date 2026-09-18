@@ -215,6 +215,25 @@ export default function ChannelsPage() {
     setDeleteTarget(ch);
   };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleting(true);
+      const res = await fetch(`/api/channels/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to delete channel');
+      }
+      toast.success('Channel profile deleted');
+      setChannels((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting channel');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="content-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}

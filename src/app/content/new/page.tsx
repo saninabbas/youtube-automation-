@@ -103,7 +103,7 @@ const STYLE_GALLERY = [
   },
 ];
 
-export const LANGUAGES_LIST = [
+const LANGUAGES_LIST = [
   { id: 'en', label: 'English (US / UK / Global)', flag: '🇺🇸' },
   { id: 'ur', label: 'Urdu — اردو (نریشن اور اسکرپٹ)', flag: '🇵🇰' },
   { id: 'hi', label: 'Hindi — हिन्दी (वॉयस और स्क्रिप्ट)', flag: '🇮🇳' },
@@ -118,7 +118,7 @@ export const LANGUAGES_LIST = [
   { id: 'zh', label: 'Chinese — 中文', flag: '🇨🇳' },
 ];
 
-export const VOICES_MAP: Record<string, Array<{ id: string; name: string; gender: string; tone: string; lang: string }>> = {
+const VOICES_MAP: Record<string, Array<{ id: string; name: string; gender: string; tone: string; lang: string }>> = {
   en: [
     { id: 'en-US-ChristopherNeural', name: 'Christopher', gender: 'Male', tone: 'Authoritative, Deep, Cinematic', lang: 'English (US)' },
     { id: 'en-US-GuyNeural', name: 'Guy', gender: 'Male', tone: 'Conversational, Engaging Storyteller', lang: 'English (US)' },
@@ -195,7 +195,7 @@ function CreateVideoWizardContent() {
           }
         }
       } catch (err: any) {
-        setError(err.message);
+        console.error('Failed to load channels:', err.message);
       } finally {
         setLoading(false);
       }
