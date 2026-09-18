@@ -497,6 +497,19 @@ function ContentLibraryList() {
                   </span>
 
                   <div style={{ display: 'flex', gap: '6px' }}>
+                    {isReady && (
+                      <a
+                        href={`/api/assets/video/${p.id}/final_video.mp4`}
+                        download={`${p.topic.replace(/[^a-zA-Z0-9]/g, '_')}.mp4`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '2px 8px', fontSize: '11px', height: '24px', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}
+                        title="Download Final MP4"
+                      >
+                        ⬇️ MP4
+                      </a>
+                    )}
+
                     {p.status === 'FAILED' && (
                       <button
                         onClick={(e) => handleRetryProject(p.id, e)}

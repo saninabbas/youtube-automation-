@@ -82,8 +82,18 @@ class DefaultAiProvider implements AiProvider {
   }): Promise<{ script: ScriptStructure; fullNarration: string }> {
     const { channelName, niche, topic, targetLengthMinutes, introStyle, outroCta, visualStyle } = params;
 
-    // 1. Try Google Gemini if configured in DB or ENV
-    const geminiKey = getApiKey('gemini');
+    // 1. Try OpenRouter if configured in DB or ENV
+    const openRouterKey = getApiKey('openrouter') || process.env.OPENROUTER_API_KEY;
+    if (openRouterKey) {
+      try {
+        return await this.generateScriptWithOpenRouter(params, openRouterKey);
+      } catch (err: any) {
+        console.warn(`[AiProvider] OpenRouter generation failed (${err.message}). Trying fallback...`);
+      }
+    }
+
+    // 2. Try Google Gemini if configured in DB or ENV
+    const geminiKey = getApiKey('gemini') || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     if (geminiKey) {
       try {
         return await this.generateScriptWithGemini(params, geminiKey);
@@ -92,8 +102,8 @@ class DefaultAiProvider implements AiProvider {
       }
     }
 
-    // 2. Try OpenAI if configured in DB or ENV
-    const openAiKey = getApiKey('openai');
+    // 3. Try OpenAI if configured in DB or ENV
+    const openAiKey = getApiKey('openai') || process.env.OPENAI_API_KEY;
     if (openAiKey) {
       try {
         return await this.generateScriptWithOpenAI(params, openAiKey);
@@ -424,6 +434,153 @@ class DefaultAiProvider implements AiProvider {
     };
   }
 
+  private buildMasterPrompt(params: {
+    channelName: string;
+    niche: string;
+    language: string;
+    topic: string;
+    targetLengthMinutes: number;
+    visualStyle?: string;
+    introStyle?: string;
+    outroCta?: string;
+    contentRules?: string;
+  }): string {
+    const targetWordCount = Math.round(params.targetLengthMinutes * 138);
+
+    const isHealthTopic = /health|wellness|longevity|disease|medical|medicine|diet|nutrition|supplement|aging|vitality|symptom|cancer|cardio|fitness|gut\b/i.test(
+      `${params.topic} ${params.niche}`
+    );
+
+    const healthSafeguard = isHealthTopic
+      ? `\nHEALTH CONTENT SAFEGUARD DIRECTIVE (STRICT REGULATORY & PLATFORM COMPLIANCE):
+- The topic involves health, longevity, nutrition, or medical science.
+- You MUST ensure all statements are strictly educational, informational, and grounded in reputable scientific consensus.
+- NEVER provide individualized medical diagnosis, prescriptive treatment protocols, or claim miraculous cures for diseases.
+- Frame advice around lifestyle, holistic habits, and balanced nutrition, with clear encouragement to consult licensed healthcare providers.`
+      : '';
+
+    return `You are a world-class documentary director and lead video writer for channel "${params.channelName}" (Niche: ${params.niche}, Language: ${params.language}, Visual Style: ${params.visualStyle || 'Cinematic'}).
+Write a mesmerizing, high-retention video script for the exact topic: "${params.topic}".
+
+TARGET DURATION: Exactly ${params.targetLengthMinutes} minutes (Spoken narration MUST contain approximately ${targetWordCount} words to fill this duration at 138 words per minute).
+Adhere to channel tone: ${params.contentRules || 'Engaging, clear, professional delivery'}.
+Intro Hook Style: ${params.introStyle || 'High-Impact Dramatic Question'}.
+Outro CTA: ${params.outroCta || 'Subscribe and hit the bell'}.${healthSafeguard}
+
+CRITICAL NARRATIVE CONTINUITY & SCENE COHESION RULES (MANDATORY FOR COMMERCIAL SAAS):
+1. SEAMLESS STORYTELLING: The script MUST flow as a single continuous story without disjointed cuts.
+   - Scene 1 (Hook): Grips the audience with high tension, mystery, or a provocative question directly about "${params.topic}".
+   - Scene 2 (Intro): Bridges from the hook into the core thesis ("Here is the astonishing truth...").
+   - Middle Scenes: Every subsection MUST begin with a natural narrative bridge connecting from the previous point (e.g., "To see this in action...", "Now look closer at...", "This breakthrough changes everything...").
+   - Conclusion & CTA: Resolves the journey with inspiring perspective and a compelling subscriber call to action.
+2. VISUAL CONTINUITY:
+   - Every "visualPrompt" MUST explicitly depict the subject matter of "${params.topic}" (NEVER use generic office or laptop stock descriptions unless the topic is specifically about office work).
+   - All visualPrompts MUST share the same aesthetic DNA: "${params.visualStyle || 'Cinematic High-Contrast'}, 35mm anamorphic, volumetric cinematic lighting, 8k resolution, photorealistic".
+   - "continuityNotes" must specify camera and color continuity from the preceding shot.
+
+You must return valid JSON strictly conforming to this schema:
+{
+  "title": "${params.topic}",
+  "hook": "High-impact opening hook (~30-50 words)",
+  "introduction": "Compelling narrative bridge into the story (~40-60 words)",
+  "sections": [
+    {
+      "heading": "Act / Chapter Title",
+      "subsections": [
+        {
+          "subheading": "Scene Specific Title",
+          "narration": "Deep narrative spoken text with transitional bridge (~60-100 words)...",
+          "visualPrompt": "Detailed cinematic visual prompt specifically depicting this moment of ${params.topic}, ${params.visualStyle || 'Cinematic'}, 4k photo",
+          "visualSubject": "Main subject in motion",
+          "environment": "Physical cinematic setting",
+          "cameraMovement": "Slow cinematic forward dolly / tracking glide",
+          "lighting": "Atmospheric dramatic lighting matching the mood",
+          "colorStyle": "${params.visualStyle || 'Cinematic'} color palette",
+          "continuityNotes": "Matches color grade and visual motif from preceding scene",
+          "durationSec": 30
+        }
+      ]
+    }
+  ],
+  "conclusion": "Resonant philosophical or practical summary (~40-60 words)",
+  "callToAction": "Natural subscriber call to action for ${params.channelName} (~30-50 words)"
+}`;
+  }
+
+  private async generateScriptWithOpenRouter(
+    params: {
+      channelName: string;
+      niche: string;
+      language: string;
+      topic: string;
+      targetLengthMinutes: number;
+      visualStyle?: string;
+      introStyle?: string;
+      outroCta?: string;
+      contentRules?: string;
+    },
+    apiKey: string
+  ): Promise<{ script: ScriptStructure; fullNarration: string }> {
+    const prompt = this.buildMasterPrompt(params);
+    const model = process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-001';
+
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      signal: AbortSignal.timeout(15000),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://youtube-automation-three-neon.vercel.app/',
+        'X-Title': 'YouTube Automation SaaS',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: 'You are an award-winning documentary director and video scriptwriter. You strictly output valid JSON matching the requested schema without markdown wrapping.' },
+          { role: 'user', content: prompt },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`OpenRouter API error (${res.status}): ${errText.substring(0, 200)}`);
+    }
+
+    const data = await res.json();
+    const rawContent = data?.choices?.[0]?.message?.content;
+    if (!rawContent) {
+      throw new Error('OpenRouter returned empty response');
+    }
+
+    let parsed: ScriptStructure;
+    try {
+      let cleaned = rawContent.trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      parsed = JSON.parse(cleaned);
+    } catch (e: any) {
+      throw new Error(`Failed to parse OpenRouter JSON output: ${e.message}`);
+    }
+
+    const narrationParts: string[] = [parsed.hook, parsed.introduction];
+    for (const sec of parsed.sections) {
+      for (const sub of sec.subsections) {
+        narrationParts.push(sub.narration);
+      }
+    }
+    narrationParts.push(parsed.conclusion);
+    narrationParts.push(parsed.callToAction);
+
+    const fullNarration = narrationParts.join('\n\n');
+    return { script: parsed, fullNarration };
+  }
+
   private async generateScriptWithGemini(
     params: {
       channelName: string;
@@ -438,42 +595,7 @@ class DefaultAiProvider implements AiProvider {
     },
     apiKey: string
   ): Promise<{ script: ScriptStructure; fullNarration: string }> {
-    const targetWordCount = Math.round(params.targetLengthMinutes * 138);
-
-    const prompt = `You are a professional video script writer and director for channel "${params.channelName}" (Niche: ${params.niche}, Language: ${params.language}, Visual Style: ${params.visualStyle || 'Cinematic'}).
-Write an engaging, deep video script for the topic: "${params.topic}".
-TARGET DURATION: Exactly ${params.targetLengthMinutes} minutes (Spoken narration MUST contain approximately ${targetWordCount} total words to fill this duration at 138 words per minute).
-Adhere to editorial rules: ${params.contentRules || 'Engaging, clear, professional delivery'}.
-Intro Hook Style: ${params.introStyle || 'High-Impact Dramatic Question'}.
-Outro CTA: ${params.outroCta || 'Subscribe and hit the bell'}.
-
-You must return valid JSON strictly conforming to this schema:
-{
-  "title": "${params.topic}",
-  "hook": "Compelling hook (~30-50 words)",
-  "introduction": "Engaging introduction (~40-60 words)",
-  "sections": [
-    {
-      "heading": "Section Title",
-      "subsections": [
-        {
-          "subheading": "Point Title",
-          "narration": "Detailed spoken narration (~60-100 words)...",
-          "visualPrompt": "Cinematic visual description for point",
-          "visualSubject": "Core subject",
-          "environment": "Physical setting",
-          "cameraMovement": "Camera motion vector",
-          "lighting": "Lighting description",
-          "colorStyle": "Color palette",
-          "continuityNotes": "Continuity notes from previous scene",
-          "durationSec": 35
-        }
-      ]
-    }
-  ],
-  "conclusion": "Insightful summary conclusion (~40-60 words)",
-  "callToAction": "Call to action subscribing to ${params.channelName} (~30-50 words)"
-}`;
+    const prompt = this.buildMasterPrompt(params);
 
     let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
@@ -556,42 +678,7 @@ You must return valid JSON strictly conforming to this schema:
     },
     apiKey: string
   ): Promise<{ script: ScriptStructure; fullNarration: string }> {
-    const targetWordCount = Math.round(params.targetLengthMinutes * 138);
-
-    const systemPrompt = `You are a professional video script writer and director for channel "${params.channelName}" (Niche: ${params.niche}, Language: ${params.language}, Visual Style: ${params.visualStyle || 'Cinematic'}).
-Write an engaging, deep video script for the topic: "${params.topic}".
-TARGET DURATION: Exactly ${params.targetLengthMinutes} minutes (Spoken narration MUST contain approximately ${targetWordCount} total words to fill this duration at 138 words per minute).
-Adhere to editorial rules: ${params.contentRules || 'Engaging, clear, professional delivery'}.
-Intro Hook Style: ${params.introStyle || 'High-Impact Dramatic Question'}.
-Outro CTA: ${params.outroCta || 'Subscribe and hit the bell'}.
-
-You must return valid JSON strictly conforming to this schema:
-{
-  "title": "${params.topic}",
-  "hook": "Compelling hook (~30-50 words)",
-  "introduction": "Engaging introduction (~40-60 words)",
-  "sections": [
-    {
-      "heading": "Section Title",
-      "subsections": [
-        {
-          "subheading": "Point Title",
-          "narration": "Detailed spoken narration (~60-100 words)...",
-          "visualPrompt": "Cinematic visual description for point",
-          "visualSubject": "Core subject",
-          "environment": "Physical setting",
-          "cameraMovement": "Camera motion vector",
-          "lighting": "Lighting description",
-          "colorStyle": "Color palette",
-          "continuityNotes": "Continuity notes from previous scene",
-          "durationSec": 35
-        }
-      ]
-    }
-  ],
-  "conclusion": "Insightful summary conclusion (~40-60 words)",
-  "callToAction": "Call to action subscribing to ${params.channelName} (~30-50 words)"
-}`;
+    const prompt = this.buildMasterPrompt(params);
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -602,8 +689,8 @@ You must return valid JSON strictly conforming to this schema:
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate video script for: "${params.topic}"` },
+          { role: 'system', content: 'You are an award-winning documentary director and video scriptwriter. You strictly output valid JSON.' },
+          { role: 'user', content: prompt },
         ],
         response_format: { type: 'json_object' },
         temperature: 0.7,

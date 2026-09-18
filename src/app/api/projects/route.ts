@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb, DEFAULT_USER_ID, ContentProject, Channel, deductUserCredits } from '@/lib/db';
+import { getDb, DEFAULT_USER_ID, ContentProject, Channel, deductUserCredits, getMonthlyVideoUsage } from '@/lib/db';
 import { videoWorker } from '@/lib/queue/worker';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     const userId = user?.id || DEFAULT_USER_ID;
 
     const db = getDb();
+    const monthlyUsage = getMonthlyVideoUsage(userId);
     let projects = db
       .prepare(
         `SELECT p.*, COALESCE(c.name, 'Creator Studio') as channel_name, COALESCE(c.niche, 'AI & Tech') as channel_niche 
@@ -38,10 +39,10 @@ export async function GET(request: Request) {
         ) VALUES (?, ?, 'Creator Studio', 'AI & Tech', 'en', 'en-US-ChristopherNeural', '1.0x', 3, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Hook', 'Subscribe for more breakdowns', 'YouTube', 'Professional studio pacing', '["Monday","Wednesday","Friday"]', '14:00', 'UTC', 'PRIVATE', 0, ?, ?)
       `).run(channelId, userId, now, now);
 
-      return NextResponse.json({ projects: [] });
+      return NextResponse.json({ projects: [], monthlyUsage });
     }
 
-    return NextResponse.json({ projects });
+    return NextResponse.json({ projects, monthlyUsage });
   } catch (err: any) {
     console.error('Projects GET error:', err);
     return NextResponse.json({ error: err.message || 'Failed to fetch projects' }, { status: 500 });
@@ -52,6 +53,18 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser(request);
     const userId = user?.id || DEFAULT_USER_ID;
+
+    // Check monthly quota (30 videos/month server-side enforcement)
+    const monthlyUsage = getMonthlyVideoUsage(userId);
+    if (monthlyUsage.remaining <= 0) {
+      return NextResponse.json(
+        {
+          error: `Monthly video quota reached (${monthlyUsage.used}/${monthlyUsage.limit} videos). Upgrade your subscription or wait for the next billing cycle.`,
+          monthlyUsage,
+        },
+        { status: 429 }
+      );
+    }
 
     const body = await request.json();
     let {
@@ -64,6 +77,8 @@ export async function POST(request: Request) {
       visibility = 'PRIVATE',
       scheduled_at = null,
       auto_publish = 0,
+      voice,
+      visual_style,
     } = body;
 
     const db = getDb();
@@ -97,9 +112,19 @@ export async function POST(request: Request) {
           target_duration_minutes, visual_style, subtitle_style, intro_style, outro_cta,
           publishing_platform, content_rules, publishing_days, publishing_time, timezone,
           default_visibility, auto_publish, created_at, updated_at
-        ) VALUES (?, ?, 'Creator Channel', 'AI & Technology', 'en', 'en-US-ChristopherNeural', '1.0x', 5, 'Cinematic High-Contrast', 'Modern Clean White', 'High-Impact Dramatic Question', 'Subscribe to the channel and leave your thoughts below', 'YouTube', 'Engaging, clear, professional tone', '["Monday","Wednesday","Friday"]', '14:00', 'UTC', 'PRIVATE', 0, ?, ?)
-      `).run(channel_id, userId, now, now);
+        ) VALUES (?, ?, 'Creator Channel', 'AI & Technology', 'en', ?, '1.0x', 5, ?, 'Modern Clean White', 'High-Impact Dramatic Question', 'Subscribe to the channel and leave your thoughts below', 'YouTube', 'Engaging, clear, professional tone', '["Monday","Wednesday","Friday"]', '14:00', 'UTC', 'PRIVATE', 0, ?, ?)
+      `).run(channel_id, userId, voice || 'en-US-ChristopherNeural', visual_style || 'Cinematic High-Contrast', now, now);
       channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channel_id) as Channel | undefined;
+    } else {
+      // Update channel voice or visual style if customized during creation
+      if (voice && voice !== channel.voice) {
+        db.prepare('UPDATE channels SET voice = ?, updated_at = ? WHERE id = ?').run(voice, now, channel_id);
+        channel.voice = voice;
+      }
+      if (visual_style && visual_style !== channel.visual_style) {
+        db.prepare('UPDATE channels SET visual_style = ?, updated_at = ? WHERE id = ?').run(visual_style, now, channel_id);
+        channel.visual_style = visual_style;
+      }
     }
 
     if (!channel) {
@@ -149,6 +174,7 @@ export async function POST(request: Request) {
         projectId,
         status: 'DRAFT',
         publishingStatus: initialPublishStatus,
+        monthlyUsage: getMonthlyVideoUsage(userId),
       },
       { status: 201 }
     );

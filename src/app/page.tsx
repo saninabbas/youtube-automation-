@@ -13,6 +13,7 @@ export default function HomePage() {
   const [credits, setCredits] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [channels, setChannels] = useState<any[]>([]);
+  const [monthlyUsage, setMonthlyUsage] = useState({ used: 0, limit: 30, remaining: 30 });
   const [loading, setLoading] = useState(true);
 
   // Quick Create Prompt state
@@ -44,6 +45,9 @@ export default function HomePage() {
       if (projRes.ok) {
         const pData = await projRes.json();
         setProjects(pData.projects || []);
+        if (pData.monthlyUsage) {
+          setMonthlyUsage(pData.monthlyUsage);
+        }
       }
 
       if (chanRes.ok) {
@@ -61,6 +65,10 @@ export default function HomePage() {
     e.preventDefault();
     if (!quickTopic.trim()) {
       toast.warning('Please enter a video topic prompt');
+      return;
+    }
+    if (monthlyUsage.remaining <= 0) {
+      toast.error(`Monthly plan quota reached (${monthlyUsage.used}/${monthlyUsage.limit} videos). Upgrade or wait for next billing cycle.`);
       return;
     }
     if (creating) return;
@@ -262,14 +270,17 @@ export default function HomePage() {
         <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
-              CREDITS BALANCE
+              VIDEOS THIS MONTH
+            </span>
+            <span style={{ fontSize: '10px', color: monthlyUsage.remaining > 0 ? '#10b981' : '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>
+              {monthlyUsage.remaining} REMAINING
             </span>
           </div>
           <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '4px' }}>
-            {credits?.balance ?? 475}
+            {monthlyUsage.used} / {monthlyUsage.limit}
           </div>
           <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ width: `${Math.min(100, ((credits?.balance ?? 475) / 500) * 100)}%`, height: '100%', background: '#f4f4f5' }} />
+            <div style={{ width: `${Math.min(100, (monthlyUsage.used / Math.max(1, monthlyUsage.limit)) * 100)}%`, height: '100%', background: monthlyUsage.remaining > 0 ? '#10b981' : '#ef4444' }} />
           </div>
         </div>
 

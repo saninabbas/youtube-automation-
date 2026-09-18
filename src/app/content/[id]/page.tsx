@@ -347,6 +347,13 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     ? `/api/assets/clips/${project.id}/scene_${displayedSceneNum}_clip_1.mp4?topic=${encodeURIComponent(project.topic)}&scene=${displayedSceneNum}&r=${currentReroll}&prompt=${encodeURIComponent(displayedScene.visual_prompt || '')}`
     : finalVideoUrl;
 
+  // Background preload next scene's video for instant zero-latency seamless cuts
+  const nextSceneNum = displayedSceneNum < scenes.length ? displayedSceneNum + 1 : null;
+  const nextScene = nextSceneNum ? scenes.find((s) => s.scene_index === nextSceneNum) : null;
+  const nextVideoUrl = nextScene && project?.id
+    ? `/api/assets/clips/${project.id}/scene_${nextSceneNum}_clip_1.mp4?topic=${encodeURIComponent(project.topic)}&scene=${nextSceneNum}&prompt=${encodeURIComponent(nextScene.visual_prompt || '')}`
+    : null;
+
   const audioAsset = data?.assets?.find((a) => a.asset_type === 'audio');
   const audioUrl = project?.id
     ? (audioAsset && audioAsset.storage_key
@@ -898,6 +905,17 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   playsInline
                   muted={true}
                 />
+
+                {/* Preload Next Scene's Footage in Background to Eliminate Transition Buffering */}
+                {nextVideoUrl && (
+                  <video
+                    src={nextVideoUrl}
+                    preload="auto"
+                    muted={true}
+                    playsInline
+                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
+                  />
+                )}
 
                 {/* Subtitle Caption Overlay */}
                 {showCc && displayedScene && (

@@ -23,14 +23,45 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  // Engine 0: ElevenLabs AI Voice Synthesis (When key configured)
+  // Curated ElevenLabs Studio Voices
+  private static readonly ELEVENLABS_VOICE_MAP: Record<string, string> = {
+    'rachel': '21m00Tcm4TlvDq8ikWAM',   // Rachel (Calm, Professional Studio)
+    'adam': 'pNInz6obpgDQGcFmaJgB',     // Adam (Deep, Authoritative)
+    'antoni': 'ErXwobaYiN019PkySvjV',   // Antoni (Energetic, Documentary)
+    'bella': 'EXAVITQu4vr4xnSDxMaL',    // Bella (Warm, Engaging)
+    'josh': 'TxGEqnHWrfWFTfGW9XjX',     // Josh (Dynamic, Narration)
+    'arnold': 'VR6AewLTigWG4xSOukaG',   // Arnold (Crisp, Narrative)
+    'domi': 'AZnzlk1XvdvUeBnXmlld',     // Domi (Confident, Strong)
+    'sam': 'yoZ06aMxZJJ28mfd3POQ',      // Sam (Natural, Conversational)
+  };
+
+  private resolveElevenLabsVoiceId(voiceName?: string): string {
+    if (!voiceName) return '21m00Tcm4TlvDq8ikWAM';
+    const clean = voiceName.trim();
+    if (clean.startsWith('elevenlabs:')) {
+      const sub = clean.replace('elevenlabs:', '').trim();
+      return MultiEngineVoiceProvider.ELEVENLABS_VOICE_MAP[sub.toLowerCase()] || sub;
+    }
+    const lower = clean.toLowerCase();
+    if (MultiEngineVoiceProvider.ELEVENLABS_VOICE_MAP[lower]) {
+      return MultiEngineVoiceProvider.ELEVENLABS_VOICE_MAP[lower];
+    }
+    // Direct Custom Cloned Voice ID (typically 15-35 alphanumeric chars)
+    if (/^[a-zA-Z0-9_-]{15,35}$/.test(clean)) {
+      return clean;
+    }
+    return '21m00Tcm4TlvDq8ikWAM'; // Default Rachel
+  }
+
+  // Engine 0: ElevenLabs AI Voice Synthesis (When key configured or voice requested)
   private async synthesizeWithElevenLabs(text: string, voiceName?: string): Promise<Buffer> {
     const apiKey = getApiKey('elevenlabs') || process.env.ELEVENLABS_API_KEY;
     if (!apiKey) throw new Error('ElevenLabs API key not configured');
 
-    const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel / Studio Narrator
+    const voiceId = this.resolveElevenLabsVoiceId(voiceName);
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
+      signal: AbortSignal.timeout(15000),
       headers: {
         'xi-api-key': apiKey,
         'Content-Type': 'application/json',
@@ -46,11 +77,16 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     });
 
     if (!res.ok) {
-      throw new Error(`ElevenLabs API HTTP ${res.status}`);
+      const errText = await res.text().catch(() => '');
+      throw new Error(`ElevenLabs API HTTP ${res.status}: ${errText.substring(0, 120)}`);
     }
 
     const arrayBuf = await res.arrayBuffer();
-    return Buffer.from(arrayBuf);
+    const buf = Buffer.from(arrayBuf);
+    if (buf.length < 500) {
+      throw new Error('ElevenLabs returned empty or invalid audio payload');
+    }
+    return buf;
   }
 
   // Engine 1: Google TTS Streaming Engine (Neural Natural Spoken Voice via HTTP)
@@ -179,7 +215,14 @@ $synth.Dispose()
     // 0. Try ElevenLabs if configured
     try {
       finalBuffer = await this.synthesizeWithElevenLabs(cleanText, params.voiceName);
-    } catch {}
+      if (finalBuffer && finalBuffer.length > 500) {
+        console.log(`[VoiceProvider] Synthesized voiceover via ElevenLabs (${finalBuffer.length} bytes, voice: ${params.voiceName || 'default'})`);
+      }
+    } catch (err: any) {
+      if (getApiKey('elevenlabs') || process.env.ELEVENLABS_API_KEY) {
+        console.warn(`[VoiceProvider] ElevenLabs synthesis failed (${err.message}). Falling back to Neural Streamer...`);
+      }
+    }
 
     // 1. Try Google Neural TTS
     if (!finalBuffer) {

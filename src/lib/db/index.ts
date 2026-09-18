@@ -579,19 +579,32 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
   }
 
   // Fallback to environment variables
-  if (provider.toLowerCase() === 'gemini') {
+  const p = provider.toLowerCase();
+  if (p === 'openrouter') {
+    return process.env.OPENROUTER_API_KEY || null;
+  }
+  if (p === 'gemini') {
     return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
   }
-  if (provider.toLowerCase() === 'openai') {
+  if (p === 'elevenlabs') {
+    return process.env.ELEVENLABS_API_KEY || null;
+  }
+  if (p === 'openai') {
     return process.env.OPENAI_API_KEY || null;
   }
-  if (provider.toLowerCase() === 'runway') {
+  if (p === 'cloudflare' || p === 'cloudflare_api_token') {
+    return process.env.CLOUDFLARE_API_TOKEN || null;
+  }
+  if (p === 'cloudflare_account_id') {
+    return process.env.CLOUDFLARE_ACCOUNT_ID || null;
+  }
+  if (p === 'runway') {
     return process.env.RUNWAY_API_KEY || null;
   }
-  if (provider.toLowerCase() === 'replicate') {
+  if (p === 'replicate') {
     return process.env.REPLICATE_API_TOKEN || null;
   }
-  if (provider.toLowerCase() === 'fal') {
+  if (p === 'fal') {
     return process.env.FAL_KEY || process.env.FAL_AI_KEY || null;
   }
   return null;
@@ -633,13 +646,14 @@ export function saveApiKey(provider: string, apiKey: string, userId: string = DE
 
 export function getAllApiCredentials(userId: string = DEFAULT_USER_ID): Record<string, { configured: boolean; maskedKey: string; source: 'database' | 'env' | 'none' }> {
   const providers = [
+    'openrouter',
     'gemini',
+    'elevenlabs',
     'openai',
     'cloudflare_account_id',
     'cloudflare_api_token',
     'pexels',
     'pixabay',
-    'elevenlabs',
     'runway',
     'replicate',
     'fal'
@@ -662,13 +676,14 @@ export function getAllApiCredentials(userId: string = DEFAULT_USER_ID): Record<s
     }
 
     let envKey: string | undefined;
-    if (p === 'gemini') envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (p === 'openrouter') envKey = process.env.OPENROUTER_API_KEY;
+    else if (p === 'gemini') envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    else if (p === 'elevenlabs') envKey = process.env.ELEVENLABS_API_KEY;
     else if (p === 'openai') envKey = process.env.OPENAI_API_KEY;
     else if (p === 'cloudflare_account_id') envKey = process.env.CLOUDFLARE_ACCOUNT_ID;
     else if (p === 'cloudflare_api_token') envKey = process.env.CLOUDFLARE_API_TOKEN;
     else if (p === 'pexels') envKey = process.env.PEXELS_API_KEY;
     else if (p === 'pixabay') envKey = process.env.PIXABAY_API_KEY;
-    else if (p === 'elevenlabs') envKey = process.env.ELEVENLABS_API_KEY;
     else if (p === 'runway') envKey = process.env.RUNWAY_API_KEY;
     else if (p === 'replicate') envKey = process.env.REPLICATE_API_TOKEN;
     else if (p === 'fal') envKey = process.env.FAL_KEY || process.env.FAL_AI_KEY;
@@ -722,6 +737,30 @@ export function deductUserCredits(userId: string = DEFAULT_USER_ID, amount: numb
   }
 
   return true;
+}
+
+export function getMonthlyVideoUsage(userId: string = DEFAULT_USER_ID): { used: number; limit: number; remaining: number } {
+  const db = getDb();
+  const LIMIT = 30;
+  try {
+    // Count non-failed projects created in the current calendar month
+    // Zero-Waste Policy: Failed generation runs do NOT consume quota
+    const row = db.prepare(`
+      SELECT COUNT(*) as count FROM content_projects
+      WHERE user_id = ? 
+        AND status != 'FAILED'
+        AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
+    `).get(userId) as { count: number } | undefined;
+    const used = row?.count ?? 0;
+    return {
+      used,
+      limit: LIMIT,
+      remaining: Math.max(0, LIMIT - used),
+    };
+  } catch (err) {
+    console.warn('[getMonthlyVideoUsage] Error querying monthly usage:', err);
+    return { used: 0, limit: LIMIT, remaining: LIMIT };
+  }
 }
 
 // ============================================================

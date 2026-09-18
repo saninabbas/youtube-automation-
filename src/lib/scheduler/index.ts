@@ -229,6 +229,38 @@ class BackgroundPublishingScheduler {
     // Default 24 hours from now
     return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   }
+
+  /**
+   * Sequential Daily Release Scheduler:
+   * Finds the latest scheduled project and automatically assigns the next sequential calendar day.
+   * e.g., Day 1 -> Video 1, Day 2 -> Video 2, ... Day 30 -> Video 30.
+   */
+  public calculateNextAvailableDailySlot(channel: Channel, userId: string = DEFAULT_USER_ID): string {
+    const db = getDb();
+    const [pubHour, pubMinute] = (channel.publishing_time || '14:00').split(':').map(Number);
+    const now = new Date();
+
+    const latestScheduled = db.prepare(`
+      SELECT scheduled_at FROM content_projects
+      WHERE user_id = ? AND channel_id = ? AND scheduled_at IS NOT NULL AND status != 'FAILED'
+      ORDER BY scheduled_at DESC LIMIT 1
+    `).get(userId, channel.id) as { scheduled_at: string } | undefined;
+
+    let targetDate: Date;
+    if (latestScheduled && latestScheduled.scheduled_at) {
+      const prevDate = new Date(latestScheduled.scheduled_at);
+      if (prevDate.getTime() > now.getTime()) {
+        targetDate = new Date(prevDate.getTime() + 24 * 60 * 60 * 1000);
+      } else {
+        targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      }
+    } else {
+      targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    targetDate.setUTCHours(pubHour || 14, pubMinute || 0, 0, 0);
+    return targetDate.toISOString();
+  }
 }
 
 export const publishingScheduler = new BackgroundPublishingScheduler();

@@ -16,241 +16,185 @@ interface Channel {
   publishing_platform?: string;
 }
 
-type FormatType = 'SHORT_VERTICAL' | 'STANDARD_LANDSCAPE' | 'DOCUMENTARY_EPIC';
-type VisualStyleType = 'CINEMATIC' | 'PHOTOREALISTIC' | 'CYBERPUNK' | 'DOCUMENTARY_BW' | 'ANIME_MOTION';
-
-const VIRAL_TOPIC_PRESETS = [
-  { id: 'ai-trends', tag: '🤖 AI', label: '5 AI Tools in 2026 That Feel Illegal to Know', full: '5 AI Tools in 2026 That Feel Illegal to Know: How Autonomous Agents Are Replacing Entire Software Teams' },
-  { id: 'wealth', tag: '💰 Wealth', label: 'Why 99% of People Stay Broke (Velocity of Money)', full: 'Why 99% of People Stay Broke: The Brutal Truth About The Velocity of Money and Compounding Leverage' },
-  { id: 'mindset', tag: '🧠 Stoic', label: 'The 2,000-Year-Old Stoic Rule to Stop Overthinking', full: 'The 2,000-Year-Old Stoic Rule to Stop Overthinking: How Marcus Aurelius Mastered Mental Discipline' },
-  { id: 'mystery', tag: '🕵️ Mystery', label: 'The Flight That Vanished in 1982', full: 'The Unsolved Mystery of Flight 729: How an Entire Plane Vanished from Radar Without a Trace' },
-  { id: 'space', tag: '🌌 Space', label: 'What Actually Happens If You Enter a Black Hole?', full: 'What Actually Happens If You Cross the Event Horizon of a Supermassive Black Hole in 4K' },
+const VIRAL_IDEAS = [
+  { label: '🤖 AI Trends', prompt: '5 AI Tools in 2026 That Feel Illegal to Know: How Autonomous Agents Are Replacing Entire Software Teams' },
+  { label: '💰 Wealth', prompt: 'Why 99% of People Stay Broke: The Brutal Truth About The Velocity of Money and Compounding Leverage' },
+  { label: '🧠 Stoic Mindset', prompt: 'The 2,000-Year-Old Stoic Rule to Stop Overthinking: How Marcus Aurelius Mastered Mental Discipline' },
+  { label: '🌌 Deep Space', prompt: 'What Actually Happens If You Cross the Event Horizon of a Supermassive Black Hole in 4K' },
+  { label: '🥗 Longevity', prompt: '5 Foods That Support Healthy Aging & Cellular Vitality: Evidence-Based Longevity Protocols' },
 ];
 
-const FORMAT_OPTIONS = [
+const CURATED_VOICES = [
   {
-    id: 'STANDARD_LANDSCAPE',
-    title: 'YouTube Landscape',
-    ratio: '16:9',
-    res: '1920x1080',
-    time: '3-5 Mins',
-    icon: '🖥️',
-    desc: 'Standard widescreen HD, ideal for YouTube monetization, tutorials, and storytelling.',
-    badge: 'Most Popular',
+    id: 'elevenlabs:rachel',
+    name: 'Rachel',
+    provider: 'ElevenLabs Studio',
+    gender: 'Female',
+    tone: 'Calm, Professional Documentary',
+    badge: 'Popular',
   },
   {
-    id: 'SHORT_VERTICAL',
-    title: 'Shorts & TikTok',
-    ratio: '9:16',
-    res: '1080x1920',
-    time: '60 Seconds',
-    icon: '📱',
-    desc: 'High-velocity vertical format with fast hooks and dynamic subtitles for virality.',
-    badge: 'Viral Boost',
-  },
-  {
-    id: 'DOCUMENTARY_EPIC',
-    title: 'Deep Documentary',
-    ratio: '16:9',
-    res: '1920x1080',
-    time: '8-12 Mins',
-    icon: '🎬',
-    desc: 'Multi-chapter narrative with deep pacing, layered sound design, and archival feel.',
+    id: 'elevenlabs:adam',
+    name: 'Adam',
+    provider: 'ElevenLabs Studio',
+    gender: 'Male',
+    tone: 'Deep, Authoritative & Cinematic',
     badge: 'High RPM',
   },
+  {
+    id: 'elevenlabs:antoni',
+    name: 'Antoni',
+    provider: 'ElevenLabs Studio',
+    gender: 'Male',
+    tone: 'Energetic, Dynamic Storyteller',
+  },
+  {
+    id: 'elevenlabs:bella',
+    name: 'Bella',
+    provider: 'ElevenLabs Studio',
+    gender: 'Female',
+    tone: 'Warm, Engaging & Conversational',
+  },
+  {
+    id: 'en-US-ChristopherNeural',
+    name: 'Christopher',
+    provider: 'Neural HD',
+    gender: 'Male',
+    tone: 'Deep Broadcast Narrator',
+  },
+  {
+    id: 'en-US-JennyNeural',
+    name: 'Jenny',
+    provider: 'Neural HD',
+    gender: 'Female',
+    tone: 'Articulate, Clear & Engaging',
+  },
+  {
+    id: 'ur-PK-AsadNeural',
+    name: 'Asad (Urdu)',
+    provider: 'Neural HD',
+    gender: 'Male',
+    tone: 'Urdu Storyteller & Narrator',
+  },
+  {
+    id: 'hi-IN-MadhurNeural',
+    name: 'Madhur (Hindi)',
+    provider: 'Neural HD',
+    gender: 'Male',
+    tone: 'Hindi Cinematic Voiceover',
+  },
 ];
 
-const STYLE_GALLERY = [
-  {
-    id: 'CINEMATIC',
-    name: 'Cinematic 35mm Masterpiece',
-    tag: 'Anamorphic Lens • HDR',
-    desc: 'Volumetric god rays, dramatic high-contrast lighting, and shallow depth of field.',
-    icon: '🎬',
-    color: '#6366f1',
-  },
-  {
-    id: 'CYBERPUNK',
-    name: 'Cyberpunk Neo-Tokyo',
-    tag: 'Neon Magenta • Holographic',
-    desc: 'Atmospheric neon glow, rain reflections, futuristic mega-cityscapes, and tech HUDs.',
-    icon: '🌆',
-    color: '#06b6d4',
-  },
-  {
-    id: 'PHOTOREALISTIC',
-    name: 'Photorealistic 8K',
-    tag: 'Unreal Engine 5 • Macro Detail',
-    desc: 'Ultra-crisp natural sunlight, organic textures, micro-focus, and broadcast realism.',
-    icon: '📸',
-    color: '#10b981',
-  },
-  {
-    id: 'DOCUMENTARY_BW',
-    name: 'Historical Archival & Noir',
-    tag: 'Film Grain • Dark Moody',
-    desc: 'Authentic 16mm film grain, sepia tones, dramatic vignette, and vintage archival mood.',
-    icon: '🏛️',
-    color: '#f59e0b',
-  },
-  {
-    id: 'ANIME_MOTION',
-    name: 'Anime Motion Aesthetic',
-    tag: 'Makoto Shinkai • Luminous',
-    desc: 'Vivid color grading, painterly clouds, radiant sunlight flare, and cel-shaded aesthetic.',
-    icon: '✨',
-    color: '#ec4899',
-  },
+const STYLES = [
+  { id: 'Cinematic High-Contrast', name: '🎬 Cinematic 35mm', desc: 'Volumetric god-rays, 35mm anamorphic blur, 8k documentary lighting' },
+  { id: 'Photorealistic 8K', name: '📸 Photorealistic 8K', desc: 'Ultra-detailed natural textures, crisp sunlight, macro studio photography' },
+  { id: 'Cyberpunk Neo-Tokyo', name: '🌆 Cyberpunk Neo-Tokyo', desc: 'Holographic magenta glow, dark rain reflections, futuristic cityscapes' },
+  { id: 'Historical Archival', name: '🏛️ Historical Archival', desc: '16mm film grain, sepia tones, dramatic vintage vignette' },
 ];
-
-const LANGUAGES_LIST = [
-  { id: 'en', label: 'English (US / UK / Global)', flag: '🇺🇸' },
-  { id: 'ur', label: 'Urdu — اردو (نریشن اور اسکرپٹ)', flag: '🇵🇰' },
-  { id: 'hi', label: 'Hindi — हिन्दी (वॉयस और स्क्रिप्ट)', flag: '🇮🇳' },
-  { id: 'ar', label: 'Arabic — العربية (التعليق الصوتي)', flag: '🇸🇦' },
-  { id: 'es', label: 'Spanish — Español', flag: '🇪🇸' },
-  { id: 'fr', label: 'French — Français', flag: '🇫🇷' },
-  { id: 'de', label: 'German — Deutsch', flag: '🇩🇪' },
-  { id: 'pt', label: 'Portuguese — Português', flag: '🇧🇷' },
-  { id: 'tr', label: 'Turkish — Türkçe', flag: '🇹🇷' },
-  { id: 'it', label: 'Italian — Italiano', flag: '🇮🇹' },
-  { id: 'ja', label: 'Japanese — 日本語', flag: '🇯🇵' },
-  { id: 'zh', label: 'Chinese — 中文', flag: '🇨🇳' },
-];
-
-const VOICES_MAP: Record<string, Array<{ id: string; name: string; gender: string; tone: string; lang: string }>> = {
-  en: [
-    { id: 'en-US-ChristopherNeural', name: 'Christopher', gender: 'Male', tone: 'Authoritative, Deep, Cinematic', lang: 'English (US)' },
-    { id: 'en-US-GuyNeural', name: 'Guy', gender: 'Male', tone: 'Conversational, Engaging Storyteller', lang: 'English (US)' },
-    { id: 'en-US-JennyNeural', name: 'Jenny', gender: 'Female', tone: 'Warm, Articulate, Dynamic', lang: 'English (US)' },
-    { id: 'en-US-AriaNeural', name: 'Aria', gender: 'Female', tone: 'High-Energy, Expressive, Punchy', lang: 'English (US)' },
-    { id: 'en-GB-RyanNeural', name: 'Ryan', gender: 'Male', tone: 'British BBC, Sophisticated, Calm', lang: 'English (UK)' },
-    { id: 'en-GB-SoniaNeural', name: 'Sonia', gender: 'Female', tone: 'Clear, Intellectual, Documentary', lang: 'English (UK)' },
-  ],
-  ur: [
-    { id: 'ur-PK-AsadNeural', name: 'Asad (اسد)', gender: 'Male', tone: 'Authoritative, Urdu Storyteller, Deep', lang: 'Urdu (Pakistan)' },
-    { id: 'ur-PK-UzmaNeural', name: 'Uzma (عظمیٰ)', gender: 'Female', tone: 'Clear, Articulate, Documentary Style', lang: 'Urdu (Pakistan)' },
-    { id: 'ur-IN-SalmanNeural', name: 'Salman (سلمان)', gender: 'Male', tone: 'Conversational, Engaging, Warm', lang: 'Urdu (India)' },
-  ],
-  hi: [
-    { id: 'hi-IN-MadhurNeural', name: 'Madhur (मधुर)', gender: 'Male', tone: 'Clear, Authoritative Hindi Storyteller', lang: 'Hindi (India)' },
-    { id: 'hi-IN-SwaraNeural', name: 'Swara (स्वरा)', gender: 'Female', tone: 'Warm, Articulate, Documentary Narration', lang: 'Hindi (India)' },
-  ],
-  ar: [
-    { id: 'ar-SA-HamedNeural', name: 'Hamed (حامد)', gender: 'Male', tone: 'Deep, Classical Arabic Narrator', lang: 'Arabic (Saudi)' },
-    { id: 'ar-SA-ZariyahNeural', name: 'Zariyah (زارية)', gender: 'Female', tone: 'Eloquent, Documentary Pacing', lang: 'Arabic (Saudi)' },
-  ],
-  es: [
-    { id: 'es-ES-AlvaroNeural', name: 'Alvaro', gender: 'Male', tone: 'Dynamic, Expressive, European Spanish', lang: 'Spanish (Spain)' },
-    { id: 'es-MX-JorgeNeural', name: 'Jorge', gender: 'Male', tone: 'Warm, Engaging, Latin American', lang: 'Spanish (Mexico)' },
-  ],
-  fr: [
-    { id: 'fr-FR-HenriNeural', name: 'Henri', gender: 'Male', tone: 'Sophisticated, Documentary Narration', lang: 'French (France)' },
-    { id: 'fr-FR-DeniseNeural', name: 'Denise', gender: 'Female', tone: 'Clear, Articulate, Cinematic', lang: 'French (France)' },
-  ],
-  de: [
-    { id: 'de-DE-ConradNeural', name: 'Conrad', gender: 'Male', tone: 'Authoritative, Precise, Professional', lang: 'German (Germany)' },
-  ],
-};
-
-const DEFAULT_VOICES = VOICES_MAP.en;
 
 function CreateVideoWizardContent() {
   const router = useRouter();
   const toast = useToast();
   const searchParams = useSearchParams();
-  const preselectedChannelId = searchParams.get('channel_id') || searchParams.get('channelId');
   const templateTopic = searchParams.get('topic');
 
+  const [topic, setTopic] = useState<string>(templateTopic || '');
+  const [voiceType, setVoiceType] = useState<'CURATED' | 'CUSTOM'>('CURATED');
+  const [selectedVoice, setSelectedVoice] = useState<string>('elevenlabs:rachel');
+  const [customVoiceId, setCustomVoiceId] = useState<string>('');
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [channelId, setChannelId] = useState<string>('');
+  const [monthlyUsage, setMonthlyUsage] = useState({ used: 0, limit: 30, remaining: 30 });
+  
+  // Advanced Options
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [format, setFormat] = useState<'STANDARD' | 'SHORT'>('STANDARD');
+  const [durationMinutes, setDurationMinutes] = useState<number>(5);
+  const [visualStyle, setVisualStyle] = useState<string>('Cinematic High-Contrast');
+  const [autoPublish, setAutoPublish] = useState<boolean>(false);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
 
-  // Wizard State
-  const [activeStep, setActiveStep] = useState<number>(1);
-  const [channelId, setChannelId] = useState<string>('');
-  const [topic, setTopic] = useState<string>(templateTopic || '');
-  const [format, setFormat] = useState<FormatType>('STANDARD_LANDSCAPE');
-  const [durationMinutes, setDurationMinutes] = useState<number>(5);
-  const [visualStyle, setVisualStyle] = useState<VisualStyleType>('CINEMATIC');
-  const [voice, setVoice] = useState<string>('en-US-ChristopherNeural');
-  const [voiceSpeed, setVoiceSpeed] = useState<string>('1.0x');
-  const [language, setLanguage] = useState<string>('en');
-  const [autoPublish, setAutoPublish] = useState<boolean>(false);
-
   useEffect(() => {
-    const loadChannels = async () => {
+    const loadInitialData = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/channels');
-        if (res.ok) {
-          const data = await res.json();
-          const list = data.channels || [];
+        const [chanRes, projRes] = await Promise.all([
+          fetch('/api/channels'),
+          fetch('/api/projects'),
+        ]);
+
+        if (chanRes.ok) {
+          const cData = await chanRes.json();
+          const list = cData.channels || [];
           setChannels(list);
-          if (preselectedChannelId && list.some((c: Channel) => c.id === preselectedChannelId)) {
-            setChannelId(preselectedChannelId);
-          } else if (list.length > 0) {
-            setChannelId(list[0].id);
+          if (list.length > 0) setChannelId(list[0].id);
+        }
+
+        if (projRes.ok) {
+          const pData = await projRes.json();
+          if (pData.monthlyUsage) {
+            setMonthlyUsage(pData.monthlyUsage);
           }
         }
       } catch (err: any) {
-        console.error('Failed to load channels:', err.message);
+        console.error('Failed to load studio data:', err);
       } finally {
         setLoading(false);
       }
     };
-    loadChannels();
-  }, [preselectedChannelId]);
+    loadInitialData();
+  }, []);
 
-  const enhancePrompt = () => {
+  const enhanceTopicPrompt = () => {
     if (!topic.trim()) {
-      toast.info('Please write a basic topic or keyword first!');
+      toast.info('Please enter a topic or keyword first!');
       return;
     }
     setEnhancing(true);
     setTimeout(() => {
-      const topicLower = topic.toLowerCase();
+      const lower = topic.toLowerCase();
       let enhanced = topic.trim();
       if (!enhanced.includes(':') && !enhanced.includes('?')) {
-        if (topicLower.includes('ai') || topicLower.includes('tech') || topicLower.includes('code')) {
+        if (lower.includes('ai') || lower.includes('tech')) {
           enhanced = `The Untold Reality of ${topic.trim()}: Why Autonomous AI Is Changing Everything in 2026`;
-        } else if (topicLower.includes('money') || topicLower.includes('wealth') || topicLower.includes('finance')) {
-          enhanced = `The Psychology of ${topic.trim()}: The Brutal Lessons 99% of People Learn Too Late`;
-        } else if (topicLower.includes('space') || topicLower.includes('universe')) {
+        } else if (lower.includes('money') || lower.includes('wealth')) {
+          enhanced = `The Psychology of ${topic.trim()}: The Financial Lessons 99% of People Learn Too Late`;
+        } else if (lower.includes('space') || lower.includes('universe')) {
           enhanced = `What Actually Happens In ${topic.trim()}? The Cosmic Science Explained in 4K`;
+        } else if (lower.includes('health') || lower.includes('diet')) {
+          enhanced = `The Science Behind ${topic.trim()}: What Cellular Research Reveals About Longevity`;
         } else {
-          enhanced = `The Complete Breakdown of ${topic.trim()}: What Nobody Tells You`;
+          enhanced = `The Complete Breakdown of ${topic.trim()}: The Hidden Truth Explained`;
         }
       }
       setTopic(enhanced);
       setEnhancing(false);
-      toast.success('Prompt enhanced with high-retention viral framing! ✨');
-    }, 350);
+      toast.success('Topic prompt enhanced with viral documentary framing! ✨');
+    }, 300);
   };
-
-  const selectFormat = (f: FormatType) => {
-    setFormat(f);
-    if (f === 'SHORT_VERTICAL') setDurationMinutes(1);
-    else if (f === 'STANDARD_LANDSCAPE') setDurationMinutes(5);
-    else if (f === 'DOCUMENTARY_EPIC') setDurationMinutes(8);
-  };
-
-  const selectedChannel = channels.find((c) => c.id === channelId);
-
-  // Real-time calculations
-  const totalSeconds = durationMinutes * 60;
-  const approxWords = Math.round(totalSeconds * 2.3);
-  const estimatedScenes = durationMinutes <= 1 ? 5 : durationMinutes <= 5 ? 10 : 18;
-  const creditCost = 25;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!topic.trim() || submitting) return;
+    if (!topic.trim()) {
+      toast.warning('Please enter a video topic');
+      return;
+    }
+    if (monthlyUsage.remaining <= 0) {
+      toast.error(`Monthly plan quota reached (${monthlyUsage.used}/${monthlyUsage.limit} videos). Upgrade or wait for next billing cycle.`);
+      return;
+    }
+    if (submitting) return;
 
     try {
       setSubmitting(true);
       toast.info('Initializing autonomous AI video pipeline... 🚀');
+
+      const finalVoice = voiceType === 'CUSTOM' && customVoiceId.trim()
+        ? customVoiceId.trim()
+        : selectedVoice;
 
       const res = await fetch('/api/projects', {
         method: 'POST',
@@ -258,9 +202,10 @@ function CreateVideoWizardContent() {
         body: JSON.stringify({
           channel_id: channelId || channels[0]?.id || 'default_channel',
           topic: topic.trim(),
-          target_length_minutes: durationMinutes,
-          preset: format === 'SHORT_VERTICAL' ? 'SHORT' : 'STANDARD',
-          language,
+          target_length_minutes: format === 'SHORT' ? 1 : durationMinutes,
+          preset: format === 'SHORT' ? 'SHORT' : 'STANDARD',
+          voice: finalVoice,
+          visual_style: visualStyle,
           platform: 'YouTube',
           auto_publish: autoPublish ? 1 : 0,
         }),
@@ -268,614 +213,484 @@ function CreateVideoWizardContent() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to initialize video generation');
+        throw new Error(data.error || 'Failed to start video generation');
       }
 
-      toast.success('Pipeline queued! Generating script & scenes... ✨');
-      router.push(`/content/${data.projectId}?topic=${encodeURIComponent(topic.trim())}&duration=${durationMinutes}`);
+      toast.success('Video queued! Script & visual generation in progress... ✨');
+      router.push(`/content/${data.projectId}?topic=${encodeURIComponent(topic.trim())}`);
     } catch (err: any) {
-      toast.error(err.message || 'Error queuing video generation');
+      toast.error(err.message || 'Error generating video');
       setSubmitting(false);
     }
   };
 
+  const usagePercent = Math.min(100, Math.round((monthlyUsage.used / Math.max(1, monthlyUsage.limit)) * 100));
+
   return (
-    <div style={{ maxWidth: '1180px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Header */}
+    <div style={{ maxWidth: '840px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px', padding: '12px 0 60px 0' }}>
+      {/* 1. Header & Navigation */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-            <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Dashboard</Link>
-            <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>/</span>
-            <span style={{ color: 'var(--text-primary)', fontSize: '12px', fontWeight: 500 }}>Studio</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+            <Link href="/" style={{ color: '#71717a', fontSize: '12px', textDecoration: 'none' }}>Dashboard</Link>
+            <span style={{ color: '#3f3f46', fontSize: '12px' }}>/</span>
+            <span style={{ color: '#f4f4f5', fontSize: '12px', fontWeight: 500 }}>Studio</span>
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.025em' }}>
-            Create Video
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.025em', margin: 0 }}>
+            Create AI Video
           </h1>
+          <p style={{ fontSize: '13px', color: '#a1a1aa', margin: '4px 0 0 0' }}>
+            Enter a topic, select your narrator voice, and let autonomous AI craft your 1080p video.
+          </p>
         </div>
 
-        <Link
-          href="/templates"
-          className="btn btn-secondary btn-sm"
-        >
-          <span>Browse Templates</span>
-          <span style={{ color: 'var(--text-muted)' }}>➔</span>
-        </Link>
-      </div>
-
-      {/* 3-Column Studio Wizard Grid (Responsive 1-col on mobile) */}
-      <div className="create-wizard-grid">
-        {/* LEFT: STEP NAVIGATION */}
+        {/* Monthly Plan Quota Pill */}
         <div
-          className="card wizard-step-nav"
           style={{
-            padding: '8px',
+            padding: '8px 14px',
+            background: 'rgba(24, 24, 27, 0.8)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            minWidth: '170px',
           }}
         >
-          {[
-            { num: 1, label: 'Topic & Idea', tag: '01' },
-            { num: 2, label: 'Format & Ratio', tag: '02' },
-            { num: 3, label: 'Visual Style', tag: '03' },
-            { num: 4, label: 'Voice & Speed', tag: '04' },
-          ].map((s) => (
-            <button
-              key={s.num}
-              type="button"
-              onClick={() => setActiveStep(s.num)}
-              className={`nav-item ${activeStep === s.num ? 'active' : ''}`}
-              style={{
-                width: '100%',
-                cursor: 'pointer',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: activeStep === s.num ? 500 : 400,
-              }}
-            >
-              <span className="tabular-nums" style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', opacity: 0.6 }}>
-                {s.tag}
-              </span>
-              <span>{s.label}</span>
-            </button>
-          ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontFamily: 'monospace' }}>
+            <span style={{ color: '#71717a' }}>PLAN QUOTA</span>
+            <span style={{ color: monthlyUsage.remaining > 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+              {monthlyUsage.used} / {monthlyUsage.limit}
+            </span>
+          </div>
+          <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ width: `${usagePercent}%`, height: '100%', background: monthlyUsage.remaining > 0 ? '#10b981' : '#ef4444' }} />
+          </div>
+          <span style={{ fontSize: '10px', color: '#71717a', textAlign: 'right' }}>
+            {monthlyUsage.remaining} videos remaining this month
+          </span>
         </div>
+      </div>
 
-        {/* CENTER: MAIN CONFIGURATION PANELS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* STEP 1: TOPIC & INSPIRATION */}
-          {activeStep === 1 && (
-            <div className="card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5' }}>
-                  Topic & Narrative Concept
-                </h2>
-                <button
-                  type="button"
-                  onClick={enhancePrompt}
-                  disabled={enhancing || !topic.trim()}
-                  className="btn btn-secondary btn-sm"
-                  style={{
-                    fontSize: '11px',
-                    fontFamily: 'var(--font-mono)',
-                    opacity: topic.trim() ? 1 : 0.4,
-                  }}
-                >
-                  <span>✨ Enhance Hook</span>
-                </button>
-              </div>
-
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Enter any prompt or topic. The autonomous engine generates viral hooks, scene breakdowns, and voice scripts.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <textarea
-                    rows={4}
-                    className="form-textarea"
-                    style={{
-                      padding: '12px 14px',
-                      fontSize: '13px',
-                      lineHeight: 1.5,
-                      resize: 'vertical',
-                    }}
-                    placeholder="e.g. 'The Untold Mystery of Ancient Deep-Sea Megastructures in 4K'..."
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Viral Topic Ideas Presets */}
-                <div>
-                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)', marginBottom: '8px' }}>
-                    Quick Presets
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {VIRAL_TOPIC_PRESETS.map((preset) => (
-                      <div
-                        key={preset.id}
-                        onClick={() => setTopic(preset.full)}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: '6px',
-                          background: topic === preset.full ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
-                          border: topic === preset.full ? '1px solid #71717a' : '1px solid var(--border-subtle)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '10px',
-                          transition: 'border-color 0.12s ease',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', flexShrink: 0 }}>
-                            {preset.tag}
-                          </span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {preset.label}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                          Use ➔
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Channel Selector */}
-                {channels.length > 0 && (
-                  <div>
-                    <label className="form-label" style={{ marginBottom: '6px' }}>
-                      Target Channel Persona
-                    </label>
-                    <select
-                      className="form-select"
-                      value={channelId}
-                      onChange={(e) => setChannelId(e.target.value)}
-                    >
-                      {channels.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.niche})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* PRIMARY ACTION CTA IN STEP 1 - DIRECTLY ACCESSIBLE */}
-                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(99, 102, 241, 0.05)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={submitting || !topic.trim()}
-                    className="btn btn-primary"
-                    style={{
-                      width: '100%',
-                      padding: '14px 20px',
-                      fontSize: '15px',
-                      fontWeight: 700,
-                      background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                      boxShadow: '0 0 24px rgba(99, 102, 241, 0.45)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: topic.trim() && !submitting ? 'pointer' : 'not-allowed',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    {submitting ? (
-                      <>
-                        <span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                        <span>Initializing AI Video Pipeline...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>⚡ Generate 1080p Video Now</span>
-                      </>
-                    )}
-                  </button>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Selected: <strong>{format === 'SHORT_VERTICAL' ? '9:16 Shorts' : '16:9 Landscape'}</strong> • {durationMinutes}m
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveStep(2)}
-                      className="btn btn-secondary btn-sm"
-                      style={{ fontSize: '12px' }}
-                    >
-                      Customize Settings ➔
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: FORMAT & ASPECT RATIO */}
-          {activeStep === 2 && (
-            <div className="card" style={{ padding: '20px' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
-                Format Archetype & Aspect Ratio
-              </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Select display aspect ratio and pacing profile.
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                {FORMAT_OPTIONS.map((f) => (
-                  <div
-                    key={f.id}
-                    onClick={() => selectFormat(f.id as FormatType)}
-                    style={{
-                      padding: '16px',
-                      borderRadius: '8px',
-                      background: format === f.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
-                      border: format === f.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
-                      cursor: 'pointer',
-                      transition: 'all 0.12s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '20px' }}>{f.icon}</span>
-                      <span
-                        className="badge"
-                        style={{
-                          background: format === f.id ? '#ffffff' : 'var(--bg-surface)',
-                          color: format === f.id ? '#09090b' : 'var(--text-muted)',
-                          border: '1px solid var(--border-subtle)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {f.ratio}
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
-                      {f.title}
-                    </h3>
-                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                      {f.res} • {f.time}
-                    </div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      {f.desc}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button type="button" onClick={() => setActiveStep(1)} className="btn btn-secondary btn-sm">
-                  ← Back to Topic
-                </button>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button type="button" onClick={() => setActiveStep(3)} className="btn btn-secondary btn-sm">
-                    Next: Style ➔
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={submitting || !topic.trim()}
-                    className="btn btn-primary btn-sm"
-                    style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', border: 'none', fontWeight: 600 }}
-                  >
-                    ⚡ Generate Video
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: VISUAL STYLE GALLERY */}
-          {activeStep === 3 && (
-            <div className="card" style={{ padding: '20px' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
-                Visual Style & Aesthetics
-              </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Directs the generative visuals engine and color grading.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {STYLE_GALLERY.map((v) => (
-                  <div
-                    key={v.id}
-                    onClick={() => setVisualStyle(v.id as VisualStyleType)}
-                    style={{
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      background: visualStyle === v.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
-                      border: visualStyle === v.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                      transition: 'all 0.12s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '20px' }}>{v.icon}</span>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1px' }}>
-                          <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>{v.name}</h3>
-                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>{v.tag}</span>
-                        </div>
-                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{v.desc}</p>
-                      </div>
-                    </div>
-
-                    <span style={{ fontSize: '12px', color: visualStyle === v.id ? '#ffffff' : 'transparent', fontWeight: 600 }}>
-                      ✓
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button type="button" onClick={() => setActiveStep(2)} className="btn btn-secondary btn-sm">
-                  ← Back to Format
-                </button>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button type="button" onClick={() => setActiveStep(4)} className="btn btn-secondary btn-sm">
-                    Next: Voice ➔
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={submitting || !topic.trim()}
-                    className="btn btn-primary btn-sm"
-                    style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', border: 'none', fontWeight: 600 }}
-                  >
-                    ⚡ Generate Video
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: VOICE & LANGUAGE */}
-          {activeStep === 4 && (
-            <div className="card" style={{ padding: '20px' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', marginBottom: '2px' }}>
-                Neural Voiceover & Narration Language
-              </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Select script & voiceover language, AI voice synthesizer model, and speech velocity.
-              </p>
-
-              {/* Language Selector */}
-              <div style={{ marginBottom: '16px' }}>
-                <label className="form-label" style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>🌐 Video Language & Locale</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>12 Languages Supported</span>
-                </label>
-                <select
-                  value={language}
-                  onChange={(e) => {
-                    const newLang = e.target.value;
-                    setLanguage(newLang);
-                    const available = VOICES_MAP[newLang] || DEFAULT_VOICES;
-                    if (available.length > 0) {
-                      setVoice(available[0].id);
-                    }
-                  }}
-                  className="form-input"
-                  style={{
-                    width: '100%',
-                    fontSize: '13px',
-                    padding: '10px 12px',
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '8px',
-                    color: '#f4f4f5',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {LANGUAGES_LIST.map((l) => (
-                    <option key={l.id} value={l.id} style={{ background: '#18181b', color: '#f4f4f5' }}>
-                      {l.flag} {l.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Voices List for Selected Language */}
-              <div style={{ marginBottom: '16px' }}>
-                <label className="form-label" style={{ marginBottom: '6px' }}>
-                  Neural Voice Synthesizer ({VOICES_MAP[language]?.length || DEFAULT_VOICES.length} Available)
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {(VOICES_MAP[language] || DEFAULT_VOICES).map((voc) => (
-                    <div
-                      key={voc.id}
-                      onClick={() => setVoice(voc.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        background: voice === voc.id ? 'var(--bg-tertiary)' : 'var(--bg-surface)',
-                        border: voice === voc.id ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
-                        cursor: 'pointer',
-                        transition: 'all 0.12s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '6px',
-                            background: 'var(--bg-surface)',
-                            border: '1px solid var(--border-subtle)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px',
-                          }}
-                        >
-                          🎙️
-                        </div>
-                        <div>
-                          <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>
-                            {voc.name} ({voc.gender})
-                          </h3>
-                          <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                            {voc.tone} • {voc.lang}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: voice === voc.id ? '#ffffff' : 'var(--text-dim)', fontWeight: 500 }}>
-                        {voice === voc.id ? '✓ Selected' : 'Select'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Speed multiplier */}
-              <div>
-                <label className="form-label" style={{ marginBottom: '6px' }}>
-                  Speech Velocity Multiplier
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {['0.9x', '1.0x', '1.1x', '1.2x'].map((spd) => (
-                    <button
-                      key={spd}
-                      type="button"
-                      onClick={() => setVoiceSpeed(spd)}
-                      className="btn"
-                      style={{
-                        flex: 1,
-                        background: voiceSpeed === spd ? '#ffffff' : 'var(--bg-surface)',
-                        color: voiceSpeed === spd ? '#09090b' : 'var(--text-secondary)',
-                        border: voiceSpeed === spd ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
-                        fontSize: '12px',
-                        fontFamily: 'var(--font-mono)',
-                      }}
-                    >
-                      {spd}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button type="button" onClick={() => setActiveStep(3)} className="btn btn-secondary btn-sm">
-                  ← Back to Style
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={submitting || !topic.trim()}
-                  className="btn btn-primary"
-                  style={{
-                    padding: '10px 22px',
-                    fontWeight: 700,
-                    fontSize: '13px',
-                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                    boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
-                    border: 'none',
-                    cursor: topic.trim() && !submitting ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  {submitting ? '⏳ Initializing Pipeline...' : '⚡ Generate 1080p Video Now'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT: LIVE STUDIO BLUEPRINT (Terminal Grade) */}
+      {/* 2. Main Creation Form */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* STEP 1: TOPIC INPUT */}
         <div
           className="card"
           style={{
-            padding: '16px',
-            position: 'sticky',
-            top: '76px',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-medium)',
+            padding: '24px',
+            background: 'rgba(24, 24, 27, 0.65)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Studio Blueprint
-            </span>
-            <span className="badge badge-ready">
-              1080P CFR
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', color: '#09090b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
+                1
+              </span>
+              <span>What do you want to make a video about?</span>
+            </label>
+
+            <button
+              type="button"
+              onClick={enhanceTopicPrompt}
+              disabled={enhancing || !topic.trim()}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '11px', height: '28px', gap: '4px' }}
+            >
+              <span>{enhancing ? 'Enhancing...' : '✨ AI Enhance Prompt'}</span>
+            </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Aspect Ratio</span>
-              <span style={{ color: 'var(--text-primary)' }}>{format === 'SHORT_VERTICAL' ? '9:16 (Vert)' : '16:9 (Land)'}</span>
+          <div style={{ position: 'relative' }}>
+            <textarea
+              rows={4}
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. 5 AI Breakthroughs in 2026 That Are Changing Everything, or The Hidden Psychology of Money and Compounding Leverage..."
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                fontSize: '14px',
+                lineHeight: 1.5,
+                background: '#09090b',
+                color: '#f4f4f5',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '8px',
+                resize: 'vertical',
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+            />
+          </div>
+
+          {/* Quick Viral Ideas Pill Selector */}
+          <div>
+            <span style={{ fontSize: '11px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', display: 'block', marginBottom: '8px' }}>
+              Or choose a viral concept:
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {VIRAL_IDEAS.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setTopic(item.prompt)}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    background: topic === item.prompt ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: topic === item.prompt ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px',
+                    color: topic === item.prompt ? '#ffffff' : '#a1a1aa',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Duration</span>
-              <span className="tabular-nums" style={{ color: 'var(--text-primary)' }}>{durationMinutes}m ({totalSeconds}s)</span>
+          </div>
+        </div>
+
+        {/* STEP 2: VOICE SELECTION */}
+        <div
+          className="card"
+          style={{
+            padding: '24px',
+            background: 'rgba(24, 24, 27, 0.65)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', color: '#09090b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
+                2
+              </span>
+              <span>Select Narrator Voice</span>
+            </label>
+
+            {/* Voice Type Segmented Switch */}
+            <div style={{ display: 'inline-flex', background: '#09090b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '2px' }}>
+              <button
+                type="button"
+                onClick={() => setVoiceType('CURATED')}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  borderRadius: '4px',
+                  border: 'none',
+                  background: voiceType === 'CURATED' ? '#ffffff' : 'transparent',
+                  color: voiceType === 'CURATED' ? '#09090b' : '#a1a1aa',
+                  cursor: 'pointer',
+                }}
+              >
+                🎙️ Curated AI Voices
+              </button>
+              <button
+                type="button"
+                onClick={() => setVoiceType('CUSTOM')}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  borderRadius: '4px',
+                  border: 'none',
+                  background: voiceType === 'CUSTOM' ? '#ffffff' : 'transparent',
+                  color: voiceType === 'CUSTOM' ? '#09090b' : '#a1a1aa',
+                  cursor: 'pointer',
+                }}
+              >
+                🧬 Custom Cloned Voice ID
+              </button>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Scene Cuts</span>
-              <span className="tabular-nums" style={{ color: 'var(--text-primary)' }}>~{estimatedScenes}</span>
+          </div>
+
+          {voiceType === 'CURATED' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+              {CURATED_VOICES.map((v) => {
+                const isSelected = selectedVoice === v.id;
+                return (
+                  <div
+                    key={v.id}
+                    onClick={() => setSelectedVoice(v.id)}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: isSelected ? 'rgba(255, 255, 255, 0.08)' : '#09090b',
+                      border: isSelected ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>
+                        {v.name}
+                      </span>
+                      {v.badge ? (
+                        <span style={{ fontSize: '9px', fontFamily: 'monospace', padding: '1px 6px', borderRadius: '3px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                          {v.badge}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#71717a' }}>
+                          {v.provider}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#a1a1aa' }}>
+                      {v.tone}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Language</span>
-              <span style={{ color: 'var(--text-primary)' }}>
-                {LANGUAGES_LIST.find((l) => l.id === language)?.flag} {LANGUAGES_LIST.find((l) => l.id === language)?.label.split('—')[0].split('(')[0].trim()}
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="Paste your ElevenLabs Voice ID (e.g. 21m00Tcm4TlvDq8ikWAM or voice_...)"
+                value={customVoiceId}
+                onChange={(e) => setCustomVoiceId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  fontSize: '13px',
+                  background: '#09090b',
+                  color: '#f4f4f5',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  fontFamily: 'monospace',
+                }}
+              />
+              <span style={{ fontSize: '11px', color: '#71717a' }}>
+                💡 You can find your authorized voice IDs in your ElevenLabs Voice Lab dashboard.
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Script Target</span>
-              <span className="tabular-nums" style={{ color: 'var(--text-primary)' }}>~{approxWords}w</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Credit Cost</span>
-              <span className="tabular-nums" style={{ color: 'var(--status-ready)', fontWeight: 600 }}>⚡ {creditCost} Credits</span>
-            </div>
-          </div>
+          )}
+        </div>
 
+        {/* STEP 3: COLLAPSIBLE ADVANCED SETTINGS */}
+        <div
+          className="card"
+          style={{
+            padding: '16px 20px',
+            background: 'rgba(24, 24, 27, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '12px',
+          }}
+        >
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={submitting || !topic.trim()}
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'transparent',
+              border: 'none',
+              color: '#d4d4d8',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>⚙️</span>
+              <span>Advanced Options (Format, Duration, Visual Style)</span>
+            </span>
+            <span style={{ fontSize: '11px', color: '#71717a', fontFamily: 'monospace' }}>
+              {showAdvanced ? '▲ HIDE' : '▼ SHOW'}
+            </span>
+          </button>
+
+          {showAdvanced && (
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              {/* Aspect Ratio & Format */}
+              <div>
+                <span style={{ fontSize: '11px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', display: 'block', marginBottom: '8px' }}>
+                  Video Format
+                </span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setFormat('STANDARD'); setDurationMinutes(5); }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: '8px',
+                      background: format === 'STANDARD' ? '#ffffff' : '#09090b',
+                      color: format === 'STANDARD' ? '#09090b' : '#a1a1aa',
+                      border: format === 'STANDARD' ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.08)',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🖥️ YouTube Landscape (16:9)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setFormat('SHORT'); setDurationMinutes(1); }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: '8px',
+                      background: format === 'SHORT' ? '#ffffff' : '#09090b',
+                      color: format === 'SHORT' ? '#09090b' : '#a1a1aa',
+                      border: format === 'SHORT' ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.08)',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📱 Shorts & TikTok (9:16)
+                  </button>
+                </div>
+              </div>
+
+              {/* Duration Slider */}
+              {format === 'STANDARD' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '11px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
+                      Target Duration
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#f4f4f5', fontFamily: 'monospace', fontWeight: 600 }}>
+                      {durationMinutes} Minutes (~{Math.round(durationMinutes * 138)} words)
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {[3, 5, 8, 12].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setDurationMinutes(m)}
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontFamily: 'monospace',
+                          background: durationMinutes === m ? 'rgba(255,255,255,0.15)' : '#09090b',
+                          color: durationMinutes === m ? '#ffffff' : '#a1a1aa',
+                          border: durationMinutes === m ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.08)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {m}m {m === 5 ? '(Recommended)' : ''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Visual Aesthetic */}
+              <div>
+                <span style={{ fontSize: '11px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace', display: 'block', marginBottom: '8px' }}>
+                  Visual Style
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                  {STYLES.map((s) => (
+                    <div
+                      key={s.id}
+                      onClick={() => setVisualStyle(s.id)}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '6px',
+                        background: visualStyle === s.id ? 'rgba(255,255,255,0.08)' : '#09090b',
+                        border: visualStyle === s.id ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.08)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#f4f4f5', display: 'block' }}>{s.name}</span>
+                      <span style={{ fontSize: '10px', color: '#71717a', display: 'block', marginTop: '2px' }}>{s.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Auto Publish Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
+                <div>
+                  <span style={{ fontSize: '13px', fontWeight: 500, color: '#f4f4f5', display: 'block' }}>
+                    Auto-Schedule to YouTube
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#71717a' }}>
+                    Automatically queue for scheduled release according to your channel slot.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={autoPublish}
+                  onChange={(e) => setAutoPublish(e.target.checked)}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* STEP 4: BIG ACTION BUTTON */}
+        <div>
+          <button
+            type="submit"
+            disabled={submitting || !topic.trim() || monthlyUsage.remaining <= 0}
             className="btn btn-primary"
             style={{
               width: '100%',
-              marginBottom: '10px',
-              padding: '10px',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: topic.trim() && !submitting ? 'pointer' : 'not-allowed',
+              padding: '16px',
+              fontSize: '15px',
+              fontWeight: 700,
+              borderRadius: '10px',
+              background: monthlyUsage.remaining <= 0 ? '#3f3f46' : '#ffffff',
+              color: monthlyUsage.remaining <= 0 ? '#71717a' : '#09090b',
+              cursor: submitting || !topic.trim() || monthlyUsage.remaining <= 0 ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: monthlyUsage.remaining > 0 ? '0 0 20px rgba(255, 255, 255, 0.15)' : 'none',
+              transition: 'all 0.15s ease',
             }}
           >
-            {submitting ? 'Queuing Pipeline...' : 'Generate 1080p Video'}
+            {submitting ? (
+              <span>Initializing Autonomous Video Pipeline... 🚀</span>
+            ) : monthlyUsage.remaining <= 0 ? (
+              <span>Monthly Quota Reached (30/30 Videos)</span>
+            ) : (
+              <span>🚀 Create Video</span>
+            )}
           </button>
-
-          <p style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.4 }}>
-            Autonomous Script $\to$ TTS $\to$ Stock B-Roll $\to$ 1080p MP4.
-          </p>
+          
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '10px', fontSize: '11px', color: '#71717a', fontFamily: 'monospace' }}>
+            <span>✓ Topic-Matched Script</span>
+            <span>✓ Seamless Scene Continuity</span>
+            <span>✓ 1080p MP4 Render</span>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
 
 export default function CreateVideoPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading Studio...</div>}>
+    <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', color: '#71717a', fontFamily: 'monospace' }}>Loading Studio...</div>}>
       <CreateVideoWizardContent />
     </Suspense>
   );
