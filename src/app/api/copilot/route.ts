@@ -9,8 +9,8 @@ async function executeAiLlmPrompt(systemPrompt: string, userPrompt: string): Pro
   const geminiKey = getApiKey('gemini');
   if (geminiKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-      const res = await fetch(url, {
+      let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`;
+      let res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -18,6 +18,17 @@ async function executeAiLlmPrompt(systemPrompt: string, userPrompt: string): Pro
           generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
         }),
       });
+      if (!res.ok) {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`;
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
+          }),
+        });
+      }
       if (res.ok) {
         const data = await res.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;

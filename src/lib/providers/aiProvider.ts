@@ -475,9 +475,9 @@ You must return valid JSON strictly conforming to this schema:
   "callToAction": "Call to action subscribing to ${params.channelName} (~30-50 words)"
 }`;
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(15000),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -493,6 +493,28 @@ You must return valid JSON strictly conforming to this schema:
         },
       }),
     });
+
+    if (!res.ok) {
+      // Fallback to gemini-3.6-flash
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(15000),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+          },
+        }),
+      });
+    }
 
     if (!res.ok) {
       const errText = await res.text();
