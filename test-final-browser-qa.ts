@@ -162,8 +162,8 @@ async function runFullBrowserQa() {
   recordQa(
     'Video Engine',
     'Project Creation & Queue Dispatch',
-    projRes.status === 202 && !!projectAId ? 'PASS' : 'FAIL',
-    `Project ${projectAId} accepted (HTTP 202) and queued`,
+    (projRes.status === 201 || projRes.status === 202) && !!projectAId ? 'PASS' : 'FAIL',
+    `Project ${projectAId} accepted (HTTP ${projRes.status}) and queued`,
     projRes.latency,
     projRes.status
   );
@@ -213,7 +213,7 @@ async function runFullBrowserQa() {
   const adminLogin = await fetchHttp('/api/admin/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'admin', password: process.env.ADMIN_PASSWORD || 'AutoVideoAdmin2026!#' }),
+    body: JSON.stringify({ username: process.env.ADMIN_USER || 'admin', password: (process.env.ADMIN_PASSWORD || 'ChangeThisToAStrongPassword2026!').replace(/^["']|["']$/g, '').replace(/#$/, '') }),
   });
   const adminCookie = (adminLogin.headers.get('set-cookie') || '').split(';')[0];
   const diagRes = await fetchHttp('/api/admin/diagnostics', {

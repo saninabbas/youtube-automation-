@@ -522,14 +522,18 @@ You must return valid JSON strictly conforming to this schema:
     apiKey: string
   ): Promise<{ script: ScriptStructure; fullNarration: string }> {
     const prompt = this.buildMasterPrompt(params);
-    const model = process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-001';
+    let formattedKey = apiKey.trim();
+    if (!formattedKey.startsWith('sk-or-v1-') && formattedKey.length === 64) {
+      formattedKey = `sk-or-v1-${formattedKey}`;
+    }
+    const model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
 
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(20000),
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${formattedKey}`,
         'HTTP-Referer': 'https://youtube-automation-three-neon.vercel.app/',
         'X-Title': 'YouTube Automation SaaS',
       },

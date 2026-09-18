@@ -10,15 +10,13 @@ export default function HomePage() {
   const router = useRouter();
   const toast = useToast();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [credits, setCredits] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [channels, setChannels] = useState<any[]>([]);
   const [monthlyUsage, setMonthlyUsage] = useState({ used: 0, limit: 30, remaining: 30 });
   const [loading, setLoading] = useState(true);
 
-  // Quick Create Prompt state
+  // Quick Create state
   const [quickTopic, setQuickTopic] = useState('');
-  const [quickPreset, setQuickPreset] = useState<'SHORT' | 'STANDARD' | 'DOCUMENTARY'>('STANDARD');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -38,7 +36,6 @@ export default function HomePage() {
         const meData = await meRes.json();
         if (meData.authenticated) {
           setCurrentUser(meData.user);
-          setCredits(meData.credits);
         }
       }
 
@@ -64,25 +61,25 @@ export default function HomePage() {
   const handleQuickCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickTopic.trim()) {
-      toast.warning('Please enter a video topic prompt');
+      toast.warning('Please enter a video topic');
       return;
     }
     if (monthlyUsage.remaining <= 0) {
-      toast.error(`Monthly plan quota reached (${monthlyUsage.used}/${monthlyUsage.limit} videos). Upgrade or wait for next billing cycle.`);
+      toast.error(`Monthly plan quota reached (${monthlyUsage.used}/${monthlyUsage.limit} videos).`);
       return;
     }
     if (creating) return;
 
     try {
       setCreating(true);
-      toast.info('Starting AI video generation pipeline... ⚡');
+      toast.info('Starting AI video creation... ⚡');
 
       let targetChannelId = channels[0]?.id;
       if (!targetChannelId) {
         const cRes = await fetch('/api/channels', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'Studio Persona', niche: 'AI & Tech', target_duration_minutes: 3 }),
+          body: JSON.stringify({ name: 'Studio Persona', niche: 'General', target_duration_minutes: 1 }),
         });
         if (cRes.ok) {
           const cData = await cRes.json();
@@ -96,339 +93,291 @@ export default function HomePage() {
         body: JSON.stringify({
           channel_id: targetChannelId || 'default_channel',
           topic: quickTopic.trim(),
-          preset: quickPreset === 'SHORT' ? 'SHORT' : 'STANDARD',
-          target_length_minutes: quickPreset === 'SHORT' ? 1 : quickPreset === 'DOCUMENTARY' ? 8 : 3,
+          target_length_minutes: 1,
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.projectId) {
-        toast.success('Video queued successfully! Opening Studio... ✨');
-        router.push(`/content/${data.projectId}?topic=${encodeURIComponent(quickTopic.trim())}`);
-      } else {
-        throw new Error(data.error || 'Failed to initialize project');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to create video');
       }
+
+      const data = await res.json();
+      toast.success('Video generation queued!');
+      router.push(`/content/${data.projectId}`);
     } catch (err: any) {
-      toast.error(err.message || 'Video creation failed');
+      toast.error(err.message);
     } finally {
       setCreating(false);
     }
   };
 
-  const completedCount = projects.filter((p) => p.status === 'COMPLETED').length;
-  const processingCount = projects.filter((p) => p.status === 'PROCESSING').length;
-
-  if (!currentUser && !loading) {
+  // If user is not authenticated, show public marketing landing page
+  if (!loading && !currentUser) {
     return <LandingPage />;
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px', padding: '12px 0' }}>
       {/* ─────────────────────────────────────────────────────────────
-          1. CREATOR COMMAND CENTER HERO
+          1. HEADER & 30-VIDEO QUOTA PROGRESS
       ───────────────────────────────────────────────────────────── */}
-      <div
-        className="card"
-        style={{
-          padding: '24px 28px',
-          background: 'rgba(24, 24, 27, 0.65)',
-          borderColor: 'rgba(255, 255, 255, 0.08)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-          <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '2px 8px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '4px', marginBottom: '10px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.5)' }} />
-              <span style={{ fontSize: '10px', fontWeight: 600, color: '#e4e4e7', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
-                STUDIO ENGINE ONLINE • v2.4.0
-              </span>
-            </div>
-            <h1 style={{ fontSize: '22px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.02em', margin: '0 0 6px 0' }}>
-              Welcome back, {currentUser?.name || 'Creator'}
-            </h1>
-            <p style={{ color: '#71717a', fontSize: '13px', maxWidth: '580px', lineHeight: 1.5, margin: 0 }}>
-              Autonomous 1080p video pipeline with multi-scene script decomposition, neural voiceover, and YouTube scheduling.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Link href="/templates" className="btn btn-secondary btn-sm" style={{ height: '32px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                <polyline points="2 17 12 22 22 17" />
-              </svg>
-              <span>Templates</span>
-            </Link>
-            <Link href="/content/new" className="btn btn-primary btn-sm" style={{ height: '32px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>+ Create Video</span>
-            </Link>
-          </div>
+      <div style={{
+        background: '#121215',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '14px',
+        padding: '24px 28px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '20px'
+      }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 6px 0' }}>
+            Welcome, {currentUser?.name || 'Creator'}
+          </h1>
+          <p style={{ color: '#a1a1aa', fontSize: '14px', margin: 0 }}>
+            Enter a topic below to generate your next automated video.
+          </p>
         </div>
 
-        {/* Quick Generation Bar */}
+        {/* Videos This Month Quota Meter */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+          padding: '12px 18px',
+          minWidth: '220px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Videos This Month
+            </span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: monthlyUsage.remaining > 0 ? '#10b981' : '#f43f5e' }}>
+              {monthlyUsage.used} / {monthlyUsage.limit}
+            </span>
+          </div>
+          <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.06)', borderRadius: '3px', overflow: 'hidden', marginBottom: '4px' }}>
+            <div style={{
+              width: `${Math.min(100, (monthlyUsage.used / Math.max(1, monthlyUsage.limit)) * 100)}%`,
+              height: '100%',
+              background: monthlyUsage.remaining > 0 ? '#10b981' : '#f43f5e',
+              transition: 'width 0.3s ease'
+            }} />
+          </div>
+          <div style={{ fontSize: '11px', color: '#71717a', textAlign: 'right' }}>
+            {monthlyUsage.remaining} videos remaining
+          </div>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. QUICK CREATE A VIDEO (PRIMARY CTA & INPUT)
+      ───────────────────────────────────────────────────────────── */}
+      <div style={{
+        background: '#121215',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        borderRadius: '14px',
+        padding: '24px 28px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>
+              Create a Video
+            </h2>
+            <p style={{ fontSize: '13px', color: '#a1a1aa', margin: '4px 0 0 0' }}>
+              Type any topic or headline. AI writes the script, voiceover, and renders the 1080p MP4.
+            </p>
+          </div>
+          <Link href="/content/new" style={{
+            background: '#ffffff',
+            color: '#09090b',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: 700,
+            textDecoration: 'none'
+          }}>
+            Open Full Creator ➔
+          </Link>
+        </div>
+
         <form onSubmit={handleQuickCreate} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
-            <input
-              type="text"
-              className="form-input"
-              style={{
-                width: '100%',
-                borderRadius: '6px',
-                padding: '10px 14px',
-                fontSize: '13px',
-                background: '#09090b',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-              }}
-              placeholder="Enter video topic, e.g. 'The 7 Laws of Neuromorphic AI in 2026'..."
-              value={quickTopic}
-              onChange={(e) => setQuickTopic(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              type="button"
-              onClick={() => setQuickPreset('SHORT')}
-              style={{
-                padding: '0 12px',
-                fontSize: '11px',
-                fontFamily: 'monospace',
-                fontWeight: quickPreset === 'SHORT' ? 600 : 500,
-                borderRadius: '6px',
-                border: quickPreset === 'SHORT' ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
-                background: quickPreset === 'SHORT' ? '#ffffff' : '#18181b',
-                color: quickPreset === 'SHORT' ? '#09090b' : '#a1a1aa',
-                cursor: 'pointer',
-              }}
-            >
-              9:16 Shorts (60s)
-            </button>
-            <button
-              type="button"
-              onClick={() => setQuickPreset('STANDARD')}
-              style={{
-                padding: '0 12px',
-                fontSize: '11px',
-                fontFamily: 'monospace',
-                fontWeight: quickPreset === 'STANDARD' ? 600 : 500,
-                borderRadius: '6px',
-                border: quickPreset === 'STANDARD' ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
-                background: quickPreset === 'STANDARD' ? '#ffffff' : '#18181b',
-                color: quickPreset === 'STANDARD' ? '#09090b' : '#a1a1aa',
-                cursor: 'pointer',
-              }}
-            >
-              16:9 Standard (3m)
-            </button>
-            <button
-              type="button"
-              onClick={() => setQuickPreset('DOCUMENTARY')}
-              style={{
-                padding: '0 12px',
-                fontSize: '11px',
-                fontFamily: 'monospace',
-                fontWeight: quickPreset === 'DOCUMENTARY' ? 600 : 500,
-                borderRadius: '6px',
-                border: quickPreset === 'DOCUMENTARY' ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
-                background: quickPreset === 'DOCUMENTARY' ? '#ffffff' : '#18181b',
-                color: quickPreset === 'DOCUMENTARY' ? '#09090b' : '#a1a1aa',
-                cursor: 'pointer',
-              }}
-            >
-              Deep-Dive (8m)
-            </button>
-
-            <button type="submit" disabled={creating || !quickTopic.trim()} className="btn btn-primary btn-sm" style={{ padding: '0 16px', height: '38px' }}>
-              {creating ? 'Queuing...' : 'Generate ➔'}
-            </button>
-          </div>
+          <input
+            type="text"
+            className="form-input"
+            style={{
+              flex: 1,
+              minWidth: '280px',
+              padding: '12px 16px',
+              fontSize: '14px',
+              background: '#09090b',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '8px',
+              color: '#fff'
+            }}
+            placeholder="e.g. '10 foods that support healthy aging' or 'How quantum computers work'..."
+            value={quickTopic}
+            onChange={(e) => setQuickTopic(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={creating || !quickTopic.trim()}
+            style={{
+              padding: '0 24px',
+              height: '46px',
+              background: '#ffffff',
+              color: '#09090b',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '14px',
+              cursor: creating ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {creating ? 'Creating Video...' : 'Create Video ➔'}
+          </button>
         </form>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. METRICS SNAPSHOT GRID
-      ───────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
-              VIDEOS GENERATED
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '2px' }}>
-            {projects.length}
-          </div>
-          <span style={{ fontSize: '11px', color: '#10b981', fontFamily: 'monospace' }}>
-            ✓ {completedCount} 1080p Rendered
-          </span>
-        </div>
-
-        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
-              VIDEOS THIS MONTH
-            </span>
-            <span style={{ fontSize: '10px', color: monthlyUsage.remaining > 0 ? '#10b981' : '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>
-              {monthlyUsage.remaining} REMAINING
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '4px' }}>
-            {monthlyUsage.used} / {monthlyUsage.limit}
-          </div>
-          <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ width: `${Math.min(100, (monthlyUsage.used / Math.max(1, monthlyUsage.limit)) * 100)}%`, height: '100%', background: monthlyUsage.remaining > 0 ? '#10b981' : '#ef4444' }} />
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
-              ACTIVE CHANNELS
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '2px' }}>
-            {channels.length || 1}
-          </div>
-          <span style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: 'monospace' }}>YouTube Bridge Ready</span>
-        </div>
-
-        <div className="card" style={{ padding: '16px', background: 'rgba(18, 18, 21, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
-              PIPELINE WORKERS
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace', marginBottom: '2px' }}>
-            {processingCount}
-          </div>
-          <span style={{ fontSize: '11px', color: processingCount > 0 ? '#60a5fa' : '#71717a', fontFamily: 'monospace' }}>
-            {processingCount > 0 ? 'Parallel Rendering...' : 'Queue Idle & Ready'}
-          </span>
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          3. RECENT PROJECTS MEDIA LIBRARY
+          3. RECENT VIDEOS LIST (THUMBNAIL, TOPIC, STATUS, DOWNLOAD, YOUTUBE)
       ───────────────────────────────────────────────────────────── */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-          <div>
-            <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.01em', margin: 0 }}>
-              Recent Video Projects
-            </h2>
-            <p style={{ fontSize: '12px', color: '#71717a', margin: '2px 0 0 0' }}>
-              Click any project to inspect the multi-scene script and preview 1080p output.
-            </p>
-          </div>
-          <Link href="/content" className="btn btn-secondary btn-sm" style={{ fontSize: '11px', height: '26px' }}>
-            View All ({projects.length}) ➔
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>
+            Recent Videos
+          </h2>
+          <Link href="/content" style={{ fontSize: '13px', color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>
+            View Video Library ({projects.length}) ➔
           </Link>
         </div>
 
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="card" style={{ height: '200px', background: 'rgba(24, 24, 27, 0.4)', opacity: 0.5 }} />
-            ))}
-          </div>
+          <div style={{ padding: '30px', textAlign: 'center', color: '#71717a' }}>Loading videos...</div>
         ) : projects.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(24, 24, 27, 0.4)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', color: '#a1a1aa' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-            </div>
-            <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', marginBottom: '4px' }}>No video projects created</h3>
-            <p style={{ color: '#71717a', fontSize: '12px', marginBottom: '16px', maxWidth: '360px', margin: '0 auto 16px' }}>
-              Enter a topic above or launch the video wizard to generate your first AI video.
+          <div style={{
+            background: '#121215',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '12px',
+            padding: '40px 20px',
+            textAlign: 'center'
+          }}>
+            <p style={{ color: '#a1a1aa', fontSize: '14px', marginBottom: '16px' }}>
+              You have not created any videos yet.
             </p>
-            <Link href="/content/new" className="btn btn-primary btn-sm">
-              + Create Your First Video
+            <Link href="/content/new" style={{
+              background: '#ffffff',
+              color: '#09090b',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: 700,
+              textDecoration: 'none'
+            }}>
+              Create Your First Video ➔
             </Link>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '14px' }}>
-            {projects.slice(0, 6).map((proj) => {
-              const isCompleted = proj.status === 'COMPLETED';
-              const isProcessing = proj.status === 'PROCESSING' || proj.status === 'PENDING';
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {projects.slice(0, 6).map((p) => {
+              const isCompleted = p.status === 'COMPLETED';
+              const downloadUrl = `/api/assets/${p.id}/final_output.mp4`;
 
               return (
                 <div
-                  key={proj.id}
-                  className="card"
-                  onClick={() => router.push(`/content/${proj.id}`)}
+                  key={p.id}
                   style={{
-                    cursor: 'pointer',
-                    padding: '14px',
+                    background: '#121215',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '10px',
+                    padding: '14px 18px',
                     display: 'flex',
-                    flexDirection: 'column',
+                    alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '10px',
-                    background: 'rgba(18, 18, 21, 0.8)',
-                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                    flexWrap: 'wrap',
+                    gap: '12px'
                   }}
                 >
-                  {/* Thumbnail / Video Box */}
-                  <div
-                    style={{
-                      aspectRatio: '16 / 9',
-                      background: '#09090b',
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '240px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
                       borderRadius: '6px',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      background: isCompleted ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                      border: isCompleted ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(255, 255, 255, 0.1)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                    }}
-                  >
-                    {/* Status Badge */}
-                    <div style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 2 }}>
-                      <span
-                        style={{
-                          fontSize: '9px',
-                          fontFamily: 'monospace',
-                          fontWeight: 600,
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          background: isCompleted ? 'rgba(16, 185, 129, 0.15)' : isProcessing ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.1)',
-                          border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : isProcessing ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255, 255, 255, 0.15)',
-                          color: isCompleted ? '#10b981' : isProcessing ? '#60a5fa' : '#e4e4e7',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {isCompleted ? '1080P READY' : isProcessing ? `⚡ ${proj.current_stage || 'RENDERING'}` : 'DRAFT'}
-                      </span>
+                      fontSize: '16px'
+                    }}>
+                      {isCompleted ? '🎬' : '⚡'}
                     </div>
 
-                    {/* Duration Badge */}
-                    <div style={{ position: 'absolute', bottom: '8px', right: '8px', zIndex: 2, background: 'rgba(9,9,11,0.85)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, color: '#f4f4f5', fontFamily: 'monospace' }}>
-                      {proj.target_length_minutes ? `${proj.target_length_minutes}m` : '60s'}
-                    </div>
-
-                    {/* Center Icon */}
-                    <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f4f4f5' }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="6 4 20 12 6 20 6 4" />
-                      </svg>
+                    <div>
+                      <Link href={`/content/${p.id}`} style={{ fontSize: '14px', fontWeight: 600, color: '#fff', textDecoration: 'none' }}>
+                        {p.topic}
+                      </Link>
+                      <div style={{ fontSize: '12px', color: '#71717a', marginTop: '2px' }}>
+                        {new Date(p.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Project Info */}
-                  <div>
-                    <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5', margin: '0 0 4px 0', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {proj.topic}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace', color: '#71717a' }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
-                        {proj.channel_name || 'YouTube Channel'}
-                      </span>
-                      <span>{new Date(proj.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase()}</span>
-                    </div>
+                  {/* Status & Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {/* Status Badge */}
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      background: isCompleted ? 'rgba(16, 185, 129, 0.1)' : p.status === 'FAILED' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(56, 189, 248, 0.1)',
+                      color: isCompleted ? '#10b981' : p.status === 'FAILED' ? '#f43f5e' : '#38bdf8'
+                    }}>
+                      {isCompleted ? 'Ready' : p.status === 'FAILED' ? 'Failed' : 'Creating...'}
+                    </span>
+
+                    {/* YouTube Status */}
+                    <span style={{ fontSize: '12px', color: p.publishing_status === 'PUBLISHED' ? '#10b981' : '#71717a' }}>
+                      {p.publishing_status === 'PUBLISHED' ? '✓ On YouTube' : p.scheduled_at ? '🗓️ Scheduled' : 'YouTube Ready'}
+                    </span>
+
+                    {/* Download MP4 Button */}
+                    {isCompleted && (
+                      <a
+                        href={downloadUrl}
+                        download
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          color: '#ffffff',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        ⬇️ MP4
+                      </a>
+                    )}
+
+                    <Link
+                      href={`/content/${p.id}`}
+                      style={{
+                        color: '#a1a1aa',
+                        fontSize: '13px',
+                        textDecoration: 'none',
+                        padding: '6px 8px'
+                      }}
+                    >
+                      View ➔
+                    </Link>
                   </div>
                 </div>
               );

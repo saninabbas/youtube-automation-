@@ -49,6 +49,11 @@ export async function GET(request: Request, { params }: { params: any }) {
       )
       .get(id) as any;
 
+    // Enforce multi-tenant isolation: block User B from accessing User A's project
+    if (project && user && project.user_id && project.user_id !== userId) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
     // Parse URL query parameters for topic and duration (propagates across ephemeral containers)
     let queryTopic: string | null = null;
     let queryDuration = 3;
@@ -289,6 +294,13 @@ export async function PATCH(request: Request, { params }: { params: any }) {
 
     const db = getDb();
     const now = new Date().toISOString();
+
+    if (user) {
+      const existing = db.prepare('SELECT user_id FROM content_projects WHERE id = ?').get(id) as any;
+      if (existing && existing.user_id && existing.user_id !== userId) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+    }
 
     if (topic && topic.trim()) {
       db.prepare(`
