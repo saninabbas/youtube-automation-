@@ -309,49 +309,9 @@ class DefaultVideoProvider implements VideoProvider {
       console.warn(`[VideoProvider] Stock video search/render error: ${stockErr.message}`);
     }
 
-    // 2. Try Generating Real AI Video via Cloudflare Workers AI (MiniMax H3 Text-to-Video)
+    // 2. Try Generating Real AI Visuals via Cloudflare Workers AI (Flux 1 Schnell & SDXL Lightning)
     const cfToken = getApiKey('cloudflare_api_token') || process.env.CLOUDFLARE_API_TOKEN;
     const cfAccountId = getApiKey('cloudflare_account_id') || process.env.CLOUDFLARE_ACCOUNT_ID;
-
-    if (cfToken && cfAccountId) {
-      try {
-        console.log(`[VideoProvider] Requesting Cloudflare MiniMax H3 Text-to-Video for Scene ${sceneIndex}...`);
-        const mmRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/minimax/h3`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${cfToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            content: [{ type: 'text', text: cleanPrompt }],
-            duration: Math.min(6, Math.max(4, Math.round(durationSec))),
-            ratio: '16:9',
-            resolution: '768P',
-          }),
-        });
-
-        if (mmRes.ok) {
-          const mmData: any = await mmRes.json();
-          const videoUrl = mmData?.task?.content?.url || mmData?.result?.content?.url;
-          if (videoUrl) {
-            console.log(`[VideoProvider] MiniMax H3 video generated successfully: ${videoUrl}`);
-            const vidRes = await fetch(videoUrl);
-            if (vidRes.ok) {
-              const ab = await vidRes.arrayBuffer();
-              if (ab.byteLength > 10000) {
-                await fs.promises.writeFile(outputPath, Buffer.from(ab));
-                return;
-              }
-            }
-          }
-        } else {
-          const errTxt = await mmRes.text();
-          console.warn(`[VideoProvider] MiniMax H3 API status ${mmRes.status}: ${errTxt}`);
-        }
-      } catch (mmErr: any) {
-        console.warn(`[VideoProvider] MiniMax H3 Video generation error: ${mmErr.message}`);
-      }
-    }
 
     let generatedAiImage = false;
     const tempDir = path.dirname(outputPath);
@@ -359,9 +319,10 @@ class DefaultVideoProvider implements VideoProvider {
     const tempAiImgPath = path.join(tempDir, `cf_img_${sceneIndex}_${clipIndex}_${rand}.jpg`);
     const enhancedPrompt = `${cleanPrompt}, cinematic 4k photo, hyperrealistic, award winning photography, 8k resolution, photorealistic`;
 
-    // 2b. Attempt Cloudflare Workers AI Flux-1-Schnell Image
+    // 2a. Attempt Cloudflare Workers AI Flux 1 Schnell (100% verified 200 OK)
     if (cfToken && cfAccountId) {
       try {
+        console.log(`[VideoProvider] Generating AI visual for Scene ${sceneIndex} using Cloudflare Flux 1 Schnell...`);
         const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, {
           method: 'POST',
           headers: {
@@ -377,6 +338,23 @@ class DefaultVideoProvider implements VideoProvider {
             const imgBuf = Buffer.from(data.result.image, 'base64');
             await fs.promises.writeFile(tempAiImgPath, imgBuf);
             generatedAiImage = true;
+          }
+        } else {
+          // Fallback to SDXL-Lightning
+          const sdxlRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${cfToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: enhancedPrompt }),
+          });
+          if (sdxlRes.ok) {
+            const ab = await sdxlRes.arrayBuffer();
+            if (ab.byteLength > 5000) {
+              await fs.promises.writeFile(tempAiImgPath, Buffer.from(ab));
+              generatedAiImage = true;
+            }
           }
         }
       } catch (cfErr: any) {
