@@ -28,6 +28,17 @@ export function LandingPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#09090b', color: '#f4f4f5', fontFamily: 'var(--font-sans, sans-serif)' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-nav {
+            display: none !important;
+          }
+          .hero-pipeline-ribbon {
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+        }
+      `}</style>
       {/* ─────────────────────────────────────────────────────────────
           1. MINIMAL HEADER / NAVBAR
       ───────────────────────────────────────────────────────────── */}
@@ -51,7 +62,7 @@ export function LandingPage() {
           </Link>
 
           {/* Desktop Nav Links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+          <nav className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
             <a href="#how-it-works" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>How It Works</a>
             <a href="#integrations" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Integrations</a>
             <a href="#ai-models" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>AI Models</a>
