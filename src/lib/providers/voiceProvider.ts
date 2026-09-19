@@ -159,24 +159,37 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     const tempDir = getTempDir();
     const rand = Math.random().toString(36).substring(2, 7);
     const tempScript = path.join(tempDir, `sapi_script_${Date.now()}_${rand}.ps1`);
+    const tempTextFile = path.join(tempDir, `sapi_text_${Date.now()}_${rand}.txt`);
     const tempWav = path.join(tempDir, `sapi_${Date.now()}_${rand}.wav`);
     const tempMp3 = path.join(tempDir, `sapi_${Date.now()}_${rand}.mp3`);
     const ffmpegPath = getFfmpegPath();
 
+    // Write text to plain data file — completely isolated from executable code
+    await fs.promises.writeFile(tempTextFile, text, 'utf8');
+
+    // Completely static PowerShell script that accepts file paths as parameters
     const psContent = `
+param([string]$textFile, [string]$wavFile)
 Add-Type -AssemblyName System.Speech
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$synth.SetOutputToWaveFile('${tempWav.replace(/'/g, "''")}')
-$synth.Speak(@'
-${text.replace(/'/g, "''")}
-'@)
+$synth.SetOutputToWaveFile($wavFile)
+$content = [System.IO.File]::ReadAllText($textFile, [System.Text.Encoding]::UTF8)
+$synth.Speak($content)
 $synth.Dispose()
 `;
 
     await fs.promises.writeFile(tempScript, psContent, 'utf8');
 
     try {
-      await execFileAsync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tempScript]);
+      await execFileAsync('powershell', [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        tempScript,
+        tempTextFile,
+        tempWav,
+      ]);
 
       if (!fs.existsSync(tempWav)) {
         throw new Error('Windows SAPI synthesis did not produce output WAV.');
@@ -188,6 +201,7 @@ $synth.Dispose()
       return mp3Buf;
     } finally {
       if (fs.existsSync(tempScript)) await fs.promises.unlink(tempScript).catch(() => {});
+      if (fs.existsSync(tempTextFile)) await fs.promises.unlink(tempTextFile).catch(() => {});
       if (fs.existsSync(tempWav)) await fs.promises.unlink(tempWav).catch(() => {});
       if (fs.existsSync(tempMp3)) await fs.promises.unlink(tempMp3).catch(() => {});
     }

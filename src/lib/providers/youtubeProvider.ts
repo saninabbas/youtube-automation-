@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { getDb, DEFAULT_USER_ID, OAuthConnection } from '../db';
+import { encryptToken, decryptToken } from '../security/encryption';
 
 export type YouTubeVisibility = 'PRIVATE' | 'UNLISTED' | 'PUBLIC';
 
@@ -163,8 +164,8 @@ class DefaultYouTubeProvider implements YouTubeProvider {
         accountEmail,
         channelId,
         channelTitle,
-        accessToken,
-        refreshToken || null,
+        encryptToken(accessToken),
+        encryptToken(refreshToken || null),
         expiryDate,
         tokenData.scope || '',
         now,
@@ -219,29 +220,19 @@ class DefaultYouTubeProvider implements YouTubeProvider {
     return true;
   }
 
-  async uploadVideo(params: YouTubeUploadParams, userId: string = DEFAULT_USER_ID): Promise<YouTubeUploadResult> {
-    const { videoFilePath, title, description, tags = [], visibility = 'PRIVATE', scheduledPublishTime } = params;
-
+  async getValidAccessToken(userId: string = DEFAULT_USER_ID): Promise<{ token: string | null; conn?: OAuthConnection; error?: string }> {
     const db = getDb();
     const conn = db.prepare('SELECT * FROM oauth_connections WHERE user_id = ? AND platform = ?').get(userId, 'YOUTUBE') as OAuthConnection | undefined;
 
     if (!conn) {
-      return {
-        status: 'NOT_CONNECTED',
-        errorMessage: 'YouTube account is not connected. Authenticate in /settings/publishing to enable direct publishing.',
-      };
+      return { token: null, error: 'YouTube account not connected. Authenticate in /settings/publishing to enable direct publishing.' };
     }
 
-    if (!fs.existsSync(videoFilePath)) {
-      return {
-        status: 'FAILED',
-        errorMessage: `Video file not found at path: ${videoFilePath}`,
-      };
-    }
+    const decryptedAccessToken = decryptToken(conn.access_token) || conn.access_token;
+    const decryptedRefreshToken = decryptToken(conn.refresh_token) || conn.refresh_token;
 
-    // Refresh access token if expired
-    let validAccessToken = conn.access_token;
-    if (conn.token_expiry && new Date(conn.token_expiry).getTime() < Date.now() + 60000 && conn.refresh_token) {
+    let validAccessToken = decryptedAccessToken;
+    if (conn.token_expiry && new Date(conn.token_expiry).getTime() < Date.now() + 60000 && decryptedRefreshToken) {
       try {
         const refreshRes = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
@@ -249,7 +240,7 @@ class DefaultYouTubeProvider implements YouTubeProvider {
           body: new URLSearchParams({
             client_id: this.clientId,
             client_secret: this.clientSecret,
-            refresh_token: conn.refresh_token,
+            refresh_token: decryptedRefreshToken,
             grant_type: 'refresh_token',
           }),
         });
@@ -258,16 +249,41 @@ class DefaultYouTubeProvider implements YouTubeProvider {
           const rData = await refreshRes.json();
           validAccessToken = rData.access_token;
           const newExpiry = new Date(Date.now() + (rData.expires_in || 3600) * 1000).toISOString();
+          const encryptedNewAccess = encryptToken(validAccessToken);
           db.prepare('UPDATE oauth_connections SET access_token = ?, token_expiry = ?, updated_at = ? WHERE id = ?').run(
-            validAccessToken,
+            encryptedNewAccess,
             newExpiry,
             new Date().toISOString(),
             conn.id
           );
+        } else {
+          console.warn('[YouTube Token Refresh] Server returned status:', refreshRes.status);
         }
       } catch (err) {
-        console.warn('Token refresh failed:', err);
+        console.warn('[YouTube Token Refresh] Failed to refresh token:', err);
       }
+    }
+
+    return { token: validAccessToken, conn };
+  }
+
+  async uploadVideo(params: YouTubeUploadParams, userId: string = DEFAULT_USER_ID): Promise<YouTubeUploadResult> {
+    const { videoFilePath, title, description, tags = [], visibility = 'PRIVATE', scheduledPublishTime } = params;
+
+    const authResult = await this.getValidAccessToken(userId);
+    if (!authResult.token || !authResult.conn) {
+      return {
+        status: 'NOT_CONNECTED',
+        errorMessage: authResult.error || 'YouTube account is not connected. Authenticate in /settings/publishing to enable direct publishing.',
+      };
+    }
+    const validAccessToken = authResult.token;
+
+    if (!fs.existsSync(videoFilePath)) {
+      return {
+        status: 'FAILED',
+        errorMessage: `Video file not found at path: ${videoFilePath}`,
+      };
     }
 
     try {
@@ -369,12 +385,11 @@ class DefaultYouTubeProvider implements YouTubeProvider {
   }
 
   async uploadThumbnail(videoId: string, thumbnailFilePath: string, userId: string = DEFAULT_USER_ID): Promise<{ success: boolean; error?: string }> {
-    const db = getDb();
-    const conn = db.prepare('SELECT * FROM oauth_connections WHERE user_id = ? AND platform = ?').get(userId, 'YOUTUBE') as OAuthConnection | undefined;
-
-    if (!conn) {
-      return { success: false, error: 'YouTube account not connected' };
+    const authResult = await this.getValidAccessToken(userId);
+    if (!authResult.token) {
+      return { success: false, error: authResult.error || 'YouTube account not connected' };
     }
+    const validAccessToken = authResult.token;
 
     if (!fs.existsSync(thumbnailFilePath)) {
       return { success: false, error: 'Thumbnail file does not exist' };
@@ -387,7 +402,7 @@ class DefaultYouTubeProvider implements YouTubeProvider {
       const res = await fetch(`https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${videoId}`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${conn.access_token}`,
+          Authorization: `Bearer ${validAccessToken}`,
           'Content-Length': String(stats.size),
           'Content-Type': 'image/png',
         },
@@ -408,18 +423,17 @@ class DefaultYouTubeProvider implements YouTubeProvider {
   }
 
   async updateMetadata(params: { videoId: string; title: string; description: string; tags?: string[] }, userId: string = DEFAULT_USER_ID): Promise<{ success: boolean; error?: string }> {
-    const db = getDb();
-    const conn = db.prepare('SELECT * FROM oauth_connections WHERE user_id = ? AND platform = ?').get(userId, 'YOUTUBE') as OAuthConnection | undefined;
-
-    if (!conn) {
-      return { success: false, error: 'YouTube account not connected' };
+    const authResult = await this.getValidAccessToken(userId);
+    if (!authResult.token) {
+      return { success: false, error: authResult.error || 'YouTube account not connected' };
     }
+    const validAccessToken = authResult.token;
 
     try {
       const res = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet', {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${conn.access_token}`,
+          Authorization: `Bearer ${validAccessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

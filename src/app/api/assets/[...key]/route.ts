@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { storage } from '@/lib/storage';
 import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
 
 function getSceneVideoCdnUrl(
   topic: string = '',
@@ -428,6 +429,53 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
     // Strict Path Traversal Protection
     if (key.includes('..') || key.includes('\\')) {
       return new NextResponse('Invalid asset key', { status: 400 });
+    }
+
+    const parts = key.split('/');
+    const category = parts[0];
+
+    // 1. Authorize Private Voice Samples
+    if (category === 'voices') {
+      const targetUserId = parts[1];
+      const filename = parts[2] || '';
+      const voiceIdWithoutExt = path.parse(filename).name;
+
+      const user = await getCurrentUser(request);
+      if (!user) {
+        return new NextResponse('Authentication required', { status: 401 });
+      }
+      if (user.id !== targetUserId) {
+        return new NextResponse('Access denied', { status: 403 });
+      }
+
+      // Verify voice sample is not deleted from user account
+      try {
+        const db = getDb();
+        const voiceRow = db.prepare(
+          'SELECT id FROM user_voices WHERE user_id = ? AND (voice_id = ? OR id = ?)'
+        ).get(user.id, voiceIdWithoutExt, voiceIdWithoutExt);
+        if (!voiceRow) {
+          return new NextResponse('Voice sample not found or deleted', { status: 404 });
+        }
+      } catch (_) {}
+    }
+
+    // 2. Authorize Project Private Assets (video outputs, narration, clips, scripts, subtitles)
+    if (['final', 'clips', 'audio', 'scripts', 'subtitles', 'thumbnails'].includes(category)) {
+      const candidateProjectId = parts[1];
+      if (candidateProjectId) {
+        const user = await getCurrentUser(request);
+        if (!user) {
+          return new NextResponse('Authentication required', { status: 401 });
+        }
+        try {
+          const db = getDb();
+          const project = db.prepare('SELECT user_id FROM content_projects WHERE id = ?').get(candidateProjectId) as any;
+          if (project && project.user_id && project.user_id !== user.id) {
+            return new NextResponse('Access denied', { status: 403 });
+          }
+        } catch (_) {}
+      }
     }
 
     const ext = path.extname(key).toLowerCase();

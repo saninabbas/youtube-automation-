@@ -11,7 +11,10 @@ export async function POST(request: Request, { params }: { params: any }) {
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
     const user = await getCurrentUser(request);
-    const userId = user ? user.id : DEFAULT_USER_ID;
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = user.id;
 
     const db = getDb();
     const now = new Date().toISOString();
@@ -40,6 +43,10 @@ export async function POST(request: Request, { params }: { params: any }) {
     let project = db
       .prepare('SELECT * FROM content_projects WHERE id = ?')
       .get(id) as ContentProject | undefined;
+
+    if (project && project.user_id && project.user_id !== userId) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
 
     // Auto-recover project and channel on serverless cold starts
     if (!project) {

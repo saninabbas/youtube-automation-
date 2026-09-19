@@ -16,7 +16,10 @@ export async function GET(request: Request, { params }: { params: any }) {
     }
 
     const user = await getCurrentUser(request);
-    const userId = user ? user.id : DEFAULT_USER_ID;
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = user.id;
     const db = getDb();
     const now = new Date().toISOString();
 
@@ -49,8 +52,8 @@ export async function GET(request: Request, { params }: { params: any }) {
       )
       .get(id) as any;
 
-    // Enforce multi-tenant isolation: block User B from accessing User A's project
-    if (project && user && project.user_id && project.user_id !== userId) {
+    // Enforce multi-tenant isolation: block non-owners without leaking project existence
+    if (project && project.user_id && project.user_id !== userId) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
@@ -288,18 +291,19 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     if (!id) return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
 
     const user = await getCurrentUser(request);
-    const userId = user ? user.id : DEFAULT_USER_ID;
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = user.id;
     const body = await request.json();
     const { topic, channel_id, target_length_minutes } = body;
 
     const db = getDb();
     const now = new Date().toISOString();
 
-    if (user) {
-      const existing = db.prepare('SELECT user_id FROM content_projects WHERE id = ?').get(id) as any;
-      if (existing && existing.user_id && existing.user_id !== userId) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-      }
+    const existing = db.prepare('SELECT user_id FROM content_projects WHERE id = ?').get(id) as any;
+    if (!existing || (existing.user_id && existing.user_id !== userId)) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     if (topic && topic.trim()) {

@@ -177,6 +177,9 @@ export function getDb(): Database.Database {
     `);
     safeAddColumn('content_projects', 'metadata_json', 'TEXT');
     safeAddColumn('content_projects', 'telemetry_json', 'TEXT');
+    safeAddColumn('user_credits', 'created_at', 'TEXT');
+    safeAddColumn('user_credits', 'stripe_customer_id', 'TEXT');
+    safeAddColumn('user_credits', 'stripe_subscription_id', 'TEXT');
 
     safeAddColumn('video_scenes', 'visual_subject', 'TEXT');
     safeAddColumn('video_scenes', 'environment', 'TEXT');
@@ -729,26 +732,66 @@ export function getUserCredits(userId: string = DEFAULT_USER_ID): { balance: num
 
 export function deductUserCredits(userId: string = DEFAULT_USER_ID, amount: number, type: string, description: string, projectId?: string): boolean {
   const db = getDb();
-  const current = getUserCredits(userId);
-  if (current.balance < amount) return false;
+  const now = new Date().toISOString();
 
-  const newBalance = current.balance - amount;
+  // Ensure record exists
+  db.prepare(`
+    INSERT INTO user_credits (user_id, balance, tier, subscription_status, monthly_allowance, created_at, updated_at)
+    VALUES (?, 500, 'CREATOR', 'ACTIVE', 500, ?, ?)
+    ON CONFLICT(user_id) DO NOTHING
+  `).run(userId, now, now);
+
+  // Atomic decrement: updates ONLY IF current balance >= amount
+  const updateRes = db.prepare(`
+    UPDATE user_credits 
+    SET balance = balance - ?, updated_at = ?
+    WHERE user_id = ? AND balance >= ?
+  `).run(amount, now, userId, amount);
+
+  if (updateRes.changes === 0) {
+    // Insufficient credits or race condition caught safely
+    return false;
+  }
+
+  // Fetch verified new balance
+  const updated = getUserCredits(userId);
+
   try {
-    db.prepare(`
-      INSERT INTO user_credits (user_id, balance, tier, subscription_status, monthly_allowance, updated_at)
-      VALUES (?, ?, 'CREATOR', 'ACTIVE', 500, ?)
-      ON CONFLICT(user_id) DO UPDATE SET balance = excluded.balance, updated_at = excluded.updated_at
-    `).run(userId, newBalance, new Date().toISOString());
-
     db.prepare(`
       INSERT INTO credit_transactions (id, user_id, amount, balance_after, type, description, project_id, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(Math.random().toString(36).substring(2), userId, -amount, newBalance, type, description, projectId || null, new Date().toISOString());
+    `).run(uuidv4(), userId, -amount, updated.balance, type, description, projectId || null, now);
   } catch (err) {
-    console.warn('[deductUserCredits] Error:', err);
+    console.warn('[deductUserCredits] Error logging transaction:', err);
   }
 
   return true;
+}
+
+export function grantUserCredits(userId: string, amount: number, type: string, description: string): number {
+  const db = getDb();
+  const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO user_credits (user_id, balance, tier, subscription_status, monthly_allowance, created_at, updated_at)
+    VALUES (?, ?, 'CREATOR', 'ACTIVE', 500, ?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET 
+      balance = user_credits.balance + excluded.balance,
+      updated_at = excluded.updated_at
+  `).run(userId, amount, now, now);
+
+  const updated = getUserCredits(userId);
+
+  try {
+    db.prepare(`
+      INSERT INTO credit_transactions (id, user_id, amount, balance_after, type, description, project_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
+    `).run(uuidv4(), userId, amount, updated.balance, type, description, now);
+  } catch (err) {
+    console.warn('[grantUserCredits] Error logging transaction:', err);
+  }
+
+  return updated.balance;
 }
 
 export function getMonthlyVideoUsage(userId: string = DEFAULT_USER_ID): { used: number; limit: number; remaining: number } {

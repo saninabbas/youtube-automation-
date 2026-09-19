@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { youtubeProvider } from '@/lib/providers/youtubeProvider';
 import { getCurrentUser } from '@/lib/auth';
+import { verifyOAuthState } from '@/lib/security/oauth-state';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
-    let state = searchParams.get('state');
+    const state = searchParams.get('state');
     const error = searchParams.get('error');
 
     if (error) {
@@ -20,15 +21,22 @@ export async function GET(request: Request) {
     }
 
     if (!state) {
-      const user = await getCurrentUser(request);
-      state = user ? user.id : null;
+      return NextResponse.redirect(new URL('/settings/publishing?error=Missing+OAuth+state+token', request.url));
     }
 
-    if (!state) {
-      return NextResponse.redirect(new URL('/settings/publishing?error=Authentication+required', request.url));
+    const currentUser = await getCurrentUser(request);
+
+    // Cryptographically verify state, freshness, signature, and user binding
+    const stateVerification = verifyOAuthState(state, currentUser?.id);
+    if (!stateVerification.valid || !stateVerification.userId) {
+      console.warn('[YouTube Callback] Invalid OAuth state rejected:', stateVerification.error);
+      return NextResponse.redirect(
+        new URL(`/settings/publishing?error=${encodeURIComponent(stateVerification.error || 'Invalid or expired state')}`, request.url)
+      );
     }
 
-    const result = await youtubeProvider.handleOAuthCallback(code, state);
+    const targetUserId = stateVerification.userId;
+    const result = await youtubeProvider.handleOAuthCallback(code, targetUserId);
 
     if (!result.success) {
       return NextResponse.redirect(new URL(`/settings/publishing?error=${encodeURIComponent(result.error || 'Authentication failed')}`, request.url));
