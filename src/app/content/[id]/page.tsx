@@ -109,6 +109,10 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const [rerollMap, setRerollMap] = useState<Record<number, number>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Per-scene independent regeneration & aspect ratio state
+  const [isRegeneratingScene, setIsRegeneratingScene] = useState(false);
+  const [aspectRatioMode, setAspectRatioMode] = useState<'9:16' | '16:9'>('9:16');
+
   // Copilot state
   const [copilotLoading, setCopilotLoading] = useState(false);
   const [copilotResult, setCopilotResult] = useState<string | null>(null);
@@ -514,6 +518,45 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     toast.success(`Scene ${sNum} visual switched to alternate 1080p shot! ✨`);
   };
 
+  const handleRegenerateScene = async (targetScene?: any) => {
+    const sceneToRegen = targetScene || displayedScene || scenes[activeSceneIdx];
+    if (!sceneToRegen || isRegeneratingScene) return;
+
+    try {
+      setIsRegeneratingScene(true);
+      toast.info(`⚡ Regenerating Scene ${sceneToRegen.scene_index} with AI...`);
+
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const res = await fetch(`/api/projects/${id}/scenes/${sceneToRegen.id || sceneToRegen.scene_index}/regenerate${search}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visualPrompt: sceneToRegen.visual_prompt,
+          cameraMovement: sceneToRegen.camera_movement,
+          durationSec: sceneToRegen.estimated_duration_sec,
+          niche: project?.channel_niche || 'AI & Tech',
+          visualStyle: project?.channel_visual_style || 'Cinematic High-Contrast',
+        }),
+      });
+
+      const resJson = await res.json();
+      if (!res.ok) throw new Error(resJson.error || 'Scene regeneration failed');
+
+      // Update reroll map to bust browser cache for that scene's clip
+      setRerollMap((prev) => ({
+        ...prev,
+        [sceneToRegen.scene_index]: (prev[sceneToRegen.scene_index] || 0) + 1,
+      }));
+
+      toast.success(`Scene ${sceneToRegen.scene_index} regenerated! Fresh 9:16 vertical clip ready 🎉`);
+      await fetchProject();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to regenerate scene');
+    } finally {
+      setIsRegeneratingScene(false);
+    }
+  };
+
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
@@ -790,7 +833,30 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                         </span>
                       ) : null}
                     </div>
-                    <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRegenerateScene(s);
+                        }}
+                        disabled={isRegeneratingScene}
+                        style={{
+                          background: 'rgba(99,102,241,0.15)',
+                          border: '1px solid rgba(99,102,241,0.3)',
+                          color: '#818cf8',
+                          cursor: 'pointer',
+                          padding: '2px 5px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                        }}
+                        title="Regenerate this scene with AI"
+                      >
+                        ⚡
+                      </button>
+                    </div>
                   </div>
                   <div className="scene-cut-text">{s.narration}</div>
                 </div>
@@ -833,10 +899,18 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '10px', color: '#a1a1aa', fontFamily: 'var(--font-mono)' }}>
-                VEO 3 / CINEMA-PRO • 1080P 60FPS
+                VEO 3 / OPENAI SORA • 1080P 60FPS
               </span>
+              <button
+                onClick={() => setAspectRatioMode(aspectRatioMode === '9:16' ? '16:9' : '9:16')}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '11px', padding: '3px 8px', height: '26px', color: '#38bdf8' }}
+                title="Switch between 9:16 Shorts/Reels vertical and 16:9 widescreen player"
+              >
+                {aspectRatioMode === '9:16' ? '📱 9:16 Shorts' : '🖥️ 16:9 Widescreen'}
+              </button>
               <button
                 onClick={handleRerollActiveScene}
                 className="btn btn-ghost btn-sm"
@@ -848,7 +922,23 @@ export default function VideoStudioPage({ params }: { params?: any }) {
             </div>
           </div>
 
-          <div className="theater-screen" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div
+            className="theater-screen"
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              ...(aspectRatioMode === '9:16'
+                ? {
+                    maxWidth: '380px',
+                    margin: '0 auto',
+                    aspectRatio: '9/16',
+                    borderRadius: '18px',
+                    border: '2px solid rgba(255, 255, 255, 0.15)',
+                    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.85)',
+                  }
+                : {}),
+            }}
+          >
             {/* Background continuous narration audio */}
             {audioUrl && <audio ref={audioRef} src={audioUrl} preload="auto" />}
 
@@ -1345,17 +1435,44 @@ export default function VideoStudioPage({ params }: { params?: any }) {
 
                 <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button
-                    onClick={handleRerollActiveScene}
+                    onClick={() => handleRegenerateScene(activeScene)}
+                    disabled={isRegeneratingScene}
                     className="btn btn-primary btn-sm"
-                    style={{ width: '100%', background: '#4f46e5', color: '#fff', fontWeight: 600 }}
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 0 14px rgba(99,102,241,0.3)',
+                    }}
                   >
-                    🔄 Re-roll Scene Visual (Change B-Roll Footage)
+                    {isRegeneratingScene ? (
+                      <>
+                        <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        <span>Regenerating Scene {displayedSceneNum}...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡ Regenerate This Scene (AI)</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleRerollActiveScene}
+                    className="btn btn-secondary btn-sm"
+                    style={{ width: '100%' }}
+                  >
+                    🔄 Re-roll B-Roll Footage
                   </button>
                   <button
                     onClick={() => {
                       setPlaybackMode(playbackMode === 'SOLO_SCENE' ? 'MULTI_SCENE_AUTO' : 'SOLO_SCENE');
                     }}
-                    className="btn btn-secondary btn-sm"
+                    className="btn btn-ghost btn-sm"
                     style={{ width: '100%' }}
                   >
                     {playbackMode === 'SOLO_SCENE' ? '🎬 Back to Full Composition' : `🔍 Solo Preview Scene ${displayedSceneNum}`}

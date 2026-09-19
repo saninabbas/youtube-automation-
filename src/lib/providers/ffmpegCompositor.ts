@@ -12,7 +12,9 @@ export interface CompositionParams {
   clipFilePaths: string[];
   audioFilePath: string;
   subtitleFilePath?: string;
+  backgroundMusicPath?: string;
   totalDurationSec: number;
+  aspectRatio?: '9:16' | '16:9';
 }
 
 export interface CompositionResult {
@@ -27,19 +29,25 @@ export interface CompositionResult {
 }
 
 export class FfmpegCompositor {
-  async composeVideo(params: {
-    projectId: string;
-    clipFilePaths: string[];
-    audioFilePath: string;
-    subtitleFilePath?: string;
-    totalDurationSec: number;
-  }): Promise<CompositionResult> {
-    const { projectId, clipFilePaths, audioFilePath, totalDurationSec } = params;
+  async composeVideo(params: CompositionParams): Promise<CompositionResult> {
+    const {
+      projectId,
+      clipFilePaths,
+      audioFilePath,
+      backgroundMusicPath,
+      totalDurationSec,
+      aspectRatio = '9:16',
+    } = params;
     const ffmpegPath = getFfmpegPath();
 
     if (!clipFilePaths || clipFilePaths.length === 0) {
       throw new Error('No video clips provided for FFmpeg composition.');
     }
+
+    const isVertical = aspectRatio === '9:16';
+    const width = isVertical ? 1080 : 1920;
+    const height = isVertical ? 1920 : 1080;
+    const targetResolution = `${width}x${height}`;
 
     const tempDir = getTempDir(projectId);
 
@@ -76,35 +84,57 @@ export class FfmpegCompositor {
       }
     }
 
-    // FFmpeg execution arguments
+    const videoFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`;
+
+    // Audio & Video Composition
     if (!composed && fs.existsSync(audioFilePath)) {
-      const args: string[] = [
-        '-y',
-        '-f',
-        'concat',
-        '-safe',
-        '0',
-        '-i',
-        concatListPath,
-        '-i',
-        audioFilePath,
-        '-r',
-        '30',
-        '-c:v',
-        'libx264',
-        '-c:a',
-        'aac',
-        '-b:a',
-        '192k',
-        '-pix_fmt',
-        'yuv420p',
-        '-preset',
-        'ultrafast',
-        '-movflags',
-        '+faststart',
-        '-shortest',
-        finalFilePath,
-      ];
+      const hasBgm = backgroundMusicPath && fs.existsSync(backgroundMusicPath);
+      let args: string[];
+
+      if (hasBgm) {
+        // Mix voiceover with subtle background music
+        args = [
+          '-y',
+          '-f', 'concat',
+          '-safe', '0',
+          '-i', concatListPath,
+          '-i', audioFilePath,
+          '-stream_loop', '-1',
+          '-i', backgroundMusicPath,
+          '-filter_complex',
+          `[0:v]${videoFilter}[vout];[1:a]volume=1.0[voice];[2:a]volume=0.12[bgm];[voice][bgm]amix=inputs=2:duration=first[aout]`,
+          '-map', '[vout]',
+          '-map', '[aout]',
+          '-r', '30',
+          '-c:v', 'libx264',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-pix_fmt', 'yuv420p',
+          '-preset', 'ultrafast',
+          '-movflags', '+faststart',
+          '-shortest',
+          finalFilePath,
+        ];
+      } else {
+        // Standard narration audio overlay with scaling filter
+        args = [
+          '-y',
+          '-f', 'concat',
+          '-safe', '0',
+          '-i', concatListPath,
+          '-i', audioFilePath,
+          '-vf', videoFilter,
+          '-r', '30',
+          '-c:v', 'libx264',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-pix_fmt', 'yuv420p',
+          '-preset', 'ultrafast',
+          '-movflags', '+faststart',
+          '-shortest',
+          finalFilePath,
+        ];
+      }
 
       try {
         await execFileAsync(ffmpegPath, args, { timeout: 90000 });
@@ -121,20 +151,14 @@ export class FfmpegCompositor {
       try {
         const fallbackArgs: string[] = [
           '-y',
-          '-f',
-          'concat',
-          '-safe',
-          '0',
-          '-i',
-          concatListPath,
-          '-c:v',
-          'libx264',
-          '-pix_fmt',
-          'yuv420p',
-          '-preset',
-          'ultrafast',
-          '-movflags',
-          '+faststart',
+          '-f', 'concat',
+          '-safe', '0',
+          '-i', concatListPath,
+          '-vf', videoFilter,
+          '-c:v', 'libx264',
+          '-pix_fmt', 'yuv420p',
+          '-preset', 'ultrafast',
+          '-movflags', '+faststart',
           finalFilePath,
         ];
         await execFileAsync(ffmpegPath, fallbackArgs, { timeout: 60000 });
@@ -179,7 +203,7 @@ export class FfmpegCompositor {
       url: storage.getUrl(finalKey),
       filePath: finalFilePath,
       durationSec,
-      resolution: '1920x1080',
+      resolution: targetResolution,
       filesizeBytes: stat.size,
       videoCodec: 'h264',
       audioCodec: 'aac',

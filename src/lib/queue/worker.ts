@@ -419,6 +419,7 @@ export class VideoPipelineWorker {
               lighting: scene.lighting || undefined,
               colorStyle: scene.color_style || undefined,
               continuityNotes: scene.continuity_notes || undefined,
+              aspectRatio: '9:16',
             });
             return { scene, clips };
           })
@@ -557,6 +558,7 @@ export class VideoPipelineWorker {
           audioFilePath: audioPath,
           subtitleFilePath: subPath,
           totalDurationSec: totalClipDuration,
+          aspectRatio: '9:16',
         });
 
         // Store video output record

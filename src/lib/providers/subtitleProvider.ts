@@ -75,17 +75,17 @@ class DefaultSubtitleProvider implements SubtitleProvider {
   }
 
   private splitIntoPhrases(text: string): string[] {
-    // Break into natural clauses by punctuation or chunks of 6-10 words
+    // Break into natural clauses by punctuation or kinetic chunks of 3-5 words for Shorts retention
     const rawClauses = text.split(/(?<=[.,!?:;])\s+/).filter(Boolean);
     const phrases: string[] = [];
 
     for (const clause of rawClauses) {
       const words = clause.split(/\s+/).filter(Boolean);
-      if (words.length <= 9) {
+      if (words.length <= 5) {
         phrases.push(clause);
       } else {
-        // Split longer clauses into 5-7 word chunks
-        const chunkSize = 6;
+        // Split longer clauses into punchy 3-4 word kinetic chunks
+        const chunkSize = 4;
         for (let i = 0; i < words.length; i += chunkSize) {
           phrases.push(words.slice(i, i + chunkSize).join(' '));
         }
@@ -97,11 +97,11 @@ class DefaultSubtitleProvider implements SubtitleProvider {
 
   private formatLines(phrase: string): string {
     const words = phrase.split(/\s+/).filter(Boolean);
-    if (words.length <= 6 || phrase.length <= 38) {
+    if (words.length <= 4 || phrase.length <= 26) {
       return phrase;
     }
 
-    // Split across 2 balanced lines
+    // Split across 2 balanced lines for mobile screen readability
     const mid = Math.ceil(words.length / 2);
     const line1 = words.slice(0, mid).join(' ');
     const line2 = words.slice(mid).join(' ');

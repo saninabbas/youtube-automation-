@@ -50,12 +50,19 @@ export class StockVideoEngine {
     return candidates;
   }
 
+  private coverrAvailable: boolean = true;
+  private coverrLastCheck: number = 0;
+
   // Search Coverr.co open 1080p stock video catalog with index offset for distinct clips
   async searchCoverrVideo(query: string, clipOffset: number = 0): Promise<string | null> {
+    if (!this.coverrAvailable && Date.now() - this.coverrLastCheck < 60000) {
+      return null;
+    }
+
     try {
       const url = `https://coverr.co/api/videos?query=${encodeURIComponent(query)}&page=1`;
       const res = await fetch(url, {
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(1500),
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'application/json',
@@ -67,23 +74,26 @@ export class StockVideoEngine {
         if (data.hits && data.hits.length > 0) {
           const hit = data.hits[clipOffset % data.hits.length] || data.hits[0];
           if (hit.base_filename) {
+            this.coverrAvailable = true;
             return `https://cdn.coverr.co/videos/${hit.base_filename}/1080p.mp4`;
           }
         }
       }
     } catch (err: any) {
-      console.warn(`[StockVideo] Coverr search error: ${err.message}`);
+      this.coverrAvailable = false;
+      this.coverrLastCheck = Date.now();
+      console.warn(`[StockVideo] Coverr search unavailable (${err.message}). Bypassing for 60s.`);
     }
     return null;
   }
 
-  // Search Pexels Video API with offset
-  async searchPexelsVideo(query: string, clipOffset: number = 0, apiKey?: string): Promise<string | null> {
+  // Search Pexels Video API with offset and orientation
+  async searchPexelsVideo(query: string, clipOffset: number = 0, apiKey?: string, orientation: 'portrait' | 'landscape' = 'portrait'): Promise<string | null> {
     const token = apiKey || getApiKey('pexels_api_key') || process.env.PEXELS_API_KEY;
     if (!token) return null;
 
     try {
-      const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape&size=medium`;
+      const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=10&orientation=${orientation}&size=medium`;
       const res = await fetch(url, {
         headers: {
           Authorization: token,
@@ -95,7 +105,7 @@ export class StockVideoEngine {
         const data: any = await res.json();
         if (data.videos && data.videos.length > 0) {
           const vid = data.videos[clipOffset % data.videos.length] || data.videos[0];
-          const file = vid.video_files?.find((f: any) => f.quality === 'hd' && f.width >= 1280) || vid.video_files?.[0];
+          const file = vid.video_files?.find((f: any) => f.quality === 'hd') || vid.video_files?.[0];
           if (file?.link) {
             return file.link;
           }
@@ -132,19 +142,20 @@ export class StockVideoEngine {
   }
 
   // Find real stock video footage with distinct offset (Coverr HD -> Pexels HD -> Pixabay HD)
-  async findStockVideo(queries: string[] | string, clipOffset: number = 0): Promise<string | null> {
+  async findStockVideo(queries: string[] | string, clipOffset: number = 0, aspectRatio: '9:16' | '16:9' = '9:16'): Promise<string | null> {
     const queryList = Array.isArray(queries) ? queries : [queries];
 
     for (const q of queryList) {
       if (!q || q.length < 2) continue;
 
-      // 1. Try Coverr HD Catalog (100% Free, high quality 1080p live action)
+      // 1. Try Pexels HD Video first (supports native portrait orientation)
+      const pexelsOrientation = aspectRatio === '9:16' ? 'portrait' : 'landscape';
+      const pexelsUrl = await this.searchPexelsVideo(q, clipOffset, undefined, pexelsOrientation);
+      if (pexelsUrl) return pexelsUrl;
+
+      // 2. Try Coverr HD Catalog (100% Free, high quality live action)
       const coverrUrl = await this.searchCoverrVideo(q, clipOffset);
       if (coverrUrl) return coverrUrl;
-
-      // 2. Try Pexels HD Video
-      const pexelsUrl = await this.searchPexelsVideo(q, clipOffset);
-      if (pexelsUrl) return pexelsUrl;
 
       // 3. Try Pixabay HD Video
       const pixabayUrl = await this.searchPixabayVideo(q, clipOffset);
@@ -154,7 +165,7 @@ export class StockVideoEngine {
     return null;
   }
 
-  // Download stock video and render into trimmed/scaled 1080p scene (30fps CFR + strip audio)
+  // Download stock video and render into trimmed/scaled scene (30fps CFR + strip audio)
   async renderStockVideoScene(params: {
     videoUrl: string;
     durationSec: number;
@@ -163,12 +174,16 @@ export class StockVideoEngine {
     headline: string;
     niche: string;
     accent: string;
+    aspectRatio?: '9:16' | '16:9';
   }): Promise<void> {
-    const { videoUrl, durationSec, outputPath, sceneIndex } = params;
+    const { videoUrl, durationSec, outputPath, sceneIndex, aspectRatio = '9:16' } = params;
     const ffmpegPath = getFfmpegPath();
     const tempDir = path.dirname(outputPath);
     const rand = Math.random().toString(36).substring(2, 7);
     const tempStockMp4 = path.join(tempDir, `stock_dl_${sceneIndex}_${rand}.mp4`);
+
+    const width = aspectRatio === '9:16' ? 1080 : 1920;
+    const height = aspectRatio === '9:16' ? 1920 : 1080;
 
     try {
       // 1. Download the real video clip (with timeout)
@@ -177,10 +192,10 @@ export class StockVideoEngine {
       const arrayBuf = await res.arrayBuffer();
       await fs.promises.writeFile(tempStockMp4, Buffer.from(arrayBuf));
 
-      // 2. Process with FFmpeg (scale, crop to 1920x1080, force 30fps CFR, strip audio, clean full-screen footage)
+      // 2. Process with FFmpeg (scale, crop to target aspect ratio, force 30fps CFR, strip audio)
       const filterGraph = [
-        `scale=1920:1080:force_original_aspect_ratio=increase`,
-        `crop=1920:1080`,
+        `scale=${width}:${height}:force_original_aspect_ratio=increase`,
+        `crop=${width}:${height}`,
         `setsar=1`,
       ].join(',');
 

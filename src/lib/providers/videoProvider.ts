@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import { storage, getTempDir } from '../storage';
 import { getApiKey } from '../db';
+import { AspectRatio } from './video-provider.types';
+import { openaiVideoProvider } from './openaiVideoProvider';
 
 const execFileAsync = util.promisify(execFile);
 
@@ -104,6 +106,7 @@ export interface VideoProvider {
     lighting?: string;
     colorStyle?: string;
     continuityNotes?: string;
+    aspectRatio?: AspectRatio;
   }): Promise<GeneratedClip[]>;
 
   generateVideoClip(params: {
@@ -115,6 +118,12 @@ export interface VideoProvider {
     niche: string;
     visualStyle?: string;
     cameraMovement?: string;
+    lighting?: string;
+    colorStyle?: string;
+    continuityNotes?: string;
+    aspectRatio?: AspectRatio;
+    projectId?: string;
+    sceneId?: string;
   }): Promise<void>;
 }
 
@@ -127,6 +136,9 @@ class DefaultVideoProvider implements VideoProvider {
   }
 
   getProviderName(): string {
+    if (openaiVideoProvider.isConfigured()) {
+      return 'OpenAI Video Engine (Sora / OpenAI Video Generation)';
+    }
     const runway = getApiKey('runway');
     const replicate = getApiKey('replicate');
     const fal = getApiKey('fal');
@@ -135,7 +147,11 @@ class DefaultVideoProvider implements VideoProvider {
       const active = runway ? 'Runway Gen-3' : replicate ? 'Replicate SVD' : 'Fal.ai Fast Video';
       return `AI Video Synthesis Engine (${active} Provider Active)`;
     }
-    return 'Local FFmpeg Motion Engine (H.264 / AAC 1080p)';
+    const pexels = getApiKey('pexels_api_key') || process.env.PEXELS_API_KEY;
+    if (pexels) {
+      return 'Pexels Cinematic HD Stock Engine (9:16 Vertical Shorts)';
+    }
+    return 'Local FFmpeg Motion Engine (9:16 Vertical HD)';
   }
 
 
@@ -152,9 +168,11 @@ class DefaultVideoProvider implements VideoProvider {
     lighting?: string;
     colorStyle?: string;
     continuityNotes?: string;
+    aspectRatio?: AspectRatio;
   }): Promise<GeneratedClip[]> {
     const {
       projectId,
+      sceneId,
       sceneIndex,
       visualPrompt,
       durationSec,
@@ -163,6 +181,9 @@ class DefaultVideoProvider implements VideoProvider {
       environment,
       cameraMovement,
       lighting,
+      colorStyle,
+      continuityNotes,
+      aspectRatio = '9:16',
     } = params;
     const clips: GeneratedClip[] = [];
 
@@ -215,6 +236,12 @@ class DefaultVideoProvider implements VideoProvider {
         niche,
         visualStyle,
         cameraMovement,
+        lighting,
+        colorStyle,
+        continuityNotes,
+        aspectRatio,
+        projectId,
+        sceneId,
       });
 
       clips.push({
@@ -238,9 +265,63 @@ class DefaultVideoProvider implements VideoProvider {
     niche: string;
     visualStyle?: string;
     cameraMovement?: string;
+    lighting?: string;
+    colorStyle?: string;
+    continuityNotes?: string;
+    aspectRatio?: AspectRatio;
+    projectId?: string;
+    sceneId?: string;
   }): Promise<void> {
-    const { durationSec, outputPath, sceneIndex, clipIndex, niche, visualStyle = '' } = params;
+    const {
+      durationSec,
+      outputPath,
+      sceneIndex,
+      clipIndex,
+      niche,
+      visualStyle = '',
+      cameraMovement,
+      lighting,
+      colorStyle,
+      continuityNotes,
+      aspectRatio = '9:16',
+      projectId,
+      sceneId,
+    } = params;
     const ffmpegPath = getFfmpegPath();
+
+    const isVertical = aspectRatio === '9:16';
+    const width = isVertical ? 1080 : 1920;
+    const height = isVertical ? 1920 : 1080;
+
+    // 1. Try OpenAI Video Generation if configured (Sora / OpenAI Video API)
+    if (openaiVideoProvider.isConfigured()) {
+      try {
+        console.log(`[VideoProvider] Calling OpenAI Video Provider for Scene ${sceneIndex} Clip ${clipIndex}...`);
+        await openaiVideoProvider.generateClip({
+          prompt: params.prompt,
+          sceneIndex,
+          durationSec,
+          aspectRatio,
+          visualStyle,
+          niche,
+          outputPath,
+          environment: niche,
+          cameraMovement,
+          lighting,
+          colorStyle,
+          continuityNotes,
+          projectId,
+          sceneId,
+        });
+
+        if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 1000) {
+          console.log(`[VideoProvider] OpenAI Video clip generated successfully for Scene ${sceneIndex}`);
+          return;
+        }
+      } catch (openAiErr: any) {
+        console.warn(`[VideoProvider] OpenAI Video generation error (${openAiErr.message}). Falling back to stock/motion engine...`);
+      }
+    }
 
     // Themed palettes based on niche & visualStyle
     let bg1 = '#090a0f';
@@ -267,9 +348,6 @@ class DefaultVideoProvider implements VideoProvider {
       accent = '#f59e0b';
     }
 
-    const fontBold = 'C\\:/Windows/Fonts/arialbd.ttf';
-    const fontRegular = 'C\\:/Windows/Fonts/arial.ttf';
-
     // Sanitize strings for FFmpeg drawtext
     const sanitize = (str: string) =>
       str.replace(/[:\\'%]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -285,15 +363,15 @@ class DefaultVideoProvider implements VideoProvider {
     const safeSubtext2 = sanitize(subtext2);
     const safeNiche = sanitize(niche.toUpperCase());
 
-    // 1. Try Searching & Downloading Real 1080p HD Stock Video Footage (Coverr / Pexels / Pixabay)
+    // 2. Try Searching & Downloading Real HD Stock Video Footage (Pexels / Coverr / Pixabay in 9:16 portrait)
     try {
       const { stockVideoEngine } = await import('./stockVideoProvider');
       const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
       const clipOffset = (sceneIndex * 3) + clipIndex;
-      const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset);
+      const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, aspectRatio);
 
       if (stockVideoUrl) {
-        console.log(`[VideoProvider] Found real HD Video Footage for Scene ${sceneIndex} Clip ${clipIndex}: ${stockVideoUrl.substring(0, 60)}...`);
+        console.log(`[VideoProvider] Found real HD Video Footage for Scene ${sceneIndex} Clip ${clipIndex} (${aspectRatio}): ${stockVideoUrl.substring(0, 60)}...`);
         await stockVideoEngine.renderStockVideoScene({
           videoUrl: stockVideoUrl,
           durationSec,
@@ -302,6 +380,7 @@ class DefaultVideoProvider implements VideoProvider {
           headline: safeHeadline,
           niche: safeNiche,
           accent,
+          aspectRatio,
         });
         return;
       }
@@ -309,7 +388,7 @@ class DefaultVideoProvider implements VideoProvider {
       console.warn(`[VideoProvider] Stock video search/render error: ${stockErr.message}`);
     }
 
-    // 2. Try Generating Real AI Visuals via Cloudflare Workers AI (Flux 1 Schnell & SDXL Lightning)
+    // 3. Try Generating Real AI Visuals via Cloudflare Workers AI (Flux 1 Schnell & SDXL Lightning)
     const cfToken = getApiKey('cloudflare_api_token') || process.env.CLOUDFLARE_API_TOKEN;
     const cfAccountId = getApiKey('cloudflare_account_id') || process.env.CLOUDFLARE_ACCOUNT_ID;
 
@@ -317,9 +396,9 @@ class DefaultVideoProvider implements VideoProvider {
     const tempDir = path.dirname(outputPath);
     const rand = Math.random().toString(36).substring(2, 7);
     const tempAiImgPath = path.join(tempDir, `cf_img_${sceneIndex}_${clipIndex}_${rand}.jpg`);
-    const enhancedPrompt = `${cleanPrompt}, cinematic 4k photo, hyperrealistic, award winning photography, 8k resolution, photorealistic`;
+    const enhancedPrompt = `${cleanPrompt}, cinematic 4k photo, vertical 9:16 composition, hyperrealistic, award winning photography, 8k resolution, photorealistic`;
 
-    // 2a. Attempt Cloudflare Workers AI Flux 1 Schnell (100% verified 200 OK)
+    // 3a. Attempt Cloudflare Workers AI Flux 1 Schnell
     if (cfToken && cfAccountId) {
       try {
         console.log(`[VideoProvider] Generating AI visual for Scene ${sceneIndex} using Cloudflare Flux 1 Schnell...`);
@@ -362,10 +441,10 @@ class DefaultVideoProvider implements VideoProvider {
       }
     }
 
-    // 2b. Attempt High-Speed Pollinations AI Turbo (Unlimited & Fast Fallback)
+    // 3b. Attempt High-Speed Pollinations AI Turbo (Unlimited & Fast Fallback with target dimensions)
     if (!generatedAiImage) {
       try {
-        const polliUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=1920&height=1080&nologo=true&model=turbo`;
+        const polliUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&nologo=true&model=turbo`;
         const polliRes = await fetch(polliUrl);
         if (polliRes.ok) {
           const arrayBuf = await polliRes.arrayBuffer();
@@ -379,14 +458,14 @@ class DefaultVideoProvider implements VideoProvider {
       }
     }
 
-    // 2c. Render AI Visual Image with FFmpeg Ken Burns Motion (30fps CFR)
+    // 3c. Render AI Visual Image with FFmpeg Ken Burns Motion (Target 1080x1920 9:16 CFR)
     if (generatedAiImage && fs.existsSync(tempAiImgPath)) {
       try {
         const filterGraph = [
-          `scale=1920:1080:force_original_aspect_ratio=increase`,
-          `crop=1920:1080`,
+          `scale=${width}:${height}:force_original_aspect_ratio=increase`,
+          `crop=${width}:${height}`,
           `setsar=1`,
-          `zoompan=z='min(zoom+0.0008,1.15)':d=120:s=1920x1080:fps=30`,
+          `zoompan=z='min(zoom+0.0008,1.15)':d=120:s=${width}x${height}:fps=30`,
         ].join(',');
 
         await execFileAsync(ffmpegPath, [
@@ -420,10 +499,10 @@ class DefaultVideoProvider implements VideoProvider {
       }
     }
 
-    // Fallback Clean Ambient Visual (No raw text boxes)
+    // 4. Fallback Clean Ambient Visual (Calibrated 1080x1920 9:16)
     const filterGraph = [
-      `drawgrid=width=160:height=160:thickness=1:color=white@0.05`,
-      `drawbox=x=0:y=0:w=1920:h=1080:color=${bg2}@0.4:t=fill`,
+      `drawgrid=width=120:height=120:thickness=1:color=white@0.05`,
+      `drawbox=x=0:y=0:w=${width}:h=${height}:color=${bg2}@0.4:t=fill`,
     ].filter(Boolean).join(',');
 
     const args = [
@@ -431,7 +510,7 @@ class DefaultVideoProvider implements VideoProvider {
       '-f',
       'lavfi',
       '-i',
-      `color=c=${bg1}:s=1920x1080:d=${durationSec}:r=30`,
+      `color=c=${bg1}:s=${width}x${height}:d=${durationSec}:r=30`,
       '-vf',
       filterGraph,
       '-c:v',
@@ -455,7 +534,7 @@ class DefaultVideoProvider implements VideoProvider {
           '-f',
           'lavfi',
           '-i',
-          `color=c=${bg2}:s=1920x1080:d=${durationSec}:r=30`,
+          `color=c=${bg2}:s=${width}x${height}:d=${durationSec}:r=30`,
           '-c:v',
           'libx264',
           '-pix_fmt',
@@ -468,7 +547,7 @@ class DefaultVideoProvider implements VideoProvider {
         ];
         await execFileAsync(ffmpegPath, fallbackArgs);
       } catch {
-        // Fallback: If FFmpeg binary is missing on serverless, cache and copy standard HD footage
+        // Fallback: If FFmpeg binary is missing on serverless, cache and copy standard footage
         try {
           const cacheSample = path.join(tempDir, 'base_sample_clip.mp4');
           if (!fs.existsSync(cacheSample)) {
