@@ -424,6 +424,12 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
     const resolvedParams = await Promise.resolve(params);
     const keyParts = resolvedParams?.key;
     const key = Array.isArray(keyParts) ? keyParts.join('/') : String(keyParts || '');
+
+    // Strict Path Traversal Protection
+    if (key.includes('..') || key.includes('\\')) {
+      return new NextResponse('Invalid asset key', { status: 400 });
+    }
+
     const ext = path.extname(key).toLowerCase();
     let filePath = storage.getFilePath(key);
 
@@ -609,6 +615,14 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
 
     if (!fs.existsSync(filePath)) {
       return new NextResponse('Asset Not Found', { status: 404 });
+    }
+
+    const resolvedPath = path.resolve(filePath);
+    const storageRoot = path.resolve(process.cwd(), 'storage');
+    const publicRoot = path.resolve(process.cwd(), 'public');
+    const tempRoot = path.resolve(process.cwd(), 'temp');
+    if (!resolvedPath.startsWith(storageRoot) && !resolvedPath.startsWith(publicRoot) && !resolvedPath.startsWith(tempRoot)) {
+      return new NextResponse('Access Denied', { status: 403 });
     }
 
     const stat = await fs.promises.stat(filePath);

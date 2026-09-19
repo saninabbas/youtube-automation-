@@ -5,9 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/components/Toast';
 
-interface UserVoice {
+export interface UserVoice {
   id: string;
-  user_id: string;
   name: string;
   voice_id: string;
   sample_url?: string;
@@ -22,6 +21,8 @@ const STUDIO_VOICES = [
   { id: 'en-US-ChristopherNeural', name: 'Studio Voice 5', desc: 'Christopher (Male, Clear Broadcast)' },
 ];
 
+type ModalState = 'idle' | 'recording' | 'recorded' | 'uploading' | 'cloning' | 'success' | 'error';
+
 function CreateVideoWizardContent() {
   const router = useRouter();
   const toast = useToast();
@@ -35,52 +36,89 @@ function CreateVideoWizardContent() {
   const [monthlyUsage, setMonthlyUsage] = useState({ used: 0, limit: 30, remaining: 30 });
   const [creating, setCreating] = useState(false);
 
-  // User Cloned Voices
+  // User Cloned Voices State
   const [myVoices, setMyVoices] = useState<UserVoice[]>([]);
-  const [loadingVoices, setLoadingVoices] = useState(false);
+  const [loadingVoices, setLoadingVoices] = useState(true);
+  const [voicesError, setVoicesError] = useState<string | null>(null);
 
   // Voice Cloning Modal State
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [modalState, setModalState] = useState<ModalState>('idle');
   const [cloneTab, setCloneTab] = useState<'mic' | 'upload'>('mic');
   const [newVoiceName, setNewVoiceName] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [justClonedVoice, setJustClonedVoice] = useState<UserVoice | null>(null);
+
+  // Recording & Upload State
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
-  const [cloningLoading, setCloningLoading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Audio Playback Preview State
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  // MediaRecorder refs
+  // MediaStream and Recorder Refs
+  const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Optional collapsible advanced options
+  // Advanced Options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [visualStyle, setVisualStyle] = useState('Cinematic High-Contrast');
   const [videoLength, setVideoLength] = useState<number>(1);
+
+  // Focus trap ref
+  const modalCardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchUserData();
     fetchUserVoices();
   }, []);
 
-  // Cleanup object URLs and audio recording on unmount
+  // Handle modal keyboard accessibility & body scroll lock
+  useEffect(() => {
+    if (showCloneModal) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && modalState !== 'cloning') {
+          closeModalSafely();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [showCloneModal, modalState]);
+
+  // Clean up media streams and object URLs on unmount
   useEffect(() => {
     return () => {
+      stopMediaTracks();
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
       if (uploadedAudioUrl) URL.revokeObjectURL(uploadedAudioUrl);
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
       }
     };
   }, [recordedAudioUrl, uploadedAudioUrl]);
+
+  const stopMediaTracks = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -105,29 +143,37 @@ function CreateVideoWizardContent() {
   const fetchUserVoices = async () => {
     try {
       setLoadingVoices(true);
+      setVoicesError(null);
       const res = await fetch('/api/voice/my-voices');
-      if (res.ok) {
-        const data = await res.json();
-        const voices: UserVoice[] = data.voices || [];
-        setMyVoices(voices);
-        // If user already has a custom voice and none selected yet, could auto-select
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMyVoices(data.voices || []);
+      } else {
+        setVoicesError(data.error || 'Failed to load custom voices.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Could not load user voices:', err);
+      setVoicesError('Network error loading voices.');
     } finally {
       setLoadingVoices(false);
     }
   };
 
-  // Live Audio Recording Handlers
+  // ─────────────────────────────────────────────────────────────
+  // LIVE AUDIO RECORDING HANDLERS
+  // ─────────────────────────────────────────────────────────────
+
   const startRecording = async () => {
     try {
+      setModalError(null);
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast.error('Microphone access is not supported by this browser. Please upload an audio file instead.');
+        setModalError('Audio recording is not supported in this browser. Please upload an audio file instead.');
         return;
       }
 
+      stopMediaTracks();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
       audioChunksRef.current = [];
 
       let mimeType = 'audio/webm';
@@ -154,19 +200,18 @@ function CreateVideoWizardContent() {
         if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
         const url = URL.createObjectURL(audioBlob);
         setRecordedAudioUrl(url);
-
-        // Stop all tracks to turn off microphone indicator
-        stream.getTracks().forEach((track) => track.stop());
+        setModalState('recorded');
+        stopMediaTracks();
       };
 
-      recorder.start(250); // collect data chunks every 250ms
-      setIsRecording(true);
+      recorder.start(250);
+      setModalState('recording');
       setRecordingSeconds(0);
 
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = setInterval(() => {
         setRecordingSeconds((prev) => {
           if (prev >= 60) {
-            // Auto stop at 60s
             stopRecording();
             return 60;
           }
@@ -175,7 +220,15 @@ function CreateVideoWizardContent() {
       }, 1000);
     } catch (err: any) {
       console.error('Microphone access error:', err);
-      toast.error(err.message?.includes('Permission') ? 'Microphone permission denied. Please allow microphone access or upload an audio file.' : 'Could not access microphone.');
+      stopMediaTracks();
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setModalError('Microphone permission was denied. Please allow microphone access in your browser or upload an audio file.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setModalError('No microphone was detected on your device. Please plug in a microphone or upload an audio file.');
+      } else {
+        setModalError('Could not access microphone. Please check your browser audio settings or upload a file.');
+      }
+      setModalState('idle');
     }
   };
 
@@ -184,50 +237,111 @@ function CreateVideoWizardContent() {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
+
+    if (recordingSeconds < 5) {
+      toast.warning('Please speak for at least 5 seconds so AI can analyze your voice.');
+    }
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
-    setIsRecording(false);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const resetRecording = () => {
+    stopMediaTracks();
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
+    setRecordedBlob(null);
+    setRecordedAudioUrl(null);
+    setRecordingSeconds(0);
+    setModalState('idle');
+    setModalError(null);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // FILE UPLOAD HANDLERS
+  // ─────────────────────────────────────────────────────────────
+
+  const processSelectedFile = (file: File) => {
+    setModalError(null);
+
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    const validExts = ['.mp3', '.wav', '.m4a', '.webm', '.ogg', '.aac', '.flac'];
+    if (!validExts.includes(ext)) {
+      setModalError("This audio format isn't supported. Please choose an MP3, WAV, M4A, WebM, or OGG file.");
+      return;
+    }
 
     if (file.size > 25 * 1024 * 1024) {
-      toast.error('File size exceeds 25 MB limit.');
+      setModalError('The audio file is too large. Maximum supported size is 25 MB.');
+      return;
+    }
+
+    if (file.size < 8000) {
+      setModalError('The audio file is too short. Please provide at least 5 seconds of clear speech.');
       return;
     }
 
     setUploadedFile(file);
     if (uploadedAudioUrl) URL.revokeObjectURL(uploadedAudioUrl);
     setUploadedAudioUrl(URL.createObjectURL(file));
+    setModalState('uploading');
 
-    // Auto-suggest name from file
     if (!newVoiceName.trim()) {
       const suggested = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-      setNewVoiceName(suggested.charAt(0).toUpperCase() + suggested.slice(1));
+      const clean = suggested.replace(/[<>"'&]/g, '').trim();
+      if (clean) {
+        setNewVoiceName(clean.charAt(0).toUpperCase() + clean.slice(1));
+      }
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processSelectedFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processSelectedFile(file);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // CLONE SUBMISSION
+  // ─────────────────────────────────────────────────────────────
+
   const handleCloneVoice = async () => {
-    const nameToUse = newVoiceName.trim() || 'My Cloned Voice';
+    if (modalState === 'cloning') return; // Prevent duplicate submission
+
+    setModalError(null);
+    const sanitizedName = newVoiceName.replace(/[<>"'&]/g, '').trim().substring(0, 50) || 'My Cloned Voice';
     let audioToSend: Blob | File | null = null;
     let fileName = 'recording.webm';
 
     if (cloneTab === 'mic') {
       if (!recordedBlob) {
-        toast.warning('Please record an audio sample first.');
+        setModalError('Please record an audio sample first.');
         return;
       }
-      if (recordingSeconds < 5 && recordedBlob.size < 10000) {
-        toast.warning('Please record at least 5-10 seconds of clear speech.');
+      if (recordingSeconds < 5) {
+        setModalError('Please record at least 5 seconds of speech.');
         return;
       }
       audioToSend = recordedBlob;
     } else {
       if (!uploadedFile) {
-        toast.warning('Please select an audio file to upload.');
+        setModalError('Please select an audio file to upload.');
         return;
       }
       audioToSend = uploadedFile;
@@ -235,11 +349,10 @@ function CreateVideoWizardContent() {
     }
 
     try {
-      setCloningLoading(true);
-      toast.info('Cloning your voice with AI... This takes ~5 to 10 seconds ⚡');
+      setModalState('cloning');
 
       const formData = new FormData();
-      formData.append('name', nameToUse);
+      formData.append('name', sanitizedName);
       formData.append('file', audioToSend, fileName);
 
       const res = await fetch('/api/voice/clone', {
@@ -248,48 +361,73 @@ function CreateVideoWizardContent() {
       });
 
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to clone voice');
       }
 
-      toast.success(`🎉 Voice "${nameToUse}" successfully cloned!`);
-
-      // Add to state and select it
       const newVoice: UserVoice = data.voice;
-      setMyVoices((prev) => [newVoice, ...prev]);
+      setJustClonedVoice(newVoice);
+      setMyVoices((prev) => [newVoice, ...prev.filter((v) => v.id !== newVoice.id)]);
       setSelectedVoice(newVoice.voice_id);
+      setModalState('success');
+      toast.success(`🎉 Voice "${sanitizedName}" ready!`);
 
-      // Reset modal state and close
-      setShowCloneModal(false);
-      setRecordedBlob(null);
-      setRecordedAudioUrl(null);
-      setUploadedFile(null);
-      setUploadedAudioUrl(null);
-      setNewVoiceName('');
-      setRecordingSeconds(0);
+      // Auto close modal after brief confirmation
+      setTimeout(() => {
+        closeModalSafely();
+      }, 2000);
     } catch (err: any) {
-      toast.error(err.message || 'Voice cloning failed');
-    } finally {
-      setCloningLoading(false);
+      setModalState('error');
+      setModalError(err.message || 'Voice cloning failed. Please try again.');
     }
   };
 
-  const handleDeleteVoice = async (e: React.MouseEvent, voiceDbId: string, voiceId: string) => {
+  const closeModalSafely = () => {
+    if (modalState === 'cloning') return; // Do not close while actively cloning
+    stopMediaTracks();
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    resetRecording();
+    setUploadedFile(null);
+    if (uploadedAudioUrl) URL.revokeObjectURL(uploadedAudioUrl);
+    setUploadedAudioUrl(null);
+    setNewVoiceName('');
+    setModalError(null);
+    setJustClonedVoice(null);
+    setModalState('idle');
+    setShowCloneModal(false);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // VOICE MANAGEMENT (PLAYBACK & DELETION)
+  // ─────────────────────────────────────────────────────────────
+
+  const handleDeleteVoice = async (e: React.MouseEvent, voiceDbId: string, voiceId: string, voiceName: string) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to remove this cloned voice?')) return;
+    const confirmed = window.confirm(`Delete "${voiceName}"? This will permanently remove it from your account.`);
+    if (!confirmed) return;
+
+    // Optimistic removal
+    const previousVoices = [...myVoices];
+    setMyVoices((prev) => prev.filter((v) => v.id !== voiceDbId));
+
+    if (selectedVoice === voiceId) {
+      setSelectedVoice('elevenlabs:rachel');
+    }
 
     try {
-      const res = await fetch(`/api/voice/my-voices?id=${voiceDbId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setMyVoices((prev) => prev.filter((v) => v.id !== voiceDbId));
-        if (selectedVoice === voiceId) {
-          setSelectedVoice('elevenlabs:rachel');
-        }
-        toast.info('Voice removed.');
+      const res = await fetch(`/api/voice/my-voices?id=${encodeURIComponent(voiceDbId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        // Rollback
+        setMyVoices(previousVoices);
+        toast.error(data.error || 'Failed to delete voice');
       } else {
-        toast.error('Failed to remove voice');
+        toast.info(`Voice "${voiceName}" removed.`);
       }
     } catch {
+      setMyVoices(previousVoices);
       toast.error('Network error removing voice');
     }
   };
@@ -317,6 +455,10 @@ function CreateVideoWizardContent() {
     audioPlayerRef.current.play().catch(() => setPlayingVoiceId(null));
     setPlayingVoiceId(voiceKey || 'sample');
   };
+
+  // ─────────────────────────────────────────────────────────────
+  // CREATE VIDEO SUBMISSION
+  // ─────────────────────────────────────────────────────────────
 
   const handleCreateVideo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -381,10 +523,13 @@ function CreateVideoWizardContent() {
   };
 
   return (
-    <div style={{ maxWidth: '720px', margin: '0 auto', padding: '20px 0 60px' }}>
+    <div style={{ maxWidth: '720px', margin: '0 auto', padding: '20px 16px 60px' }}>
       {/* Top Breadcrumb & Quota Status */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Link href="/" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '8px' }}>
+        <Link
+          href="/"
+          style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px' }}
+        >
           ← Back to Dashboard
         </Link>
         <div style={{ fontSize: '12px', color: monthlyUsage.remaining > 0 ? '#10b981' : '#f43f5e', fontWeight: 600 }}>
@@ -396,7 +541,7 @@ function CreateVideoWizardContent() {
         background: '#121215',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         borderRadius: '16px',
-        padding: '36px 32px',
+        padding: '32px 24px',
         boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
       }}>
         <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 8px 0' }}>
@@ -409,10 +554,11 @@ function CreateVideoWizardContent() {
         <form onSubmit={handleCreateVideo} style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
           {/* STEP 1: TOPIC INPUT */}
           <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: '#f4f4f5', marginBottom: '6px' }}>
+            <label htmlFor="video-topic-input" style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: '#f4f4f5', marginBottom: '6px' }}>
               What do you want to make a video about?
             </label>
             <textarea
+              id="video-topic-input"
               className="form-input"
               rows={3}
               style={{
@@ -424,7 +570,8 @@ function CreateVideoWizardContent() {
                 borderRadius: '8px',
                 color: '#fff',
                 resize: 'none',
-                lineHeight: 1.5
+                lineHeight: 1.5,
+                boxSizing: 'border-box',
               }}
               placeholder="e.g. 10 foods that help support healthy aging"
               value={topic}
@@ -437,26 +584,32 @@ function CreateVideoWizardContent() {
 
           {/* STEP 2: CHOOSE VOICE */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 700, color: '#f4f4f5', margin: 0 }}>
                 Choose Voice
               </label>
               <button
                 type="button"
-                onClick={() => setShowCloneModal(true)}
+                onClick={() => {
+                  setModalState('idle');
+                  setModalError(null);
+                  setShowCloneModal(true);
+                }}
+                aria-label="Open Voice Cloning Studio to record or upload voice"
                 style={{
                   background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '6px',
-                  padding: '6px 12px',
+                  padding: '8px 14px',
                   fontSize: '12px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
+                  minHeight: '38px',
                 }}
               >
                 <span>🎙️</span>
@@ -464,20 +617,61 @@ function CreateVideoWizardContent() {
               </button>
             </div>
 
-            {/* MY CLONED VOICES SECTION (If Any) */}
-            {myVoices.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                  My Cloned Voices ({myVoices.length})
+            {/* MY CLONED VOICES SECTION */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                My Cloned Voices
+              </div>
+
+              {loadingVoices ? (
+                <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#71717a' }}>
+                  Loading your cloned voices…
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+              ) : voicesError ? (
+                <div style={{ padding: '14px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '12px', color: '#f87171', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{voicesError}</span>
+                  <button
+                    type="button"
+                    onClick={fetchUserVoices}
+                    style={{ background: 'transparent', border: 'none', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline', fontSize: '12px' }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : myVoices.length === 0 ? (
+                <div style={{
+                  padding: '16px',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px dashed rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: '#71717a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  flexWrap: 'wrap'
+                }}>
+                  <span>You haven&apos;t cloned a voice yet. Click <strong>Clone Your Voice</strong> above to narrate videos with your real voice!</span>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
                   {myVoices.map((v) => {
                     const isSelected = selectedVoice === v.voice_id;
                     const isPlaying = playingVoiceId === v.id;
                     return (
                       <div
                         key={v.id}
+                        role="radio"
+                        aria-checked={isSelected}
+                        tabIndex={0}
                         onClick={() => setSelectedVoice(v.voice_id)}
+                        onKeyDown={(e) => {
+                          if (e.key === ' ' || e.key === 'Enter') {
+                            e.preventDefault();
+                            setSelectedVoice(v.voice_id);
+                          }
+                        }}
                         style={{
                           background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.02)',
                           border: isSelected ? '1px solid #818cf8' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -487,10 +681,11 @@ function CreateVideoWizardContent() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          gap: '10px'
+                          gap: '10px',
+                          outline: 'none',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
                           <div style={{
                             width: '16px',
                             height: '16px',
@@ -499,33 +694,38 @@ function CreateVideoWizardContent() {
                             background: isSelected ? '#09090b' : 'transparent',
                             flexShrink: 0
                           }} />
-                          <div>
+                          <div style={{ overflow: 'hidden' }}>
                             <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>🎙️ {v.name}</span>
-                              <span style={{ fontSize: '10px', background: '#6366f1', color: '#fff', padding: '1px 6px', borderRadius: '4px' }}>
+                              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🎙️ {v.name}</span>
+                              <span style={{ fontSize: '10px', background: '#6366f1', color: '#fff', padding: '1px 5px', borderRadius: '4px', flexShrink: 0 }}>
                                 My Voice
                               </span>
                             </div>
                             <div style={{ fontSize: '11px', color: '#a1a1aa' }}>
-                              Cloned AI Voice • Ready to narrate
+                              Personal Cloned Voice
                             </div>
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                           {v.sample_url && (
                             <button
                               type="button"
                               onClick={(e) => handlePlaySample(e, v.sample_url, v.id)}
-                              title="Play sample"
+                              aria-label={isPlaying ? `Pause sample for ${v.name}` : `Play sample for ${v.name}`}
                               style={{
                                 background: isPlaying ? '#4f46e5' : 'rgba(255,255,255,0.08)',
                                 border: 'none',
                                 color: '#fff',
                                 borderRadius: '4px',
-                                padding: '4px 8px',
-                                fontSize: '11px',
-                                cursor: 'pointer'
+                                padding: '6px 10px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                minWidth: '32px',
+                                minHeight: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                               }}
                             >
                               {isPlaying ? '⏸' : '▶'}
@@ -533,15 +733,20 @@ function CreateVideoWizardContent() {
                           )}
                           <button
                             type="button"
-                            onClick={(e) => handleDeleteVoice(e, v.id, v.voice_id)}
-                            title="Delete cloned voice"
+                            onClick={(e) => handleDeleteVoice(e, v.id, v.voice_id, v.name)}
+                            aria-label={`Delete cloned voice ${v.name}`}
                             style={{
                               background: 'transparent',
                               border: 'none',
                               color: '#71717a',
                               cursor: 'pointer',
-                              fontSize: '13px',
-                              padding: '2px 6px'
+                              fontSize: '14px',
+                              padding: '6px 8px',
+                              minWidth: '32px',
+                              minHeight: '32px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
                             }}
                           >
                             ✕
@@ -551,23 +756,30 @@ function CreateVideoWizardContent() {
                     );
                   })}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* PRE-MADE STUDIO VOICES */}
             <div>
-              {myVoices.length > 0 && (
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                  Studio Voices (Pre-configured)
-                </div>
-              )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                Studio Voices (Pre-configured)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
                 {STUDIO_VOICES.map((v) => {
                   const isSelected = selectedVoice === v.id;
                   return (
                     <div
                       key={v.id}
+                      role="radio"
+                      aria-checked={isSelected}
+                      tabIndex={0}
                       onClick={() => setSelectedVoice(v.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          setSelectedVoice(v.id);
+                        }
+                      }}
                       style={{
                         background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)',
                         border: isSelected ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -576,7 +788,8 @@ function CreateVideoWizardContent() {
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px'
+                        gap: '10px',
+                        outline: 'none',
                       }}
                     >
                       <div style={{
@@ -607,6 +820,7 @@ function CreateVideoWizardContent() {
                   <input
                     type="text"
                     className="form-input"
+                    aria-label="Manual ElevenLabs Voice ID"
                     style={{
                       flex: 1,
                       padding: '8px 10px',
@@ -640,7 +854,8 @@ function CreateVideoWizardContent() {
                       borderRadius: '4px',
                       padding: '0 12px',
                       fontSize: '12px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      minHeight: '34px',
                     }}
                   >
                     {selectedVoice === 'custom_manual' ? '✓ Using Custom ID' : 'Apply'}
@@ -690,10 +905,11 @@ function CreateVideoWizardContent() {
             {showAdvanced && (
               <div style={{ marginTop: '14px', padding: '16px', background: '#09090b', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
+                  <label htmlFor="visual-style-select" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
                     Visual Style
                   </label>
                   <select
+                    id="visual-style-select"
                     value={visualStyle}
                     onChange={(e) => setVisualStyle(e.target.value)}
                     style={{
@@ -713,10 +929,11 @@ function CreateVideoWizardContent() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
+                  <label htmlFor="target-duration-select" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
                     Target Duration
                   </label>
                   <select
+                    id="target-duration-select"
                     value={videoLength}
                     onChange={(e) => setVideoLength(Number(e.target.value))}
                     style={{
@@ -756,7 +973,8 @@ function CreateVideoWizardContent() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px'
+                gap: '8px',
+                minHeight: '52px',
               }}
             >
               {creating ? 'Creating Video...' : 'Create Video ➔'}
@@ -775,352 +993,466 @@ function CreateVideoWizardContent() {
         </form>
       </div>
 
-      {/* IN-APP INSTANT VOICE CLONING MODAL */}
+      {/* ─────────────────────────────────────────────────────────────
+          IN-APP INSTANT VOICE CLONING MODAL
+      ───────────────────────────────────────────────────────────── */}
       {showCloneModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: '#121215',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '560px',
-            padding: '28px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
-            position: 'relative'
-          }}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="voice-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && modalState !== 'cloning') {
+              closeModalSafely();
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '16px'
+          }}
+        >
+          <div
+            ref={modalCardRef}
+            style={{
+              background: '#121215',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '560px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '24px 20px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+              position: 'relative',
+              boxSizing: 'border-box'
+            }}
+          >
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 id="voice-modal-title" style={{ fontSize: '20px', fontWeight: 800, color: '#fff', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>🎙️</span>
                   <span>Instant Voice Cloning</span>
                 </h2>
                 <p style={{ fontSize: '13px', color: '#a1a1aa', margin: 0 }}>
-                  Clone your voice in seconds. Videos will be narrated with your exact tone and accent.
+                  Clone your voice in seconds so all your videos sound exactly like you.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (isRecording) stopRecording();
-                  setShowCloneModal(false);
-                }}
+                onClick={closeModalSafely}
+                disabled={modalState === 'cloning'}
+                aria-label="Close Voice Cloning Modal"
                 style={{
                   background: 'rgba(255,255,255,0.06)',
                   border: 'none',
-                  color: '#a1a1aa',
+                  color: modalState === 'cloning' ? '#52525b' : '#a1a1aa',
                   borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  cursor: 'pointer',
+                  width: '36px',
+                  height: '36px',
+                  cursor: modalState === 'cloning' ? 'not-allowed' : 'pointer',
                   fontSize: '16px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}
               >
                 ✕
               </button>
             </div>
 
-            {/* Tab Switcher */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: '#09090b', padding: '4px', borderRadius: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setCloneTab('mic')}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: cloneTab === 'mic' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  color: cloneTab === 'mic' ? '#fff' : '#71717a'
-                }}
-              >
-                🎤 Record Microphone
-              </button>
-              <button
-                type="button"
-                onClick={() => setCloneTab('upload')}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: cloneTab === 'upload' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  color: cloneTab === 'upload' ? '#fff' : '#71717a'
-                }}
-              >
-                📁 Upload Audio File
-              </button>
-            </div>
-
-            {/* TAB 1: RECORD WITH MICROPHONE */}
-            {cloneTab === 'mic' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
-                <div style={{
-                  padding: '16px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px dashed rgba(255,255,255,0.15)',
-                  borderRadius: '10px',
-                  textAlign: 'center'
-                }}>
-                  {isRecording ? (
-                    <div>
-                      <div style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '50%',
-                        background: '#ef4444',
-                        margin: '0 auto 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        animation: 'pulse 1.5s infinite',
-                        boxShadow: '0 0 20px rgba(239, 68, 68, 0.6)'
-                      }}>
-                        <span style={{ fontSize: '24px' }}>🎤</span>
-                      </div>
-                      <div style={{ fontSize: '20px', fontWeight: 800, color: '#ef4444', fontFamily: 'monospace' }}>
-                        00:{recordingSeconds.toString().padStart(2, '0')} / 01:00
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '6px' }}>
-                        Speaking clearly into your microphone... (speak for 10-30 seconds)
-                      </div>
-                      <button
-                        type="button"
-                        onClick={stopRecording}
-                        style={{
-                          marginTop: '16px',
-                          padding: '8px 20px',
-                          background: '#ffffff',
-                          color: '#09090b',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ⏹️ Stop Recording
-                      </button>
-                    </div>
-                  ) : recordedAudioUrl ? (
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981', marginBottom: '8px' }}>
-                        ✓ Voice sample recorded ({recordingSeconds}s)
-                      </div>
-                      <audio controls src={recordedAudioUrl} style={{ width: '100%', marginBottom: '12px' }} />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRecordedBlob(null);
-                          setRecordedAudioUrl(null);
-                          setRecordingSeconds(0);
-                        }}
-                        style={{
-                          background: 'rgba(255,255,255,0.08)',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          padding: '6px 14px',
-                          fontSize: '12px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ↺ Re-record Sample
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ fontSize: '12px', color: '#a1a1aa', marginBottom: '12px', lineHeight: 1.6 }}>
-                        <span style={{ color: '#e4e4e7', fontWeight: 600 }}>Suggested Reading Sample (15-20s):</span><br />
-                        <em>&ldquo;Hello and welcome to my channel. In this video, we will explore exciting ideas, healthy habits, and helpful insights to level up your everyday life. Let&apos;s get started!&rdquo;</em>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={startRecording}
-                        style={{
-                          padding: '12px 24px',
-                          background: '#ef4444',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
-                        }}
-                      >
-                        <span>🔴</span>
-                        <span>Start Recording</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+            {/* Error Banner Inside Modal */}
+            {modalError && (
+              <div style={{
+                marginBottom: '16px',
+                padding: '12px 14px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: '#f87171',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span>⚠️</span>
+                <span style={{ flex: 1 }}>{modalError}</span>
               </div>
             )}
 
-            {/* TAB 2: UPLOAD AUDIO FILE */}
-            {cloneTab === 'upload' && (
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{
-                  padding: '24px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px dashed rgba(255,255,255,0.15)',
-                  borderRadius: '10px',
-                  textAlign: 'center'
-                }}>
-                  {uploadedFile ? (
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981', marginBottom: '4px' }}>
-                        ✓ {uploadedFile.name}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#71717a', marginBottom: '12px' }}>
-                        {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
-                      </div>
-                      {uploadedAudioUrl && (
-                        <audio controls src={uploadedAudioUrl} style={{ width: '100%', marginBottom: '12px' }} />
-                      )}
-                      <label style={{
-                        display: 'inline-block',
-                        background: 'rgba(255,255,255,0.08)',
-                        color: '#fff',
-                        borderRadius: '6px',
-                        padding: '6px 14px',
-                        fontSize: '12px',
-                        cursor: 'pointer'
-                      }}>
-                        Choose Different File
-                        <input type="file" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg" onChange={handleFileUpload} style={{ display: 'none' }} />
-                      </label>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>📂</div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '4px' }}>
-                        Choose an audio sample file
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#71717a', marginBottom: '16px' }}>
-                        Supports MP3, WAV, M4A, WebM (up to 25 MB). Clear vocal speaking sample works best.
-                      </div>
-                      <label style={{
-                        display: 'inline-block',
-                        background: '#ffffff',
-                        color: '#09090b',
-                        borderRadius: '6px',
-                        padding: '10px 20px',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                      }}>
-                        Browse Audio File
-                        <input type="file" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg" onChange={handleFileUpload} style={{ display: 'none' }} />
-                      </label>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Voice Name Input */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e4e4e7', marginBottom: '6px' }}>
-                Give Your Voice a Name
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  fontSize: '13px',
-                  background: '#09090b',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '6px',
-                  color: '#fff'
-                }}
-                placeholder="e.g. My Host Voice, Nabeel's Voice"
-                value={newVoiceName}
-                onChange={(e) => setNewVoiceName(e.target.value)}
-              />
-            </div>
-
-            {/* Modal Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isRecording) stopRecording();
-                  setShowCloneModal(false);
-                }}
-                disabled={cloningLoading}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#a1a1aa',
-                  borderRadius: '6px',
-                  padding: '10px 16px',
-                  fontSize: '13px',
-                  cursor: cloningLoading ? 'not-allowed' : 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCloneVoice}
-                disabled={cloningLoading || (cloneTab === 'mic' ? !recordedBlob : !uploadedFile)}
-                style={{
-                  background: cloningLoading ? '#4f46e5' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '10px 20px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: (cloningLoading || (cloneTab === 'mic' ? !recordedBlob : !uploadedFile)) ? 'not-allowed' : 'pointer',
-                  opacity: (cloneTab === 'mic' ? !recordedBlob : !uploadedFile) ? 0.5 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                {cloningLoading ? (
-                  <>
-                    <span>⏳</span>
-                    <span>Cloning Voice (~5-10s)...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>⚡</span>
-                    <span>Clone My Voice Now</span>
-                  </>
+            {/* Success State Banner */}
+            {modalState === 'success' && justClonedVoice && (
+              <div style={{
+                padding: '24px',
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '12px',
+                textAlign: 'center',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎉</div>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#10b981', margin: '0 0 6px 0' }}>
+                  Voice &ldquo;{justClonedVoice.name}&rdquo; Successfully Cloned!
+                </h3>
+                <p style={{ fontSize: '13px', color: '#a1a1aa', margin: '0 0 16px 0' }}>
+                  Your voice is automatically selected and ready for your video.
+                </p>
+                {justClonedVoice.sample_url && (
+                  <audio controls src={justClonedVoice.sample_url} style={{ width: '100%', marginBottom: '14px' }} />
                 )}
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={closeModalSafely}
+                  style={{
+                    padding: '10px 24px',
+                    background: '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Continue to Video ➔
+                </button>
+              </div>
+            )}
+
+            {/* Active Workflow (Hidden once in success mode) */}
+            {modalState !== 'success' && (
+              <>
+                {/* Tab Switcher */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: '#09090b', padding: '4px', borderRadius: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (modalState === 'recording') stopRecording();
+                      setCloneTab('mic');
+                      setModalError(null);
+                    }}
+                    disabled={modalState === 'cloning'}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: modalState === 'cloning' ? 'not-allowed' : 'pointer',
+                      background: cloneTab === 'mic' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      color: cloneTab === 'mic' ? '#fff' : '#71717a',
+                      minHeight: '40px',
+                    }}
+                  >
+                    🎤 Record Microphone
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (modalState === 'recording') stopRecording();
+                      setCloneTab('upload');
+                      setModalError(null);
+                    }}
+                    disabled={modalState === 'cloning'}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: modalState === 'cloning' ? 'not-allowed' : 'pointer',
+                      background: cloneTab === 'upload' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      color: cloneTab === 'upload' ? '#fff' : '#71717a',
+                      minHeight: '40px',
+                    }}
+                  >
+                    📁 Upload Audio File
+                  </button>
+                </div>
+
+                {/* TAB 1: RECORD WITH MICROPHONE */}
+                {cloneTab === 'mic' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+                    <div style={{
+                      padding: '18px',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: modalState === 'recording' ? '1px solid #ef4444' : '1px dashed rgba(255,255,255,0.15)',
+                      borderRadius: '10px',
+                      textAlign: 'center'
+                    }}>
+                      {modalState === 'recording' ? (
+                        <div>
+                          <div style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '50%',
+                            background: '#ef4444',
+                            margin: '0 auto 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 0 24px rgba(239, 68, 68, 0.6)'
+                          }}>
+                            <span style={{ fontSize: '26px' }}>🎤</span>
+                          </div>
+                          <div aria-live="polite" style={{ fontSize: '22px', fontWeight: 800, color: '#ef4444', fontFamily: 'monospace' }}>
+                            00:{recordingSeconds.toString().padStart(2, '0')} / 01:00
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '6px' }}>
+                            Speaking clearly into your microphone... (speak for 10-30 seconds)
+                          </div>
+                          <button
+                            type="button"
+                            onClick={stopRecording}
+                            style={{
+                              marginTop: '16px',
+                              padding: '10px 24px',
+                              background: '#ffffff',
+                              color: '#09090b',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              minHeight: '42px',
+                            }}
+                          >
+                            ⏹️ Stop Recording
+                          </button>
+                        </div>
+                      ) : recordedAudioUrl ? (
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981', marginBottom: '8px' }}>
+                            ✓ Voice sample recorded ({recordingSeconds}s)
+                          </div>
+                          <audio controls src={recordedAudioUrl} style={{ width: '100%', marginBottom: '12px' }} />
+                          <button
+                            type="button"
+                            onClick={resetRecording}
+                            disabled={modalState === 'cloning'}
+                            style={{
+                              background: 'rgba(255,255,255,0.08)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '8px 16px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              minHeight: '36px',
+                            }}
+                          >
+                            ↺ Re-record Sample
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: '12px', color: '#a1a1aa', marginBottom: '14px', lineHeight: 1.6 }}>
+                            <span style={{ color: '#e4e4e7', fontWeight: 600 }}>Suggested Reading Sample (15-20s):</span><br />
+                            <em>&ldquo;Hello and welcome to my channel. In this video, we will explore exciting ideas, healthy habits, and helpful insights to level up your everyday life. Let&apos;s get started!&rdquo;</em>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={startRecording}
+                            disabled={modalState === 'cloning'}
+                            style={{
+                              padding: '12px 28px',
+                              background: '#ef4444',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                              minHeight: '46px',
+                            }}
+                          >
+                            <span>🔴</span>
+                            <span>Start Recording</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: UPLOAD AUDIO FILE */}
+                {cloneTab === 'upload' && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      style={{
+                        padding: '24px',
+                        background: isDragOver ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255,255,255,0.02)',
+                        border: isDragOver ? '1px solid #818cf8' : '1px dashed rgba(255,255,255,0.15)',
+                        borderRadius: '10px',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {uploadedFile ? (
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981', marginBottom: '4px' }}>
+                            ✓ {uploadedFile.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#71717a', marginBottom: '12px' }}>
+                            {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
+                          </div>
+                          {uploadedAudioUrl && (
+                            <audio controls src={uploadedAudioUrl} style={{ width: '100%', marginBottom: '12px' }} />
+                          )}
+                          <label style={{
+                            display: 'inline-block',
+                            background: 'rgba(255,255,255,0.08)',
+                            color: '#fff',
+                            borderRadius: '6px',
+                            padding: '8px 16px',
+                            fontSize: '12px',
+                            cursor: 'pointer'
+                          }}>
+                            Choose Different File
+                            <input
+                              type="file"
+                              accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.aac,.flac"
+                              onChange={handleFileChange}
+                              disabled={modalState === 'cloning'}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: '28px', marginBottom: '8px' }}>📂</div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '4px' }}>
+                            Drag & drop or choose an audio file
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#71717a', marginBottom: '16px' }}>
+                            Supports MP3, WAV, M4A, WebM, OGG (up to 25 MB). Clear vocal speech works best.
+                          </div>
+                          <label style={{
+                            display: 'inline-block',
+                            background: '#ffffff',
+                            color: '#09090b',
+                            borderRadius: '6px',
+                            padding: '10px 22px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            minHeight: '40px',
+                          }}>
+                            Browse Audio File
+                            <input
+                              type="file"
+                              accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.aac,.flac"
+                              onChange={handleFileChange}
+                              disabled={modalState === 'cloning'}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Voice Name Input */}
+                <div style={{ marginBottom: '20px' }}>
+                  <label htmlFor="voice-name-input" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e4e4e7', marginBottom: '6px' }}>
+                    Give Your Voice a Name
+                  </label>
+                  <input
+                    id="voice-name-input"
+                    type="text"
+                    className="form-input"
+                    maxLength={50}
+                    disabled={modalState === 'cloning'}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: '13px',
+                      background: '#09090b',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: '6px',
+                      color: '#fff',
+                      boxSizing: 'border-box'
+                    }}
+                    placeholder="e.g. My Host Voice, Nabeel's Voice"
+                    value={newVoiceName}
+                    onChange={(e) => setNewVoiceName(e.target.value)}
+                  />
+                </div>
+
+                {/* Modal Actions */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={closeModalSafely}
+                    disabled={modalState === 'cloning'}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#a1a1aa',
+                      borderRadius: '6px',
+                      padding: '10px 18px',
+                      fontSize: '13px',
+                      cursor: modalState === 'cloning' ? 'not-allowed' : 'pointer',
+                      minHeight: '42px',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCloneVoice}
+                    disabled={modalState === 'cloning' || (cloneTab === 'mic' ? !recordedBlob : !uploadedFile)}
+                    style={{
+                      background: modalState === 'cloning' ? '#4f46e5' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '10px 22px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: (modalState === 'cloning' || (cloneTab === 'mic' ? !recordedBlob : !uploadedFile)) ? 'not-allowed' : 'pointer',
+                      opacity: (cloneTab === 'mic' ? !recordedBlob : !uploadedFile) ? 0.5 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      minHeight: '42px',
+                    }}
+                  >
+                    {modalState === 'cloning' ? (
+                      <>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+                        <span>Cloning Voice (~5-10s)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span>
+                        <span>Clone My Voice Now</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
