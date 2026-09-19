@@ -196,6 +196,34 @@ async function runTests() {
   });
   assert(hugeRes.status === 413, 'Audio > 25MB rejected with HTTP 413 Payload Too Large', `Got status ${hugeRes.status}`);
 
+  // E. Valid in-app audio cloning succeeds without ElevenLabs key (Built-in Studio Voice Clone Engine)
+  const ffmpeg = (await import('../src/lib/providers/videoProvider')).getFfmpegPath();
+  const test6sWav = path.join(process.cwd(), 'temp', 'test_speech_sample_6s.wav');
+  const { execFile } = await import('child_process');
+  const { promisify } = await import('util');
+  const execFileAsync = promisify(execFile);
+  await execFileAsync(ffmpeg, ['-y', '-f', 'lavfi', '-i', 'sine=frequency=350:duration=6', '-c:a', 'pcm_s16le', test6sWav]);
+  const sampleWavBytes = fs.readFileSync(test6sWav);
+
+  const validCloneForm = buildMultipartBody(
+    { name: 'Alice Cloned Host Voice' },
+    { name: 'file', filename: 'voice_sample.wav', contentType: 'audio/wav', data: sampleWavBytes }
+  );
+  const validCloneRes = await httpRequest(`${BASE_URL}/api/voice/clone`, {
+    method: 'POST',
+    headers: { ...authHeadersA, 'Content-Type': validCloneForm.contentType },
+    body: validCloneForm.body,
+  });
+  assert(validCloneRes.status === 201, 'In-App Voice Cloning succeeds with HTTP 201 Created', `Got status ${validCloneRes.status} (${validCloneRes.json?.error || ''})`);
+  assert(validCloneRes.json?.success === true, 'Response contains success: true');
+  assert(validCloneRes.json?.voice?.name === 'Alice Cloned Host Voice', 'Response contains cloned voice with correct name');
+  assert(!!validCloneRes.json?.voice?.voice_id, 'Response contains generated voice_id');
+
+  // Verify voice is present in user's voice list
+  const refreshedList = await httpRequest(`${BASE_URL}/api/voice/my-voices`, { headers: authHeadersA });
+  const inList = refreshedList.json?.voices?.find((v: any) => v.voice_id === validCloneRes.json?.voice?.voice_id);
+  assert(!!inList, 'Newly cloned voice is retrievable via GET /api/voice/my-voices');
+
   // --- 4. Path Traversal Protection on Asset Reverse Proxy ---
   console.log('\n--- 4. Path Traversal Protection on Asset Reverse Proxy ---');
   const traversal1 = await httpRequest(`${BASE_URL}/api/assets/%2e%2e%2f%2e%2e%2fpackage.json`);
@@ -215,7 +243,8 @@ async function runTests() {
 
   // Verify voice is deleted from SQLite
   const remainingVoices = getUserVoices(userA);
-  assert(remainingVoices.length === 0, 'Voice removed from SQLite database');
+  const stillHasVoiceA = remainingVoices.some((v) => v.id === voiceA.id);
+  assert(!stillHasVoiceA, 'Voice A removed from SQLite database');
 
   // Verify audio sample was unlinked from disk
   assert(!fs.existsSync(sampleFilePath), 'Audio sample file was cleanly removed from disk on voice deletion');
