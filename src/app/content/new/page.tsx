@@ -514,7 +514,7 @@ function CreateVideoWizardContent() {
 
       const data = await res.json();
       toast.success('Your video is being created!');
-      router.push(`/content/${data.projectId}`);
+      router.push(`/content/${data.projectId}?topic=${encodeURIComponent(topic.trim())}&duration=${videoLength}`);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
