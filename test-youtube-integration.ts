@@ -224,6 +224,7 @@ async function runYouTubeIntegrationSuite() {
   // 7. Test Background Scheduler Execution
   const schedRun = await fetchHttp('/api/scheduler/run', {
     method: 'POST',
+    headers: { Cookie: cookieA },
   });
   recordTest(
     'Scheduler & Cron',
