@@ -1,15 +1,17 @@
-import Database from 'better-sqlite3';
+import BetterSqlite3 from 'better-sqlite3';
 import { Pool, PoolClient } from 'pg';
 import path from 'path';
 import fs from 'fs';
 
-export interface DbResult {
-  changes: number;
-  lastInsertRowid?: number | bigint;
+export interface Database {
+  queryOne<T>(sql: string, params?: unknown[]): Promise<T | undefined>;
+  queryAll<T>(sql: string, params?: unknown[]): Promise<T[]>;
+  execute(sql: string, params?: unknown[]): Promise<{ changes: number; lastInsertRowid?: number | bigint }>;
+  transaction<T>(fn: (tx: Database) => Promise<T>): Promise<T>;
 }
 
 let pgPoolInstance: Pool | null = null;
-let sqliteInstance: Database.Database | null = null;
+let sqliteInstance: BetterSqlite3.Database | null = null;
 
 export function getPostgresUrl(): string | null {
   return (
@@ -60,7 +62,7 @@ export function getPgPool(): Pool {
 /**
  * Initializes and returns SQLite instance (used for local development / testing).
  */
-export function getSqliteDb(): Database.Database {
+export function getSqliteDb(): BetterSqlite3.Database {
   if (!sqliteInstance) {
     const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
     const dataDir = isServerless ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
@@ -69,7 +71,7 @@ export function getSqliteDb(): Database.Database {
     }
 
     const dbPath = path.join(dataDir, 'app.db');
-    sqliteInstance = new Database(dbPath);
+    sqliteInstance = new BetterSqlite3(dbPath);
     if (!isServerless) {
       sqliteInstance.pragma('journal_mode = WAL');
     }
@@ -79,92 +81,50 @@ export function getSqliteDb(): Database.Database {
 }
 
 /**
- * Universal async query function that routes to either PostgreSQL or SQLite.
+ * PostgreSQL Database Implementation
  */
-export async function dbQuery<T = any>(sql: string, params: any[] = []): Promise<T[]> {
-  if (isUsingPostgres()) {
-    const pool = getPgPool();
+export class PostgresDatabase implements Database {
+  private pool: Pool;
+  private client?: PoolClient;
+
+  constructor(poolOrClient?: Pool | PoolClient) {
+    if (poolOrClient) {
+      if ('connect' in poolOrClient && typeof poolOrClient.connect === 'function') {
+        this.pool = poolOrClient as Pool;
+      } else {
+        this.client = poolOrClient as PoolClient;
+        this.pool = getPgPool();
+      }
+    } else {
+      this.pool = getPgPool();
+    }
+  }
+
+  async queryOne<T>(sql: string, params: unknown[] = []): Promise<T | undefined> {
+    const rows = await this.queryAll<T>(sql, params);
+    return rows.length > 0 ? rows[0] : undefined;
+  }
+
+  async queryAll<T>(sql: string, params: unknown[] = []): Promise<T[]> {
     const pgSql = translateSqlToPostgres(sql);
-    const res = await pool.query(pgSql, params);
+    const target = this.client || this.pool;
+    const res = await target.query(pgSql, params);
     return res.rows as T[];
-  } else {
-    const sqlite = getSqliteDb();
-    const stmt = sqlite.prepare(sql);
-    return stmt.all(...params) as T[];
   }
-}
 
-/**
- * Universal async queryOne function.
- */
-export async function dbQueryOne<T = any>(sql: string, params: any[] = []): Promise<T | null> {
-  if (isUsingPostgres()) {
-    const rows = await dbQuery<T>(sql, params);
-    return rows.length > 0 ? rows[0] : null;
-  } else {
-    const sqlite = getSqliteDb();
-    const stmt = sqlite.prepare(sql);
-    const row = stmt.get(...params);
-    return (row as T) || null;
-  }
-}
-
-/**
- * Universal async execute function (INSERT, UPDATE, DELETE).
- */
-export async function dbExecute(sql: string, params: any[] = []): Promise<DbResult> {
-  if (isUsingPostgres()) {
-    const pool = getPgPool();
+  async execute(sql: string, params: unknown[] = []): Promise<{ changes: number }> {
     const pgSql = translateSqlToPostgres(sql);
-    const res = await pool.query(pgSql, params);
-    return {
-      changes: res.rowCount || 0,
-    };
-  } else {
-    const sqlite = getSqliteDb();
-    const stmt = sqlite.prepare(sql);
-    const res = stmt.run(...params);
-    return {
-      changes: res.changes,
-      lastInsertRowid: res.lastInsertRowid,
-    };
+    const target = this.client || this.pool;
+    const res = await target.query(pgSql, params);
+    return { changes: res.rowCount || 0 };
   }
-}
 
-/**
- * Universal transaction runner.
- */
-export async function dbTransaction<T>(
-  callback: (tx: {
-    query: <R = any>(sql: string, params?: any[]) => Promise<R[]>;
-    queryOne: <R = any>(sql: string, params?: any[]) => Promise<R | null>;
-    execute: (sql: string, params?: any[]) => Promise<DbResult>;
-  }) => Promise<T>
-): Promise<T> {
-  if (isUsingPostgres()) {
-    const pool = getPgPool();
-    const client: PoolClient = await pool.connect();
+  async transaction<T>(fn: (tx: Database) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      const tx = {
-        query: async <R = any>(sql: string, params: any[] = []) => {
-          const pgSql = translateSqlToPostgres(sql);
-          const res = await client.query(pgSql, params);
-          return res.rows as R[];
-        },
-        queryOne: async <R = any>(sql: string, params: any[] = []) => {
-          const pgSql = translateSqlToPostgres(sql);
-          const res = await client.query(pgSql, params);
-          return res.rows.length > 0 ? (res.rows[0] as R) : null;
-        },
-        execute: async (sql: string, params: any[] = []) => {
-          const pgSql = translateSqlToPostgres(sql);
-          const res = await client.query(pgSql, params);
-          return { changes: res.rowCount || 0 };
-        },
-      };
-
-      const result = await callback(tx);
+      const txDb = new PostgresDatabase(client);
+      const result = await fn(txDb);
       await client.query('COMMIT');
       return result;
     } catch (err) {
@@ -173,19 +133,86 @@ export async function dbTransaction<T>(
     } finally {
       client.release();
     }
-  } else {
-    const sqlite = getSqliteDb();
-    const runInTx = sqlite.transaction(() => {
-      // Synchronous SQLite transaction runner wrapped in promise
-      return callback({
-        query: async (sql, params = []) => sqlite.prepare(sql).all(...params) as any,
-        queryOne: async (sql, params = []) => sqlite.prepare(sql).get(...params) as any,
-        execute: async (sql, params = []) => {
-          const r = sqlite.prepare(sql).run(...params);
-          return { changes: r.changes, lastInsertRowid: r.lastInsertRowid };
-        },
-      });
+  }
+}
+
+/**
+ * SQLite Database Implementation
+ */
+export class SQLiteDatabase implements Database {
+  private db: BetterSqlite3.Database;
+
+  constructor(db?: BetterSqlite3.Database) {
+    this.db = db || getSqliteDb();
+  }
+
+  async queryOne<T>(sql: string, params: unknown[] = []): Promise<T | undefined> {
+    const stmt = this.db.prepare(sql);
+    const row = stmt.get(...params);
+    return (row as T) || undefined;
+  }
+
+  async queryAll<T>(sql: string, params: unknown[] = []): Promise<T[]> {
+    const stmt = this.db.prepare(sql);
+    return stmt.all(...params) as T[];
+  }
+
+  async execute(sql: string, params: unknown[] = []): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
+    const stmt = this.db.prepare(sql);
+    const res = stmt.run(...params);
+    return { changes: res.changes, lastInsertRowid: res.lastInsertRowid };
+  }
+
+  async transaction<T>(fn: (tx: Database) => Promise<T>): Promise<T> {
+    const runInTx = this.db.transaction(() => {
+      return fn(this);
     });
     return await runInTx();
   }
+}
+
+let activeDatabaseInstance: Database | null = null;
+
+/**
+ * Returns the configured active Database implementation (PostgreSQL or SQLite).
+ */
+export function getDatabase(): Database {
+  if (!activeDatabaseInstance) {
+    if (isUsingPostgres()) {
+      activeDatabaseInstance = new PostgresDatabase();
+    } else {
+      activeDatabaseInstance = new SQLiteDatabase();
+    }
+  }
+  return activeDatabaseInstance;
+}
+
+// Universal convenience functions
+export async function dbQuery<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  return getDatabase().queryAll<T>(sql, params);
+}
+
+export async function dbQueryOne<T = any>(sql: string, params: any[] = []): Promise<T | null> {
+  const res = await getDatabase().queryOne<T>(sql, params);
+  return res ?? null;
+}
+
+export async function dbExecute(sql: string, params: any[] = []): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
+  return getDatabase().execute(sql, params);
+}
+
+export async function dbTransaction<T>(
+  callback: (tx: {
+    query: <R = any>(sql: string, params?: any[]) => Promise<R[]>;
+    queryOne: <R = any>(sql: string, params?: any[]) => Promise<R | null>;
+    execute: (sql: string, params?: any[]) => Promise<{ changes: number }>;
+  }) => Promise<T>
+): Promise<T> {
+  return getDatabase().transaction(async (txDb) => {
+    return callback({
+      query: (s, p) => txDb.queryAll(s, p),
+      queryOne: async (s, p) => (await txDb.queryOne(s, p)) ?? null,
+      execute: (s, p) => txDb.execute(s, p),
+    });
+  });
 }
