@@ -283,7 +283,7 @@ export default function HomePage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {projects.slice(0, 6).map((p) => {
               const isCompleted = p.status === 'COMPLETED';
-              const downloadUrl = `/api/assets/${p.id}/final_output.mp4`;
+              const downloadUrl = p.output_url || (p.output_storage_key ? `/api/assets/${p.output_storage_key}` : `/api/assets/final/${p.id}/output.mp4`);
 
               return (
                 <div

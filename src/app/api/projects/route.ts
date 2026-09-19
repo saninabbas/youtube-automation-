@@ -16,13 +16,14 @@ export async function GET(request: Request) {
     const monthlyUsage = getMonthlyVideoUsage(userId);
     let projects = db
       .prepare(
-        `SELECT p.*, COALESCE(c.name, 'Creator Studio') as channel_name, COALESCE(c.niche, 'AI & Tech') as channel_niche 
+        `SELECT p.*, vo.storage_key as output_storage_key, vo.url as output_url, COALESCE(c.name, 'Creator Studio') as channel_name, COALESCE(c.niche, 'AI & Tech') as channel_niche 
          FROM content_projects p 
          LEFT JOIN channels c ON p.channel_id = c.id 
+         LEFT JOIN video_outputs vo ON vo.project_id = p.id
          WHERE p.user_id = ? 
          ORDER BY p.created_at DESC`
       )
-      .all(userId) as ContentProject[];
+      .all(userId) as any[];
 
     if (projects.length === 0) {
       const now = new Date().toISOString();

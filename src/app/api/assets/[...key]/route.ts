@@ -427,6 +427,29 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
     const ext = path.extname(key).toLowerCase();
     let filePath = storage.getFilePath(key);
 
+    // Resolve real project final video if requested by project ID or legacy path
+    if (ext === '.mp4' && !fs.existsSync(filePath)) {
+      const parts = key.split('/');
+      const candidateProjectId = parts[0] === 'final' ? parts[1] : parts[0];
+      if (candidateProjectId) {
+        const directFinal = path.join(process.cwd(), 'storage', 'final', candidateProjectId, 'output.mp4');
+        if (fs.existsSync(directFinal)) {
+          filePath = directFinal;
+        } else {
+          try {
+            const db = getDb();
+            const vo = db.prepare('SELECT storage_key FROM video_outputs WHERE project_id = ?').get(candidateProjectId) as any;
+            if (vo?.storage_key) {
+              const voPath = storage.getFilePath(vo.storage_key);
+              if (fs.existsSync(voPath)) {
+                filePath = voPath;
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    }
+
     // If MP4 requested and missing locally, redirect to topic & scene matched 1080p CDN video
     if (ext === '.mp4' && !fs.existsSync(filePath)) {
       try {
