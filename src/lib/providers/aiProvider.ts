@@ -1,4 +1,5 @@
 import { ProjectMetadata, getApiKey } from '../db';
+import { resolveGlobalVisualStyle, applyGlobalStyleToPrompt } from '../video/visualStyles';
 
 export interface ScriptStructure {
   title: string;
@@ -137,54 +138,75 @@ class DefaultAiProvider implements AiProvider {
     visualStyle?: string;
   }): Promise<GeneratedScene[]> {
     const { script, niche, visualStyle = 'Cinematic High-Contrast' } = params;
+    const globalStyle = resolveGlobalVisualStyle(visualStyle);
     const scenes: GeneratedScene[] = [];
     let sceneIndex = 1;
 
-    // Scene 1: Hook
+    // Scene 1: Hook (First 3-5 seconds high-retention visual hook)
     const hookWords = script.hook.split(/\s+/).filter(Boolean).length;
-    const hookDuration = Math.max(8, Math.round(hookWords / 2.3));
+    const hookDuration = Math.max(6, Math.round(hookWords / 2.3));
+    const hookCameraMovement = 'Slow linear forward push-in with centered focus';
+    const hookEnvironment = `Modern documentary studio with atmospheric ambient depth matching ${niche}`;
+    const rawHookPrompt = `High-impact cinematic opening visual for ${script.title}, ${niche} aesthetic, 4k ultra realistic`;
+    const hookPrompt = applyGlobalStyleToPrompt(rawHookPrompt, globalStyle, {
+      isHook: true,
+      niche,
+      environment: hookEnvironment,
+      cameraMovement: hookCameraMovement,
+    });
+
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Hook',
       narration: script.hook,
-      visualPrompt: `High-impact cinematic opening visual for ${script.title}, ${visualStyle} lighting, ${niche} aesthetic, 4k ultra realistic`,
+      visualPrompt: hookPrompt,
       visualSubject: `High-impact visual representation of ${script.title}`,
-      environment: `Modern documentary studio with atmospheric ambient depth`,
-      cameraMovement: `Slow linear forward push-in with centered focus`,
-      lighting: `Dramatic directional rim lighting with subtle warm fill`,
-      colorStyle: `${visualStyle} palette tailored to ${niche}`,
-      continuityNotes: `Establishes primary color grade and atmospheric tone for the entire video`,
+      environment: hookEnvironment,
+      cameraMovement: hookCameraMovement,
+      lighting: globalStyle.dna.lighting,
+      colorStyle: globalStyle.dna.colorPalette,
+      continuityNotes: `Establishes primary ${globalStyle.name} color grade and atmospheric tone for the entire video`,
       estimatedDurationSec: hookDuration,
       subtitleText: script.hook,
     });
 
     // Scene 2: Introduction
     const introWords = script.introduction.split(/\s+/).filter(Boolean).length;
-    const introDuration = Math.max(12, Math.round(introWords / 2.3));
+    const introDuration = Math.max(10, Math.round(introWords / 2.3));
+    const introCameraMovement = 'Gentle wide-angle horizontal tracking glide';
+    const introEnvironment = `Expansive cinematic space matching ${niche} domain`;
+    const rawIntroPrompt = `Wide cinematic shot establishing context for ${script.title}, ${niche} aesthetic`;
+    const introPrompt = applyGlobalStyleToPrompt(rawIntroPrompt, globalStyle, {
+      isHook: false,
+      niche,
+      environment: introEnvironment,
+      cameraMovement: introCameraMovement,
+    });
+
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Introduction',
       narration: script.introduction,
-      visualPrompt: `Wide cinematic shot establishing context for ${script.title}, ${visualStyle} aesthetic, professional documentary style`,
+      visualPrompt: introPrompt,
       visualSubject: `Contextual thematic overview of ${script.title}`,
-      environment: `Expansive cinematic space matching ${niche} domain`,
-      cameraMovement: `Gentle wide-angle horizontal tracking glide`,
-      lighting: `Balanced natural key lighting with soft background diffusion`,
-      colorStyle: `${visualStyle} balanced tones`,
-      continuityNotes: `Expands perspective from Scene 1 while maintaining cohesive color grading`,
+      environment: introEnvironment,
+      cameraMovement: introCameraMovement,
+      lighting: globalStyle.dna.lighting,
+      colorStyle: globalStyle.dna.colorPalette,
+      continuityNotes: `Expands perspective from Scene 1 while maintaining cohesive ${globalStyle.name} visual DNA`,
       estimatedDurationSec: introDuration,
       subtitleText: script.introduction,
     });
 
-    // Section Scenes with Visual Continuity
+    // Section Scenes with Visual Continuity and Exact Narration Segment Mapping
     for (let sIdx = 0; sIdx < script.sections.length; sIdx++) {
       const section = script.sections[sIdx];
       for (let subIdx = 0; subIdx < section.subsections.length; subIdx++) {
         const sub = section.subsections[subIdx];
         const words = sub.narration.split(/\s+/).filter(Boolean).length;
-        const duration = sub.durationSec || Math.max(12, Math.round(words / 2.3));
+        const duration = sub.durationSec || Math.max(8, Math.round(words / 2.3));
 
-        const prevEnv = subIdx > 0 ? section.subsections[subIdx - 1].environment : 'Consistent studio context';
+        const prevEnv = subIdx > 0 ? section.subsections[subIdx - 1].environment : 'Consistent documentary context';
         const camMovements = [
           'Steady forward dolly glide with subtle depth shift',
           'Smooth horizontal parallax tracking shot',
@@ -193,17 +215,26 @@ class DefaultAiProvider implements AiProvider {
           'Centered cinematic framing with slow zoom',
         ];
         const cameraMovement = sub.cameraMovement || camMovements[(sIdx + subIdx) % camMovements.length];
+        const environment = sub.environment || `${niche} specific environment, ${globalStyle.name}`;
+
+        const rawPrompt = sub.visualPrompt || `Detailed visual representation of ${sub.subheading}, ${niche} context, smooth motion`;
+        const visualPrompt = applyGlobalStyleToPrompt(rawPrompt, globalStyle, {
+          isHook: false,
+          niche,
+          environment,
+          cameraMovement,
+        });
 
         scenes.push({
           sceneIndex: sceneIndex++,
           sectionName: `${section.heading} - ${sub.subheading}`,
           narration: sub.narration,
-          visualPrompt: sub.visualPrompt || `Detailed visual representation of ${sub.subheading}, cinematic depth of field, ${niche} context, smooth motion`,
+          visualPrompt,
           visualSubject: sub.visualSubject || sub.subheading,
-          environment: sub.environment || `${niche} specific environment, ${visualStyle}`,
+          environment,
           cameraMovement,
-          lighting: sub.lighting || `Controlled studio lighting with subtle accent rim`,
-          colorStyle: sub.colorStyle || `${visualStyle} themed palette`,
+          lighting: sub.lighting || globalStyle.dna.lighting,
+          colorStyle: sub.colorStyle || globalStyle.dna.colorPalette,
           continuityNotes: sub.continuityNotes || `Maintains lighting and environmental palette from previous scene (${prevEnv})`,
           estimatedDurationSec: duration,
           subtitleText: sub.narration,
@@ -213,17 +244,27 @@ class DefaultAiProvider implements AiProvider {
 
     // Conclusion Scene
     const conclWords = script.conclusion.split(/\s+/).filter(Boolean).length;
-    const conclDuration = Math.max(12, Math.round(conclWords / 2.3));
+    const conclDuration = Math.max(10, Math.round(conclWords / 2.3));
+    const conclCamera = 'Slow wide-angle pull-out revealing grand scale';
+    const conclEnv = `Panoramic wide environment reflecting positive culmination in ${niche}`;
+    const rawConclPrompt = `Inspiring wide perspective closing shot summarizing ${script.title}, warm atmospheric glow`;
+    const conclPrompt = applyGlobalStyleToPrompt(rawConclPrompt, globalStyle, {
+      isHook: false,
+      niche,
+      environment: conclEnv,
+      cameraMovement: conclCamera,
+    });
+
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Conclusion',
       narration: script.conclusion,
-      visualPrompt: `Inspiring wide perspective closing shot summarizing ${script.title}, warm atmospheric glow, modern cinematic`,
+      visualPrompt: conclPrompt,
       visualSubject: `Synthesis and summary visualization for ${script.title}`,
-      environment: `Panoramic wide environment reflecting positive culmination`,
-      cameraMovement: `Slow wide-angle pull-out revealing grand scale`,
-      lighting: `Warm golden hour atmospheric illumination`,
-      colorStyle: `${visualStyle} warm highlights`,
+      environment: conclEnv,
+      cameraMovement: conclCamera,
+      lighting: globalStyle.dna.lighting,
+      colorStyle: globalStyle.dna.colorPalette,
       continuityNotes: `Culmination of visual motifs, resolving into expansive wide shot`,
       estimatedDurationSec: conclDuration,
       subtitleText: script.conclusion,
@@ -231,17 +272,27 @@ class DefaultAiProvider implements AiProvider {
 
     // Call To Action Scene
     const ctaWords = script.callToAction.split(/\s+/).filter(Boolean).length;
-    const ctaDuration = Math.max(8, Math.round(ctaWords / 2.3));
+    const ctaDuration = Math.max(6, Math.round(ctaWords / 2.3));
+    const ctaCamera = 'Subtle linear forward drift with elegant graphic overlay';
+    const ctaEnv = `Clean minimalist branded visual canvas in ${niche}`;
+    const rawCtaPrompt = `Sleek branded outro visual with subtle motion, subscription and notification invitation, clean minimalist style`;
+    const ctaPrompt = applyGlobalStyleToPrompt(rawCtaPrompt, globalStyle, {
+      isHook: false,
+      niche,
+      environment: ctaEnv,
+      cameraMovement: ctaCamera,
+    });
+
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Call To Action',
       narration: script.callToAction,
-      visualPrompt: `Sleek branded outro visual with subtle motion, subscription and notification invitation, clean minimalist style`,
+      visualPrompt: ctaPrompt,
       visualSubject: `Branded channel outro graphic and engagement callout`,
-      environment: `Clean minimalist branded visual canvas`,
-      cameraMovement: `Subtle linear forward drift with elegant graphic overlay`,
-      lighting: `Soft ambient glow on brand accents`,
-      colorStyle: `${visualStyle} brand signature colors`,
+      environment: ctaEnv,
+      cameraMovement: ctaCamera,
+      lighting: globalStyle.dna.lighting,
+      colorStyle: globalStyle.dna.colorPalette,
       continuityNotes: `Transitions smoothly from cinematic conclusion to clean outro slate`,
       estimatedDurationSec: ctaDuration,
       subtitleText: script.callToAction,

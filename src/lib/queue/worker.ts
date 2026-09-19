@@ -9,14 +9,16 @@ import { subtitleProvider } from '../providers/subtitleProvider';
 import { ffmpegCompositor } from '../providers/ffmpegCompositor';
 import { thumbnailProvider } from '../providers/thumbnailProvider';
 import { storage } from '../storage';
+import { sceneQualityChecker, QualityReport } from '../video/qualityControl';
+import { resolveGlobalVisualStyle } from '../video/visualStyles';
 
-export type PipelineStage = 'SCRIPT' | 'VOICE' | 'SCENES' | 'VIDEO' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
+export type PipelineStage = 'SCRIPT' | 'SCENES' | 'VIDEO' | 'VOICE' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
 
 export const PIPELINE_STAGES: PipelineStage[] = [
   'SCRIPT',
-  'VOICE',
   'SCENES',
   'VIDEO',
+  'VOICE',
   'SUBTITLES',
   'FINAL_VIDEO',
   'THUMBNAIL',
@@ -404,13 +406,24 @@ export class VideoPipelineWorker {
         // Remove old clip assets on retry
         db.prepare("DELETE FROM generated_assets WHERE project_id = ? AND asset_type = 'clip'").run(project.id);
 
-        const sceneClipsResults = await Promise.all(
-          scenes.map(async (scene) => {
+        const globalStyle = resolveGlobalVisualStyle(channel.visual_style);
+        const MAX_QC_ATTEMPTS = 2;
+        let previousScene: VideoScene | null = null;
+
+        for (const scene of scenes) {
+          let attempt = 1;
+          let currentPrompt = scene.visual_prompt;
+          let bestClip: { clipIndex: number; storageKey: string; url: string; durationSec: number } | null = null;
+          let latestQcReport: QualityReport | null = null;
+
+          while (attempt <= MAX_QC_ATTEMPTS) {
+            console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS})...`);
+
             const clips = await videoProvider.generateVideoClipsForScene({
               projectId: project.id,
               sceneId: scene.id,
               sceneIndex: scene.scene_index,
-              visualPrompt: scene.visual_prompt,
+              visualPrompt: currentPrompt,
               durationSec: scene.estimated_duration_sec,
               niche: channel.niche,
               visualStyle: channel.visual_style,
@@ -421,12 +434,57 @@ export class VideoPipelineWorker {
               continuityNotes: scene.continuity_notes || undefined,
               aspectRatio: '9:16',
             });
-            return { scene, clips };
-          })
-        );
 
-        for (const { scene, clips } of sceneClipsResults) {
-          for (const clip of clips) {
+            if (clips && clips.length > 0) {
+              bestClip = clips[0];
+            }
+
+            // Quality Control Validation
+            const clipPath = bestClip ? storage.getFilePath(bestClip.storageKey) : '';
+            latestQcReport = await sceneQualityChecker.validateSceneClip({
+              scene: {
+                ...scene,
+                visual_prompt: currentPrompt,
+              },
+              clipPath,
+              globalStyle,
+              previousScene,
+              attempt,
+              niche: channel.niche,
+            });
+
+            if (latestQcReport.passed) {
+              console.log(`[QualityControl] ✅ Scene ${scene.scene_index} PASSED Quality Control (Score: ${latestQcReport.overallScore}%).`);
+              break;
+            }
+
+            console.warn(
+              `[QualityControl] ⚠️ Scene ${scene.scene_index} failed QC (${latestQcReport.failedChecks.join(', ')}). Attempt ${attempt} score: ${latestQcReport.overallScore}%.`
+            );
+
+            if (attempt < MAX_QC_ATTEMPTS && latestQcReport.retryPromptAdjustment) {
+              console.log(`[QualityControl] ⚡ Auto-regenerating Scene ${scene.scene_index} with prompt refinement: ${latestQcReport.retryPromptAdjustment}`);
+              currentPrompt = `${scene.visual_prompt}, ${latestQcReport.retryPromptAdjustment}`;
+            }
+
+            attempt++;
+          }
+
+          // Persist QC report to video_scenes table
+          if (latestQcReport) {
+            try {
+              db.prepare('UPDATE video_scenes SET quality_report_json = ?, visual_prompt = ? WHERE id = ?').run(
+                JSON.stringify(latestQcReport),
+                currentPrompt,
+                scene.id
+              );
+            } catch (err: any) {
+              console.warn(`[QualityControl] Failed to update video_scenes quality_report_json: ${err.message}`);
+            }
+          }
+
+          // Persist approved clip asset
+          if (bestClip) {
             db.prepare(
               `INSERT INTO generated_assets (id, project_id, scene_id, asset_type, storage_key, url, duration_sec, metadata_json, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -435,13 +493,25 @@ export class VideoPipelineWorker {
               project.id,
               scene.id,
               'clip',
-              clip.storageKey,
-              clip.url,
-              clip.durationSec,
-              JSON.stringify({ clipIndex: clip.clipIndex, sceneIndex: scene.scene_index }),
+              bestClip.storageKey,
+              bestClip.url,
+              bestClip.durationSec,
+              JSON.stringify({
+                clipIndex: bestClip.clipIndex,
+                sceneIndex: scene.scene_index,
+                qualityScore: latestQcReport?.overallScore || 85,
+                qcPassed: latestQcReport?.passed ?? true,
+                failedChecks: latestQcReport?.failedChecks || [],
+              }),
               now
             );
           }
+
+          // Advance previousScene reference for next iteration's differentiation check
+          previousScene = {
+            ...scene,
+            visual_prompt: currentPrompt,
+          };
         }
         break;
       }

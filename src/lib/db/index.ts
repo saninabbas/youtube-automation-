@@ -163,6 +163,7 @@ export function getDb(): Database.Database {
     safeAddColumn('content_projects', 'publish_started_at', 'TEXT');
     safeAddColumn('content_projects', 'publish_completed_at', 'TEXT');
     safeAddColumn('content_projects', 'auto_publish', 'INTEGER NOT NULL DEFAULT 0');
+    safeAddColumn('video_scenes', 'quality_report_json', 'TEXT');
 
     dbInstance.exec(`
       CREATE TABLE IF NOT EXISTS user_voices (
@@ -525,6 +526,7 @@ export interface VideoScene {
   continuity_notes?: string | null;
   estimated_duration_sec: number;
   subtitle_text: string;
+  quality_report_json?: string | null;
   created_at: string;
 }
 

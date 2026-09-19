@@ -7,6 +7,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { videoProvider } from '@/lib/providers/videoProvider';
 import { ffmpegCompositor } from '@/lib/providers/ffmpegCompositor';
 import { storage } from '@/lib/storage';
+import { sceneQualityChecker } from '@/lib/video/qualityControl';
+import { resolveGlobalVisualStyle, applyGlobalStyleToPrompt } from '@/lib/video/visualStyles';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,16 +58,18 @@ export async function POST(
       body = await request.json();
     } catch {}
 
-    const visualPrompt = body.visualPrompt || scene.visual_prompt;
-    const cameraMovement = body.cameraMovement || scene.camera_movement || undefined;
-    const visualStyle = body.visualStyle || 'Cinematic High-Contrast';
-    const durationSec = body.durationSec || scene.estimated_duration_sec || 6;
-    const niche = body.niche || 'General';
-
-    // If prompt changed, update scene in DB
-    if (body.visualPrompt && body.visualPrompt !== scene.visual_prompt) {
-      db.prepare('UPDATE video_scenes SET visual_prompt = ? WHERE id = ?').run(visualPrompt, scene.id);
+    const globalStyle = resolveGlobalVisualStyle(visualStyle);
+    let effectivePrompt = body.visualPrompt || scene.visual_prompt;
+    if (!effectivePrompt.includes(globalStyle.name) && !effectivePrompt.includes('lighting:')) {
+      effectivePrompt = applyGlobalStyleToPrompt(effectivePrompt, globalStyle, {
+        isHook: scene.scene_index === 1,
+        niche,
+        cameraMovement: cameraMovement || scene.camera_movement || undefined,
+        environment: scene.environment || undefined,
+      });
     }
+
+    const durationSec = body.durationSec || scene.estimated_duration_sec || 6;
 
     // Generate the new clip
     const clipKey = `clips/${projectId}/scene_${scene.scene_index}_clip_1.mp4`;
@@ -78,21 +82,74 @@ export async function POST(
     console.log(`[RegenerateScene] Re-synthesizing Scene ${scene.scene_index} for project ${projectId}...`);
 
     await videoProvider.generateVideoClip({
-      prompt: visualPrompt,
+      prompt: effectivePrompt,
       durationSec,
       outputPath: localFilePath,
       sceneIndex: scene.scene_index,
       clipIndex: 1,
       niche,
-      visualStyle,
+      visualStyle: globalStyle.name,
       cameraMovement,
-      lighting: scene.lighting || undefined,
-      colorStyle: scene.color_style || undefined,
+      lighting: scene.lighting || globalStyle.dna.lighting,
+      colorStyle: scene.color_style || globalStyle.dna.colorPalette,
       continuityNotes: scene.continuity_notes || undefined,
       aspectRatio: '9:16',
       projectId,
       sceneId: scene.id,
     });
+
+    // Run Quality Control Check on regenerated clip
+    let qcReport = await sceneQualityChecker.validateSceneClip({
+      scene: {
+        ...scene,
+        visual_prompt: effectivePrompt,
+      },
+      clipPath: localFilePath,
+      globalStyle,
+      attempt: 1,
+      niche,
+    });
+
+    // If initial QC fails and adjustment is suggested, retry generation once with refined prompt
+    if (!qcReport.passed && qcReport.retryPromptAdjustment) {
+      console.log(`[RegenerateScene] QC check triggered adjustment for Scene ${scene.scene_index}: ${qcReport.retryPromptAdjustment}`);
+      effectivePrompt = `${effectivePrompt}, ${qcReport.retryPromptAdjustment}`;
+
+      await videoProvider.generateVideoClip({
+        prompt: effectivePrompt,
+        durationSec,
+        outputPath: localFilePath,
+        sceneIndex: scene.scene_index,
+        clipIndex: 1,
+        niche,
+        visualStyle: globalStyle.name,
+        cameraMovement,
+        lighting: scene.lighting || globalStyle.dna.lighting,
+        colorStyle: scene.color_style || globalStyle.dna.colorPalette,
+        continuityNotes: scene.continuity_notes || undefined,
+        aspectRatio: '9:16',
+        projectId,
+        sceneId: scene.id,
+      });
+
+      qcReport = await sceneQualityChecker.validateSceneClip({
+        scene: {
+          ...scene,
+          visual_prompt: effectivePrompt,
+        },
+        clipPath: localFilePath,
+        globalStyle,
+        attempt: 2,
+        niche,
+      });
+    }
+
+    // Persist prompt and QC report to DB
+    db.prepare('UPDATE video_scenes SET visual_prompt = ?, quality_report_json = ? WHERE id = ?').run(
+      effectivePrompt,
+      JSON.stringify(qcReport),
+      scene.id
+    );
 
     const now = new Date().toISOString();
     const clipUrl = storage.getUrl(clipKey);
@@ -174,7 +231,8 @@ export async function POST(
       sceneIndex: scene.scene_index,
       clipUrl,
       finalVideoUrl,
-      message: `Scene ${scene.scene_index} regenerated successfully`,
+      qualityReport: qcReport,
+      message: `Scene ${scene.scene_index} regenerated successfully (QC Score: ${qcReport.overallScore}%)`,
     });
   } catch (err: any) {
     console.error('[RegenerateScene] Error:', err);

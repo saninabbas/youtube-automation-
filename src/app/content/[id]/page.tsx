@@ -1355,26 +1355,51 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                     No scene cuts generated yet.
                   </div>
                 ) : (
-                  scenes.map((s, idx) => (
-                    <div
-                      key={s.id || idx}
-                      onClick={() => handleSelectScene(idx)}
-                      className={`scene-cut-item ${(displayedSceneNum === s.scene_index) ? 'active' : ''}`}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className="scene-cut-index">Scene {s.scene_index}</span>
-                          {rerollMap[s.scene_index] ? (
-                            <span style={{ fontSize: '9px', background: '#4f46e5', color: '#fff', padding: '1px 5px', borderRadius: '4px' }}>
-                              v{rerollMap[s.scene_index] + 1}
-                            </span>
-                          ) : null}
+                  scenes.map((s, idx) => {
+                    let qcScore: number | null = null;
+                    let qcPassed = true;
+                    try {
+                      if (s.quality_report_json) {
+                        const parsed = JSON.parse(s.quality_report_json);
+                        qcScore = parsed.overallScore;
+                        qcPassed = parsed.passed ?? true;
+                      }
+                    } catch {}
+
+                    return (
+                      <div
+                        key={s.id || idx}
+                        onClick={() => handleSelectScene(idx)}
+                        className={`scene-cut-item ${(displayedSceneNum === s.scene_index) ? 'active' : ''}`}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className="scene-cut-index">Scene {s.scene_index}</span>
+                            {qcScore !== null ? (
+                              <span style={{
+                                fontSize: '9px',
+                                background: qcPassed ? 'rgba(34, 197, 94, 0.18)' : 'rgba(234, 179, 8, 0.18)',
+                                color: qcPassed ? '#4ade80' : '#facc15',
+                                border: `1px solid ${qcPassed ? 'rgba(34, 197, 94, 0.35)' : 'rgba(234, 179, 8, 0.35)'}`,
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                fontWeight: 600,
+                              }}>
+                                {qcPassed ? `✓ ${qcScore}% QC` : `⚡ ${qcScore}% QC`}
+                              </span>
+                            ) : null}
+                            {rerollMap[s.scene_index] ? (
+                              <span style={{ fontSize: '9px', background: '#4f46e5', color: '#fff', padding: '1px 5px', borderRadius: '4px' }}>
+                                v{rerollMap[s.scene_index] + 1}
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
                         </div>
-                        <span className="scene-cut-duration">{s.estimated_duration_sec}s</span>
+                        <div className="scene-cut-text">{s.narration}</div>
                       </div>
-                      <div className="scene-cut-text">{s.narration}</div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             ) : activeInspectorTab === 'scene' && activeScene ? (
@@ -1432,6 +1457,77 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                     style={{ fontSize: '12px' }}
                   />
                 </div>
+
+                {/* AI Quality Control Audit Section */}
+                {(() => {
+                  let qcData: any = null;
+                  try {
+                    if (activeScene.quality_report_json) {
+                      qcData = JSON.parse(activeScene.quality_report_json);
+                    }
+                  } catch {}
+
+                  if (!qcData) {
+                    return (
+                      <div style={{ padding: '10px 12px', background: 'rgba(99,102,241,0.08)', borderRadius: '8px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#818cf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🛡️ AI Quality Control Active</span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Automated 8-point check evaluates narration match, 9:16 framing, visual style cohesion, and motion realism.
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const checks = qcData.checks || {};
+                  return (
+                    <div style={{ padding: '12px', background: 'rgba(15, 23, 42, 0.65)', borderRadius: '8px', border: `1px solid ${qcData.passed ? 'rgba(34, 197, 94, 0.3)' : 'rgba(234, 179, 8, 0.3)'}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🛡️ Quality Control Audit</span>
+                        </span>
+                        <span style={{
+                          fontSize: '10px',
+                          background: qcData.passed ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)',
+                          color: qcData.passed ? '#4ade80' : '#facc15',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: 700,
+                        }}>
+                          {qcData.passed ? `PASSED (${qcData.overallScore}%)` : `REFINED (${qcData.overallScore}%)`}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '10px' }}>
+                        <div style={{ color: checks.visualMatchesNarration?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.visualMatchesNarration?.passed ? '✓' : '✗'} Narration Sync
+                        </div>
+                        <div style={{ color: checks.correctSubjectAndObjects?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.correctSubjectAndObjects?.passed ? '✓' : '✗'} Subject / Objects
+                        </div>
+                        <div style={{ color: checks.noAiArtifactsOrDistortions?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.noAiArtifactsOrDistortions?.passed ? '✓' : '✗'} No Distortions
+                        </div>
+                        <div style={{ color: checks.naturalLookingMotion?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.naturalLookingMotion?.passed ? '✓' : '✗'} Natural Motion
+                        </div>
+                        <div style={{ color: checks.correct916Framing?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.correct916Framing?.passed ? '✓' : '✗'} 9:16 Framing
+                        </div>
+                        <div style={{ color: checks.consistentVisualStyle?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.consistentVisualStyle?.passed ? '✓' : '✗'} Visual Style DNA
+                        </div>
+                        <div style={{ color: checks.sceneDifferentiation?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.sceneDifferentiation?.passed ? '✓' : '✗'} Shot Variety
+                        </div>
+                        <div style={{ color: checks.strongVisualHook?.passed ? '#4ade80' : '#f87171' }}>
+                          {checks.strongVisualHook?.passed ? '✓' : '✗'} Visual Hook
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button
