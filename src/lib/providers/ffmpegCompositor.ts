@@ -107,10 +107,13 @@ export class FfmpegCompositor {
       ];
 
       try {
-        await execFileAsync(ffmpegPath, args, { timeout: 3500 });
+        await execFileAsync(ffmpegPath, args, { timeout: 90000 });
         composed = true;
       } catch (err: any) {
         console.warn('[FfmpegCompositor] Primary composition failed, trying fallback merge...', err.message);
+        if (fs.existsSync(finalFilePath)) {
+          await fs.promises.unlink(finalFilePath).catch(() => {});
+        }
       }
     }
 
@@ -134,10 +137,13 @@ export class FfmpegCompositor {
           '+faststart',
           finalFilePath,
         ];
-        await execFileAsync(ffmpegPath, fallbackArgs, { timeout: 2500 });
+        await execFileAsync(ffmpegPath, fallbackArgs, { timeout: 60000 });
         composed = true;
       } catch (fbErr: any) {
         console.warn('[FfmpegCompositor] Concat merge fallback error:', fbErr.message);
+        if (fs.existsSync(finalFilePath)) {
+          await fs.promises.unlink(finalFilePath).catch(() => {});
+        }
       }
     }
 

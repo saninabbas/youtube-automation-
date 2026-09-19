@@ -349,9 +349,9 @@ export function LandingPage() {
 
           <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace', marginBottom: '8px' }}>HIGH-SPEED FALLBACK</div>
-            <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Gemini Flash</h3>
+            <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Gemini 3.8 Flash</h3>
             <p style={{ color: '#a1a1aa', fontSize: '13px', lineHeight: 1.6, margin: 0 }}>
-              Google's fast multimodal engine ready as a live backup to ensure zero downtime when creating videos.
+              Google's latest production multimodal engine (gemini-3.8-flash) ready as a live backup to ensure zero downtime.
             </p>
           </div>
         </div>
