@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 export const DEFAULT_USER_ID = 'user_default';
 
@@ -161,8 +162,19 @@ export function getDb(): Database.Database {
     safeAddColumn('content_projects', 'publish_url', 'TEXT');
     safeAddColumn('content_projects', 'publish_started_at', 'TEXT');
     safeAddColumn('content_projects', 'publish_completed_at', 'TEXT');
-    safeAddColumn('content_projects', 'publish_error', 'TEXT');
     safeAddColumn('content_projects', 'auto_publish', 'INTEGER NOT NULL DEFAULT 0');
+
+    dbInstance.exec(`
+      CREATE TABLE IF NOT EXISTS user_voices (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        voice_id TEXT NOT NULL,
+        sample_url TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_voices_user ON user_voices(user_id);
+    `);
     safeAddColumn('content_projects', 'metadata_json', 'TEXT');
     safeAddColumn('content_projects', 'telemetry_json', 'TEXT');
 
@@ -944,3 +956,44 @@ export function getWorkspacesByCustomer(customerId: string): Workspace[] {
   const db = getDb();
   return db.prepare('SELECT * FROM workspaces WHERE customer_id = ? ORDER BY created_at ASC').all(customerId) as Workspace[];
 }
+
+// ============================================================
+// CLONED VOICES HELPERS
+// ============================================================
+
+export interface UserVoice {
+  id: string;
+  user_id: string;
+  name: string;
+  voice_id: string;
+  sample_url?: string | null;
+  created_at: string;
+}
+
+export function getUserVoices(userId: string = DEFAULT_USER_ID): UserVoice[] {
+  const db = getDb();
+  try {
+    return db.prepare('SELECT * FROM user_voices WHERE user_id = ? ORDER BY created_at DESC').all(userId) as UserVoice[];
+  } catch (err) {
+    console.warn('[getUserVoices] Error querying user voices:', err);
+    return [];
+  }
+}
+
+export function addUserVoice(userId: string, name: string, voiceId: string, sampleUrl?: string): UserVoice {
+  const db = getDb();
+  const id = `vce_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO user_voices (id, user_id, name, voice_id, sample_url, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, userId, name, voiceId, sampleUrl || null, now);
+  return { id, user_id: userId, name, voice_id: voiceId, sample_url: sampleUrl || null, created_at: now };
+}
+
+export function deleteUserVoice(userId: string, voiceDbId: string): boolean {
+  const db = getDb();
+  const res = db.prepare('DELETE FROM user_voices WHERE id = ? AND user_id = ?').run(voiceDbId, userId);
+  return res.changes > 0;
+}
+

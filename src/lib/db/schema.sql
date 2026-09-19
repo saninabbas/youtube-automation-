@@ -213,5 +213,12 @@ CREATE TABLE IF NOT EXISTS workspace_members (
   FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
   FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
-
+CREATE TABLE IF NOT EXISTS user_voices (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  voice_id TEXT NOT NULL,
+  sample_url TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_user_voices_user ON user_voices(user_id);
