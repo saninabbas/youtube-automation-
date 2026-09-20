@@ -339,3 +339,39 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     return NextResponse.json({ error: err.message || 'Failed to update project' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: any }) {
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
+    if (!id) return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
+
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = user.id;
+    const db = getDb();
+
+    const existing = db.prepare('SELECT user_id FROM content_projects WHERE id = ?').get(id) as any;
+    if (!existing) {
+      return NextResponse.json({ error: 'Project does not exist' }, { status: 404 });
+    }
+    const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
+    if (existing.user_id && existing.user_id !== userId && !isAdmin) {
+      return NextResponse.json({ error: 'You do not have access to this project' }, { status: 403 });
+    }
+
+    // Cascade delete project and related assets
+    db.prepare('DELETE FROM video_scenes WHERE project_id = ?').run(id);
+    db.prepare('DELETE FROM video_outputs WHERE project_id = ?').run(id);
+    db.prepare('DELETE FROM video_jobs WHERE project_id = ?').run(id);
+    db.prepare('DELETE FROM generated_assets WHERE project_id = ?').run(id);
+    db.prepare('DELETE FROM content_projects WHERE id = ?').run(id);
+
+    return NextResponse.json({ success: true, message: 'Project deleted successfully' });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Failed to delete project' }, { status: 500 });
+  }
+}
+

@@ -59,8 +59,16 @@ export async function POST(
       body = await request.json();
     } catch {}
 
+    const {
+      visualPrompt,
+      cameraMovement,
+      durationSec: reqDuration,
+      niche = 'AI & Tech',
+      visualStyle = 'Cinematic High-Contrast'
+    } = body || {};
+
     const globalStyle = resolveGlobalVisualStyle(visualStyle);
-    let effectivePrompt = body.visualPrompt || scene.visual_prompt;
+    let effectivePrompt = visualPrompt || scene.visual_prompt;
     if (!effectivePrompt.includes(globalStyle.name) && !effectivePrompt.includes('lighting:')) {
       effectivePrompt = applyGlobalStyleToPrompt(effectivePrompt, globalStyle, {
         isHook: scene.scene_index === 1,
@@ -70,7 +78,7 @@ export async function POST(
       });
     }
 
-    const durationSec = body.durationSec || scene.estimated_duration_sec || 6;
+    const durationSec = reqDuration || scene.estimated_duration_sec || 6;
 
     // Generate the new clip
     const clipKey = `clips/${projectId}/scene_${scene.scene_index}_clip_1.mp4`;

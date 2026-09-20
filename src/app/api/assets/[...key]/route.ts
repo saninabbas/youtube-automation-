@@ -473,8 +473,9 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
     const keyParts = resolvedParams?.key;
     const key = Array.isArray(keyParts) ? keyParts.join('/') : String(keyParts || '');
 
-    // Strict Path Traversal Protection
-    if (key.includes('..') || key.includes('\\')) {
+    // Strict Path Traversal Protection (raw, decoded, and resolved boundaries)
+    const decodedKey = decodeURIComponent(key);
+    if (key.includes('..') || key.includes('\\') || decodedKey.includes('..') || decodedKey.includes('\\')) {
       return new NextResponse('Invalid asset key', { status: 400 });
     }
 
@@ -491,7 +492,8 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
       if (!user) {
         return new NextResponse('Authentication required', { status: 401 });
       }
-      if (user.id !== targetUserId) {
+      const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
+      if (user.id !== targetUserId && !isAdmin) {
         return new NextResponse('Access denied', { status: 403 });
       }
 
@@ -500,7 +502,7 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
         const db = getDb();
         const voiceRow = db.prepare(
           'SELECT id FROM user_voices WHERE user_id = ? AND (voice_id = ? OR id = ?)'
-        ).get(user.id, voiceIdWithoutExt, voiceIdWithoutExt);
+        ).get(targetUserId, voiceIdWithoutExt, voiceIdWithoutExt);
         if (!voiceRow) {
           return new NextResponse('Voice sample not found or deleted', { status: 404 });
         }
@@ -515,10 +517,11 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
         if (!user) {
           return new NextResponse('Authentication required', { status: 401 });
         }
+        const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
         try {
           const db = getDb();
           const project = db.prepare('SELECT user_id FROM content_projects WHERE id = ?').get(candidateProjectId) as any;
-          if (project && project.user_id && project.user_id !== user.id) {
+          if (project && project.user_id && project.user_id !== user.id && !isAdmin) {
             return new NextResponse('Access denied', { status: 403 });
           }
         } catch (_) {}
