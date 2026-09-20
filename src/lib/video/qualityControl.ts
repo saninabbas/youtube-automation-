@@ -14,9 +14,14 @@
  */
 
 import fs from 'fs';
-import { inspectMedia, MediaMetadata } from '../providers/videoProvider';
+import path from 'path';
+import { execFile } from 'child_process';
+import util from 'util';
+import { inspectMedia, MediaMetadata, getFfmpegPath } from '../providers/videoProvider';
 import { GlobalVisualStyle } from './visualStyles';
 import { getApiKey } from '../db';
+
+const execFileAsync = util.promisify(execFile);
 
 export interface QualityCheckItem {
   name: string;
@@ -96,31 +101,79 @@ export class SceneQualityChecker {
       console.warn(`[QualityChecker] Media probe failed for ${clipPath}: ${err.message}`);
     }
 
-    // 2. Evaluate Each of the 8 Criteria
+    // 2. Evaluate Each of the 8 Criteria (Base Heuristics)
+    let narrationCheck = this.evaluateVisualMatchesNarration(scene.narration, scene.visual_prompt, scene.visual_subject);
+    let subjectObjectsCheck = this.evaluateCorrectSubjectAndObjects(scene.visual_prompt, scene.visual_subject, scene.narration);
+    let artifactsCheck = this.evaluateNoAiArtifactsOrDistortions(scene.visual_prompt, fileExists, fileSize, mediaMeta);
+    let motionCheck = this.evaluateNaturalLookingMotion(scene.camera_movement, scene.visual_prompt, mediaMeta);
+    let framingCheck = this.evaluateCorrect916Framing(mediaMeta, fileExists, fileSize, scene.visual_prompt);
+    let styleCheck = this.evaluateConsistentVisualStyle(scene.visual_prompt, globalStyle);
+    let diffCheck = this.evaluateSceneDifferentiation(scene, previousScene);
+    let hookCheck = this.evaluateStrongVisualHook(scene, isFirstScene);
 
-    // Criterion 1: Visual matches the narration
-    const narrationCheck = this.evaluateVisualMatchesNarration(scene.narration, scene.visual_prompt, scene.visual_subject);
+    // 3. Multimodal Real Video Frame Inspection via Gemini Vision (if available and clip exists)
+    if (fileExists && fileSize > 1000 && clipPath.endsWith('.mp4')) {
+      const geminiKey = getApiKey('gemini') || process.env.GEMINI_API_KEY;
+      if (geminiKey) {
+        try {
+          const ffmpegPath = getFfmpegPath();
+          const frameDir = path.dirname(clipPath);
+          const framePath = path.join(frameDir, `qc_frame_scene_${scene.scene_index}.jpg`);
 
-    // Criterion 2: Correct subject and objects
-    const subjectObjectsCheck = this.evaluateCorrectSubjectAndObjects(scene.visual_prompt, scene.visual_subject, scene.narration);
+          // Extract real video frame at t=1.0s
+          await execFileAsync(ffmpegPath, [
+            '-y',
+            '-ss',
+            '00:00:01.0',
+            '-i',
+            clipPath,
+            '-vframes',
+            '1',
+            '-q:v',
+            '2',
+            framePath,
+          ]);
 
-    // Criterion 3: No obvious AI artifacts or severe distortions
-    const artifactsCheck = this.evaluateNoAiArtifactsOrDistortions(scene.visual_prompt, fileExists, fileSize, mediaMeta);
+          if (fs.existsSync(framePath)) {
+            const frameStat = await fs.promises.stat(framePath).catch(() => null);
+            const isProceduralFallback = !!(frameStat && frameStat.size < 40000);
 
-    // Criterion 4: Natural-looking motion
-    const motionCheck = this.evaluateNaturalLookingMotion(scene.camera_movement, scene.visual_prompt, mediaMeta);
+            const visionResults = await this.evaluateWithGeminiVision({
+              framePath,
+              scene,
+              globalStyle,
+              isFirstScene,
+              geminiKey,
+            });
 
-    // Criterion 5: Correct 9:16 framing (1080x1920)
-    const framingCheck = this.evaluateCorrect916Framing(mediaMeta, fileExists, fileSize, scene.visual_prompt);
-
-    // Criterion 6: Consistent visual style with other scenes (inherits global style)
-    const styleCheck = this.evaluateConsistentVisualStyle(scene.visual_prompt, globalStyle);
-
-    // Criterion 7: Scene is sufficiently different from previous scenes
-    const diffCheck = this.evaluateSceneDifferentiation(scene, previousScene);
-
-    // Criterion 8: Strong visual hook in opening seconds (scene 1)
-    const hookCheck = this.evaluateStrongVisualHook(scene, isFirstScene);
+            if (visionResults) {
+              if (visionResults.visualMatchesNarration) narrationCheck = visionResults.visualMatchesNarration;
+              if (visionResults.correctSubjectAndObjects) subjectObjectsCheck = visionResults.correctSubjectAndObjects;
+              if (visionResults.noAiArtifactsOrDistortions) artifactsCheck = visionResults.noAiArtifactsOrDistortions;
+              if (visionResults.correct916Framing) framingCheck = visionResults.correct916Framing;
+              if (visionResults.consistentVisualStyle) styleCheck = visionResults.consistentVisualStyle;
+              if (visionResults.strongVisualHook && isFirstScene) hookCheck = visionResults.strongVisualHook;
+            } else if (isProceduralFallback) {
+              // Guardrail: cap scores when physical frame is an ambient/procedural fallback grid
+              narrationCheck = {
+                name: 'Visual matches narration',
+                passed: false,
+                score: 55,
+                details: 'Procedural/ambient graphic visual detected (<40KB frame entropy); narration subjects not identifiable.',
+              };
+              subjectObjectsCheck = {
+                name: 'Correct subject and objects',
+                passed: false,
+                score: 55,
+                details: 'Focal subject is represented by procedural graphics rather than concrete visual elements.',
+              };
+            }
+          }
+        } catch (visionErr: any) {
+          console.warn(`[QualityChecker] Video frame extraction / vision check bypassed: ${visionErr.message}`);
+        }
+      }
+    }
 
     const checks = {
       visualMatchesNarration: narrationCheck,
@@ -564,6 +617,112 @@ export class SceneQualityChecker {
     return adjustments.length > 0
       ? adjustments.join(', ')
       : 'enhanced clarity, cinematic 9:16 vertical composition, pristine visual fidelity';
+  }
+
+  /**
+   * Multimodal AI Visual Verification using Google Gemini Vision
+   * Directly inspects the extracted pixel frame from the generated video.
+   */
+  private async evaluateWithGeminiVision(params: {
+    framePath: string;
+    scene: {
+      scene_index: number;
+      narration: string;
+      visual_prompt: string;
+      visual_subject?: string | null;
+      camera_movement?: string | null;
+    };
+    globalStyle: GlobalVisualStyle;
+    isFirstScene: boolean;
+    geminiKey: string;
+  }): Promise<Partial<{
+    visualMatchesNarration: QualityCheckItem;
+    correctSubjectAndObjects: QualityCheckItem;
+    noAiArtifactsOrDistortions: QualityCheckItem;
+    correct916Framing: QualityCheckItem;
+    consistentVisualStyle: QualityCheckItem;
+    strongVisualHook: QualityCheckItem;
+  }> | null> {
+    try {
+      const base64Img = (await fs.promises.readFile(params.framePath)).toString('base64');
+      const prompt = `You are a strict film Quality Control AI inspector for mobile short-form video production (YouTube Shorts, Reels, TikTok).
+Inspect this real video frame extracted from a generated scene clip.
+
+SCENE METADATA:
+Scene Index: ${params.scene.scene_index}
+Scene Spoken Narration: "${params.scene.narration}"
+Visual Prompt: "${params.scene.visual_prompt}"
+Focal Subject: "${params.scene.visual_subject || 'Not specified'}"
+Global Visual Style: "${params.globalStyle.name}" (${params.globalStyle.dna.renderStyle})
+Is Opening Hook Scene: ${params.isFirstScene}
+
+EVALUATION CHECKLIST (Examine pixels carefully):
+1. Visual matches narration: Are the key concepts/themes spoken in the narration visually represented in the frame?
+2. Correct subject and objects: Is the focal subject/object identifiable and correctly depicted without missing key elements?
+3. No obvious AI artifacts: Are there distorted faces, malformed hands, impossible anatomy, broken geometry, melting textures, or digital glitches?
+4. Correct 9:16 framing: Is the subject framed within a vertical mobile safe zone without awkward cropping or letterboxing?
+5. Consistent visual style: Does the visual match the ${params.globalStyle.name} aesthetic (lighting, realism, color palette)?
+6. Strong visual hook: (If Scene 1) Does this opening frame deliver a captivating, high-retention visual hook?
+
+Return valid JSON strictly matching this structure:
+{
+  "visualMatchesNarration": { "passed": true, "score": 90, "details": "string" },
+  "correctSubjectAndObjects": { "passed": true, "score": 90, "details": "string" },
+  "noAiArtifactsOrDistortions": { "passed": true, "score": 95, "details": "string" },
+  "correct916Framing": { "passed": true, "score": 95, "details": "string" },
+  "consistentVisualStyle": { "passed": true, "score": 90, "details": "string" },
+  "strongVisualHook": { "passed": true, "score": 90, "details": "string" }
+}`;
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${params.geminiKey}`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(25000),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: base64Img,
+                  },
+                },
+                { text: prompt },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+          },
+        }),
+      });
+
+      if (!res.ok) return null;
+      const data: any = await res.json();
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!raw) return null;
+
+      let cleaned = raw.trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      const parsed = JSON.parse(cleaned);
+      return {
+        visualMatchesNarration: parsed.visualMatchesNarration ? { name: 'Visual matches narration', ...parsed.visualMatchesNarration } : undefined,
+        correctSubjectAndObjects: parsed.correctSubjectAndObjects ? { name: 'Correct subject and objects', ...parsed.correctSubjectAndObjects } : undefined,
+        noAiArtifactsOrDistortions: parsed.noAiArtifactsOrDistortions ? { name: 'No obvious AI artifacts or severe distortions', ...parsed.noAiArtifactsOrDistortions } : undefined,
+        correct916Framing: parsed.correct916Framing ? { name: 'Correct 9:16 framing', ...parsed.correct916Framing } : undefined,
+        consistentVisualStyle: parsed.consistentVisualStyle ? { name: 'Consistent visual style with other scenes', ...parsed.consistentVisualStyle } : undefined,
+        strongVisualHook: parsed.strongVisualHook ? { name: 'Strong visual hook in the opening seconds', ...parsed.strongVisualHook } : undefined,
+      };
+    } catch (err: any) {
+      console.warn(`[QualityChecker] Gemini vision evaluation bypassed (${err.message}).`);
+      return null;
+    }
   }
 }
 
