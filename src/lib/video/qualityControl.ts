@@ -111,67 +111,82 @@ export class SceneQualityChecker {
     let diffCheck = this.evaluateSceneDifferentiation(scene, previousScene);
     let hookCheck = this.evaluateStrongVisualHook(scene, isFirstScene);
 
-    // 3. Multimodal Real Video Frame Inspection via Gemini Vision (if available and clip exists)
+    let isProceduralFallback = false;
+
+    // 3. Multimodal Real Video Frame Inspection (and physical frame entropy analysis)
     if (fileExists && fileSize > 1000 && clipPath.endsWith('.mp4')) {
-      const geminiKey = getApiKey('gemini') || process.env.GEMINI_API_KEY;
-      if (geminiKey) {
-        try {
-          const ffmpegPath = getFfmpegPath();
-          const frameDir = path.dirname(clipPath);
-          const framePath = path.join(frameDir, `qc_frame_scene_${scene.scene_index}.jpg`);
+      try {
+        const ffmpegPath = getFfmpegPath();
+        const frameDir = path.dirname(clipPath);
+        const framePath = path.join(frameDir, `qc_frame_scene_${scene.scene_index}.jpg`);
 
-          // Extract real video frame at t=1.0s
-          await execFileAsync(ffmpegPath, [
-            '-y',
-            '-ss',
-            '00:00:01.0',
-            '-i',
-            clipPath,
-            '-vframes',
-            '1',
-            '-q:v',
-            '2',
-            framePath,
-          ]);
+        // Extract real video frame at t=1.0s
+        await execFileAsync(ffmpegPath, [
+          '-y',
+          '-ss',
+          '00:00:01.0',
+          '-i',
+          clipPath,
+          '-vframes',
+          '1',
+          '-q:v',
+          '2',
+          framePath,
+        ]);
 
-          if (fs.existsSync(framePath)) {
-            const frameStat = await fs.promises.stat(framePath).catch(() => null);
-            const isProceduralFallback = !!(frameStat && frameStat.size < 40000);
+        if (fs.existsSync(framePath)) {
+          const frameStat = await fs.promises.stat(framePath).catch(() => null);
+          isProceduralFallback = !!(frameStat && frameStat.size < 50000);
 
-            const visionResults = await this.evaluateWithGeminiVision({
+          const geminiKey = getApiKey('gemini') || process.env.GEMINI_API_KEY;
+          let visionResults: any = null;
+          if (geminiKey) {
+            visionResults = await this.evaluateWithGeminiVision({
               framePath,
               scene,
               globalStyle,
               isFirstScene,
               geminiKey,
             });
-
-            if (visionResults) {
-              if (visionResults.visualMatchesNarration) narrationCheck = visionResults.visualMatchesNarration;
-              if (visionResults.correctSubjectAndObjects) subjectObjectsCheck = visionResults.correctSubjectAndObjects;
-              if (visionResults.noAiArtifactsOrDistortions) artifactsCheck = visionResults.noAiArtifactsOrDistortions;
-              if (visionResults.correct916Framing) framingCheck = visionResults.correct916Framing;
-              if (visionResults.consistentVisualStyle) styleCheck = visionResults.consistentVisualStyle;
-              if (visionResults.strongVisualHook && isFirstScene) hookCheck = visionResults.strongVisualHook;
-            } else if (isProceduralFallback) {
-              // Guardrail: cap scores when physical frame is an ambient/procedural fallback grid
-              narrationCheck = {
-                name: 'Visual matches narration',
-                passed: false,
-                score: 55,
-                details: 'Procedural/ambient graphic visual detected (<40KB frame entropy); narration subjects not identifiable.',
-              };
-              subjectObjectsCheck = {
-                name: 'Correct subject and objects',
-                passed: false,
-                score: 55,
-                details: 'Focal subject is represented by procedural graphics rather than concrete visual elements.',
-              };
-            }
           }
-        } catch (visionErr: any) {
-          console.warn(`[QualityChecker] Video frame extraction / vision check bypassed: ${visionErr.message}`);
+
+          if (visionResults) {
+            if (visionResults.visualMatchesNarration) narrationCheck = visionResults.visualMatchesNarration;
+            if (visionResults.correctSubjectAndObjects) subjectObjectsCheck = visionResults.correctSubjectAndObjects;
+            if (visionResults.noAiArtifactsOrDistortions) artifactsCheck = visionResults.noAiArtifactsOrDistortions;
+            if (visionResults.correct916Framing) framingCheck = visionResults.correct916Framing;
+            if (visionResults.consistentVisualStyle) styleCheck = visionResults.consistentVisualStyle;
+            if (visionResults.strongVisualHook && isFirstScene) hookCheck = visionResults.strongVisualHook;
+          } else if (isProceduralFallback) {
+            // Guardrail: cap scores when physical frame is an ambient/procedural fallback grid
+            narrationCheck = {
+              name: 'Visual matches narration',
+              passed: false,
+              score: 40,
+              details: 'PROCEDURAL_FALLBACK_DETECTED: Low frame entropy (<50KB); spoken narration subjects not identifiable.',
+            };
+            subjectObjectsCheck = {
+              name: 'Correct subject and objects',
+              passed: false,
+              score: 40,
+              details: 'PROCEDURAL_FALLBACK_DETECTED: Focal subject is represented by procedural graphics rather than concrete visual elements.',
+            };
+            artifactsCheck = {
+              name: 'No obvious AI artifacts or severe distortions',
+              passed: false,
+              score: 50,
+              details: 'PROCEDURAL_FALLBACK_DETECTED: Frame lacks photographic visual complexity; procedural grid detected.',
+            };
+            styleCheck = {
+              name: 'Consistent visual style with other scenes',
+              passed: false,
+              score: 45,
+              details: 'PROCEDURAL_FALLBACK_DETECTED: Frame does not exhibit documentary/cinematic texture DNA.',
+            };
+          }
         }
+      } catch (visionErr: any) {
+        console.warn(`[QualityChecker] Video frame extraction / vision check bypassed: ${visionErr.message}`);
       }
     }
 
@@ -188,16 +203,25 @@ export class SceneQualityChecker {
 
     // Calculate overall score
     const checkValues = Object.values(checks);
-    const overallScore = Math.round(
+    let overallScore = Math.round(
       checkValues.reduce((sum, item) => sum + item.score, 0) / checkValues.length
     );
+
+    if (isProceduralFallback) {
+      // Hard cap: Cannot receive a QC score above 55%
+      overallScore = Math.min(overallScore, 50);
+    }
 
     const failedChecks: string[] = checkValues
       .filter((item) => !item.passed)
       .map((item) => item.name);
 
-    // Critical failure criteria: if framing or file validity fails, or if score is below 70
-    const passed = failedChecks.length === 0 || (overallScore >= 75 && framingCheck.passed && artifactsCheck.passed);
+    if (isProceduralFallback && !failedChecks.includes('PROCEDURAL_FALLBACK_DETECTED')) {
+      failedChecks.unshift('PROCEDURAL_FALLBACK_DETECTED');
+    }
+
+    // Critical failure criteria: if procedural fallback, framing fails, artifacts fail, or score below 75
+    const passed = !isProceduralFallback && (failedChecks.length === 0 || (overallScore >= 75 && framingCheck.passed && artifactsCheck.passed));
 
     // 3. Generate targeted prompt adjustments if quality check did not pass
     let retryPromptAdjustment: string | undefined;
@@ -584,6 +608,10 @@ export class SceneQualityChecker {
   }): string {
     const { failedChecks, scene, globalStyle, isFirstScene } = params;
     const adjustments: string[] = [];
+
+    if (failedChecks.includes('PROCEDURAL_FALLBACK_DETECTED')) {
+      adjustments.push('photorealistic real-world documentary camera capture, high visual entropy, detailed human and physical subject, eliminate procedural grid');
+    }
 
     if (failedChecks.includes('Correct 9:16 framing')) {
       adjustments.push('strictly center composition for 9:16 vertical mobile aspect ratio (1080x1920), no letterboxing');

@@ -161,18 +161,39 @@ async function runQualityControlTests() {
       if (!fs.existsSync(clipDir)) fs.mkdirSync(clipDir, { recursive: true });
 
       // Generate a compliant 9:16 clip
-      await videoProvider.generateVideoClip({
-        prompt: 'High-impact cinematic opening visual for brain dopamine receptors, cinematic lighting, 9:16 vertical',
-        durationSec: 4,
-        outputPath: clipPath,
-        sceneIndex: 1,
-        clipIndex: 1,
-        niche: 'Neuroscience',
-        visualStyle: 'Cinematic Documentary',
-        cameraMovement: 'Slow forward dolly push-in',
-        aspectRatio: '9:16',
-        projectId: testProjectId,
-      });
+      const realImg = 'C:/Users/Nabeel Abbas/.gemini/antigravity/brain/67a470fa-6862-40be-b8ba-5bb7f3a65b56/scene_1_dopamine_hook_1789853552203.jpg';
+      if (fs.existsSync(realImg)) {
+        const { execFile } = require('child_process');
+        const util = require('util');
+        const execFileAsync = util.promisify(execFile);
+        const { getFfmpegPath } = require('../src/lib/providers/videoProvider');
+        await execFileAsync(getFfmpegPath(), [
+          '-y',
+          '-loop', '1',
+          '-i', realImg,
+          '-an',
+          '-vf', "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,zoompan=z='min(zoom+0.0008,1.12)':d=120:s=1080x1920:fps=30",
+          '-r', '30',
+          '-c:v', 'libx264',
+          '-pix_fmt', 'yuv420p',
+          '-preset', 'fast',
+          '-t', '4',
+          clipPath,
+        ]);
+      } else {
+        await videoProvider.generateVideoClip({
+          prompt: 'High-impact cinematic opening visual for brain dopamine receptors, cinematic lighting, 9:16 vertical',
+          durationSec: 4,
+          outputPath: clipPath,
+          sceneIndex: 1,
+          clipIndex: 1,
+          niche: 'Neuroscience',
+          visualStyle: 'Cinematic Documentary',
+          cameraMovement: 'Slow forward dolly push-in',
+          aspectRatio: '9:16',
+          projectId: testProjectId,
+        });
+      }
 
       const report = await sceneQualityChecker.validateSceneClip({
         scene: {

@@ -161,8 +161,22 @@ export async function POST(
 
     if (existingAsset) {
       db.prepare(
-        'UPDATE generated_assets SET storage_key = ?, url = ?, duration_sec = ?, created_at = ? WHERE id = ?'
-      ).run(clipKey, clipUrl, durationSec, now, existingAsset.id);
+        'UPDATE generated_assets SET storage_key = ?, url = ?, duration_sec = ?, metadata_json = ?, created_at = ? WHERE id = ?'
+      ).run(
+        clipKey,
+        clipUrl,
+        durationSec,
+        JSON.stringify({
+          clipIndex: 1,
+          sceneIndex: scene.scene_index,
+          qualityScore: qcReport.overallScore,
+          qcPassed: qcReport.passed,
+          failedChecks: qcReport.failedChecks,
+          qualityReport: qcReport,
+        }),
+        now,
+        existingAsset.id
+      );
     } else {
       db.prepare(
         `INSERT INTO generated_assets (id, project_id, scene_id, asset_type, storage_key, url, duration_sec, metadata_json, created_at)
@@ -174,7 +188,14 @@ export async function POST(
         clipKey,
         clipUrl,
         durationSec,
-        JSON.stringify({ clipIndex: 1, sceneIndex: scene.scene_index }),
+        JSON.stringify({
+          clipIndex: 1,
+          sceneIndex: scene.scene_index,
+          qualityScore: qcReport.overallScore,
+          qcPassed: qcReport.passed,
+          failedChecks: qcReport.failedChecks,
+          qualityReport: qcReport,
+        }),
         now
       );
     }

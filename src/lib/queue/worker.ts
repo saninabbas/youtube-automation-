@@ -502,6 +502,7 @@ export class VideoPipelineWorker {
                 qualityScore: latestQcReport?.overallScore || 85,
                 qcPassed: latestQcReport?.passed ?? true,
                 failedChecks: latestQcReport?.failedChecks || [],
+                qualityReport: latestQcReport,
               }),
               now
             );
