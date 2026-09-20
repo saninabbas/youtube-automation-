@@ -74,8 +74,16 @@ export class StockVideoEngine {
         if (data.hits && data.hits.length > 0) {
           const hit = data.hits[clipOffset % data.hits.length] || data.hits[0];
           if (hit.base_filename) {
-            this.coverrAvailable = true;
-            return `https://cdn.coverr.co/videos/${hit.base_filename}/1080p.mp4`;
+            const filename = hit.base_filename.toLowerCase();
+            const qLower = query.toLowerCase();
+            // Prevent yoga/stretching/nature clips from being returned for tech, psychology, money or abstract topics
+            const isIrrelevantSport = (filename.includes('yoga') || filename.includes('stretching') || filename.includes('runner') || filename.includes('running')) &&
+              !qLower.includes('yoga') && !qLower.includes('stretch') && !qLower.includes('run') && !qLower.includes('sport') && !qLower.includes('workout');
+
+            if (!isIrrelevantSport) {
+              this.coverrAvailable = true;
+              return `https://cdn.coverr.co/videos/${hit.base_filename}/1080p.mp4`;
+            }
           }
         }
       }

@@ -424,34 +424,34 @@ class DefaultAiProvider implements AiProvider {
 
     const pillars = [
       {
-        title: 'Core Fundamentals & Underlying Mechanisms',
-        desc: `To truly understand ${cleanTopic}, we must first examine the foundational principles that govern this domain. Analyzing how these core factors interact provides the structural bedrock for everything that follows.`,
-        subject: `Foundational mechanisms of ${cleanTopic}`,
+        title: 'The Hidden Reality & The Hook',
+        desc: `Almost everything you have been told about ${cleanTopic} is only scratching the surface. When you strip away the noise and look at what is actually happening behind the scenes, the real pattern becomes undeniable.`,
+        subject: `Dramatic, photorealistic cinematic scene exposing ${cleanTopic}`,
       },
       {
-        title: 'Critical Drivers & Strategic Advantages',
-        desc: `When analyzing ${cleanTopic} through a data-driven lens, specific patterns emerge that separate high-performers from the rest. Leveraging these key drivers creates a sustainable, compounding advantage.`,
-        subject: `Strategic analytical drivers of ${cleanTopic}`,
+        title: 'The Psychological Trigger & Mechanism',
+        desc: `There is a very specific mechanism driving ${cleanTopic}. It targets human cognitive behavior, creating an irresistible cycle that keeps you engaged whether you realize it or not.`,
+        subject: `Close-up cinematic focus revealing the internal mechanism of ${cleanTopic}`,
       },
       {
-        title: 'Common Misconceptions & Fatal Pitfalls',
-        desc: `A major mistake most people make when approaching ${cleanTopic} is relying on outdated assumptions. By identifying and avoiding these common traps, you bypass years of trial, error, and wasted effort.`,
-        subject: `Key pitfalls and corrections regarding ${cleanTopic}`,
+        title: 'The Hidden Cost & The Turning Point',
+        desc: `Here is the part most people overlook: every choice in ${cleanTopic} carries a hidden trade-off. Once you recognize how the system is calibrated, your entire approach shifts.`,
+        subject: `Atmospheric, dramatic cinematic perspective capturing the turning point of ${cleanTopic}`,
       },
       {
-        title: 'Advanced Methodologies & Execution Protocols',
-        desc: `Once the baseline is established, mastering the nuances of ${cleanTopic} requires systematic execution. Implementing structured feedback loops ensures consistent, reliable progress over time.`,
-        subject: `Advanced execution frameworks for ${cleanTopic}`,
+        title: 'The Unfair Advantage & Strategy',
+        desc: `The top one percent do not interact with ${cleanTopic} like everyone else. They exploit these exact mechanics to take full control and turn the game to their advantage.`,
+        subject: `High-contrast, sleek cinematic visualization of mastering ${cleanTopic}`,
       },
       {
-        title: 'Long-Term Compounding & Future Implications',
-        desc: `Looking ahead, the broader impact of ${cleanTopic} will continue to compound. Those who adapt early and build resilient systems around these insights will achieve outsized results.`,
-        subject: `Future trajectory and compounding impact of ${cleanTopic}`,
+        title: 'The Compounding Future',
+        desc: `This is only accelerating. The gap between those who understand ${cleanTopic} and those who are controlled by it is about to become massive.`,
+        subject: `Expansive futuristic cinematic perspective illustrating the trajectory of ${cleanTopic}`,
       },
       {
-        title: 'Actionable Blueprint & Immediate Implementation',
-        desc: `Theory without execution is meaningless. By breaking down ${cleanTopic} into clear, bite-sized daily action steps, you can start building momentum immediately today.`,
-        subject: `Practical implementation blueprint for ${cleanTopic}`,
+        title: 'The Final Takeaway',
+        desc: `Take back your focus. Once you see through the illusion of ${cleanTopic}, you can never be manipulated by it again.`,
+        subject: `Inspiring, definitive cinematic resolution of ${cleanTopic}`,
       },
     ];
 
@@ -462,9 +462,9 @@ class DefaultAiProvider implements AiProvider {
         heading: `Part ${i + 1}: ${p.title}`,
         subsections: [
           {
-            subheading: `Deep-Dive Analysis on ${cleanTopic}`,
-            narration: `${p.desc} In the context of ${domainFocus}, mastering this aspect of ${cleanTopic} provides a profound shift in perspective.`,
-            visualPrompt: `Cinematic, photorealistic visualization of ${p.subject}, ${visualStyle} lighting, ${defaultEnv}, 8k ultra high resolution`,
+            subheading: `Breakdown of ${cleanTopic}`,
+            narration: `${p.desc}`,
+            visualPrompt: `Cinematic, photorealistic 8k visualization of ${cleanTopic}, focusing on ${p.subject}, ${visualStyle} lighting, ${defaultEnv}, 35mm lens, atmospheric depth of field`,
             visualSubject: p.subject,
             environment: defaultEnv,
             cameraMovement: 'Slow smooth cinematic push-in with shallow depth of field',
@@ -477,10 +477,10 @@ class DefaultAiProvider implements AiProvider {
 
     return {
       title: cleanTopic,
-      hook: `What if understanding the hidden truths behind ${cleanTopic} could fundamentally transform your perspective on ${niche}? Today, on ${channelName}, we break down the definitive blueprint.`,
-      introduction: `Welcome back to ${channelName}. In this comprehensive breakdown, we are exploring ${cleanTopic}—diving deep into ${domainFocus}. Whether you are just getting started or looking to master advanced strategies, this video provides the exact principles you need.`,
+      hook: `Did you know that ${cleanTopic} is engineered to completely rewire how you think? Here is the shocking truth they don't want you to know.`,
+      introduction: `Welcome back to ${channelName}. Today, we are pulling back the curtain on ${cleanTopic}. What you are about to discover will change the way you see this forever.`,
       sections,
-      conclusion: `Mastering ${cleanTopic} is not about luck; it is about applying consistent, validated principles and letting compounding do the work. Implement these takeaways, stay disciplined, and build for the long term.`,
+      conclusion: `Understanding ${cleanTopic} is your greatest competitive edge. Don't be a passive participant—master the rules and stay ahead.`,
       callToAction: ctaText,
     };
   }
@@ -595,6 +595,7 @@ You must return valid JSON strictly conforming to this schema:
           { role: 'user', content: prompt },
         ],
         response_format: { type: 'json_object' },
+        max_tokens: 3500,
         temperature: 0.7,
       }),
     });

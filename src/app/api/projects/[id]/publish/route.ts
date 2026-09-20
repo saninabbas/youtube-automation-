@@ -20,17 +20,22 @@ export async function POST(request: Request, { params }: { params: any }) {
     const { visibility = 'PRIVATE', scheduleTime = null, platform = 'YouTube' } = body;
 
     const db = getDb();
+    const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
     const project = db
       .prepare(
         `SELECT p.*, c.name as channel_name, c.publishing_platform as channel_platform 
          FROM content_projects p 
          JOIN channels c ON p.channel_id = c.id 
-         WHERE p.id = ? AND p.user_id = ?`
+         WHERE p.id = ?`
       )
-      .get(id, user.id) as (ContentProject & { channel_name: string; channel_platform: string }) | undefined;
+      .get(id) as (ContentProject & { channel_name: string; channel_platform: string }) | undefined;
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found or access denied.' }, { status: 404 });
+      return NextResponse.json({ error: 'Project does not exist' }, { status: 404 });
+    }
+
+    if (project.user_id && project.user_id !== user.id && !isAdmin) {
+      return NextResponse.json({ error: 'You do not have access to this project' }, { status: 403 });
     }
 
     if (project.status !== 'COMPLETED') {

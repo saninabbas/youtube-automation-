@@ -52,9 +52,10 @@ export async function GET(request: Request, { params }: { params: any }) {
       )
       .get(id) as any;
 
-    // Enforce multi-tenant isolation: block non-owners without leaking project existence
-    if (project && project.user_id && project.user_id !== userId) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    // Enforce multi-tenant isolation: check ownership or admin role
+    const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
+    if (project && project.user_id && project.user_id !== userId && !isAdmin) {
+      return NextResponse.json({ error: 'You do not have access to this project' }, { status: 403 });
     }
 
     // Parse URL query parameters for topic and duration (propagates across ephemeral containers)
@@ -70,7 +71,7 @@ export async function GET(request: Request, { params }: { params: any }) {
     // 3. Auto-recover if missing from cold reset or if new topic explicitly requested
     if (!project) {
       if (!queryTopic || !queryTopic.trim()) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Project does not exist' }, { status: 404 });
       }
       const activeTopic = queryTopic.trim().substring(0, 500);
       db.prepare(`
@@ -111,7 +112,7 @@ export async function GET(request: Request, { params }: { params: any }) {
     }
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found or access denied.' }, { status: 404 });
+      return NextResponse.json({ error: 'Project does not exist' }, { status: 404 });
     }
 
     const rawJobs = db
@@ -302,8 +303,12 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     const now = new Date().toISOString();
 
     const existing = db.prepare('SELECT user_id FROM content_projects WHERE id = ?').get(id) as any;
-    if (!existing || (existing.user_id && existing.user_id !== userId)) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    if (!existing) {
+      return NextResponse.json({ error: 'Project does not exist' }, { status: 404 });
+    }
+    const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
+    if (existing.user_id && existing.user_id !== userId && !isAdmin) {
+      return NextResponse.json({ error: 'You do not have access to this project' }, { status: 403 });
     }
 
     if (topic && topic.trim()) {

@@ -363,32 +363,7 @@ class DefaultVideoProvider implements VideoProvider {
     const safeSubtext2 = sanitize(subtext2);
     const safeNiche = sanitize(niche.toUpperCase());
 
-    // 2. Try Searching & Downloading Real HD Stock Video Footage (Pexels / Coverr / Pixabay in 9:16 portrait)
-    try {
-      const { stockVideoEngine } = await import('./stockVideoProvider');
-      const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
-      const clipOffset = (sceneIndex * 3) + clipIndex;
-      const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, aspectRatio);
-
-      if (stockVideoUrl) {
-        console.log(`[VideoProvider] Found real HD Video Footage for Scene ${sceneIndex} Clip ${clipIndex} (${aspectRatio}): ${stockVideoUrl.substring(0, 60)}...`);
-        await stockVideoEngine.renderStockVideoScene({
-          videoUrl: stockVideoUrl,
-          durationSec,
-          outputPath,
-          sceneIndex,
-          headline: safeHeadline,
-          niche: safeNiche,
-          accent,
-          aspectRatio,
-        });
-        return;
-      }
-    } catch (stockErr: any) {
-      console.warn(`[VideoProvider] Stock video search/render error: ${stockErr.message}`);
-    }
-
-    // 3. Try Generating Real AI Visuals via Cloudflare Workers AI (Flux 1 Schnell & SDXL Lightning)
+    // 2. Try Generating Real AI Visuals via Cloudflare Workers AI (Flux 1 Schnell & SDXL Lightning)
     const cfToken = getApiKey('cloudflare_api_token') || process.env.CLOUDFLARE_API_TOKEN;
     const cfAccountId = getApiKey('cloudflare_account_id') || process.env.CLOUDFLARE_ACCOUNT_ID;
 
@@ -396,9 +371,9 @@ class DefaultVideoProvider implements VideoProvider {
     const tempDir = path.dirname(outputPath);
     const rand = Math.random().toString(36).substring(2, 7);
     const tempAiImgPath = path.join(tempDir, `cf_img_${sceneIndex}_${clipIndex}_${rand}.jpg`);
-    const enhancedPrompt = `${cleanPrompt}, cinematic 4k photo, vertical 9:16 composition, hyperrealistic, award winning photography, 8k resolution, photorealistic`;
+    const enhancedPrompt = `${cleanPrompt}, cinematic 4k photo, vertical 9:16 composition, hyperrealistic, award winning photography, 8k resolution, photorealistic, 35mm film still, cinematic lighting, volumetric atmosphere, detailed textures`;
 
-    // 3a. Attempt Cloudflare Workers AI Flux 1 Schnell
+    // 2a. Attempt Cloudflare Workers AI Flux 1 Schnell (State of the Art Photorealism)
     if (cfToken && cfAccountId) {
       try {
         console.log(`[VideoProvider] Generating AI visual for Scene ${sceneIndex} using Cloudflare Flux 1 Schnell...`);
@@ -417,6 +392,7 @@ class DefaultVideoProvider implements VideoProvider {
             const imgBuf = Buffer.from(data.result.image, 'base64');
             await fs.promises.writeFile(tempAiImgPath, imgBuf);
             generatedAiImage = true;
+            console.log(`[VideoProvider] Flux 1 Schnell image generated successfully for Scene ${sceneIndex}`);
           }
         } else {
           // Fallback to SDXL-Lightning
@@ -441,31 +417,30 @@ class DefaultVideoProvider implements VideoProvider {
       }
     }
 
-    // 3b. Attempt High-Speed Pollinations AI Turbo (Unlimited & Fast Fallback with target dimensions)
-    if (!generatedAiImage) {
-      try {
-        const polliUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&nologo=true&model=turbo`;
-        const polliRes = await fetch(polliUrl);
-        if (polliRes.ok) {
-          const arrayBuf = await polliRes.arrayBuffer();
-          if (arrayBuf.byteLength > 5000) {
-            await fs.promises.writeFile(tempAiImgPath, Buffer.from(arrayBuf));
-            generatedAiImage = true;
-          }
-        }
-      } catch (polliErr: any) {
-        console.warn(`[VideoProvider] Pollinations AI error (${polliErr.message}).`);
-      }
-    }
-
-    // 3c. Render AI Visual Image with FFmpeg Ken Burns Motion (Target 1080x1920 9:16 CFR)
+    // 2b. If AI image generated, render with Cinematic Camera Motion & Film Grading
     if (generatedAiImage && fs.existsSync(tempAiImgPath)) {
       try {
+        const move = (cameraMovement || '').toLowerCase();
+        let zoomPanExpr: string;
+
+        if (move.includes('pull') || move.includes('out') || move.includes('back')) {
+          // Smooth slow cinematic pull-out
+          zoomPanExpr = `zoompan=z='if(lte(zoom,1.0),1.18,max(1.001,zoom-0.0006))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=180:s=${width}x${height}:fps=30`;
+        } else if (move.includes('pan') || move.includes('glide') || move.includes('track')) {
+          // Subtle horizontal dolly glide
+          zoomPanExpr = `zoompan=z=1.10:x='if(lte(on,1),(iw-iw/zoom)/2,max(0,min(iw-iw/zoom,x+0.35)))':y='ih/2-(ih/zoom/2)':d=180:s=${width}x${height}:fps=30`;
+        } else {
+          // Default slow dramatic push-in
+          zoomPanExpr = `zoompan=z='min(zoom+0.0007,1.18)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=180:s=${width}x${height}:fps=30`;
+        }
+
         const filterGraph = [
           `scale=${width}:${height}:force_original_aspect_ratio=increase`,
           `crop=${width}:${height}`,
           `setsar=1`,
-          `zoompan=z='min(zoom+0.0008,1.15)':d=120:s=${width}x${height}:fps=30`,
+          zoomPanExpr,
+          `eq=contrast=1.06:brightness=0.01:saturation=1.08`,
+          `vignette=PI/5`,
         ].join(',');
 
         await execFileAsync(ffmpegPath, [
@@ -484,14 +459,93 @@ class DefaultVideoProvider implements VideoProvider {
           '-pix_fmt',
           'yuv420p',
           '-preset',
-          'ultrafast',
+          'fast',
           '-t',
           String(durationSec),
           outputPath,
         ]);
         return;
       } catch (renderErr) {
-        console.warn(`[VideoProvider] Image motion render failed, falling back to graphics template.`);
+        console.warn(`[VideoProvider] Image motion render failed: ${renderErr}`);
+      } finally {
+        if (fs.existsSync(tempAiImgPath)) {
+          await fs.promises.unlink(tempAiImgPath).catch(() => {});
+        }
+      }
+    }
+
+    // 3. Try Searching & Downloading Real HD Stock Video Footage (Pexels / Pixabay in 9:16 portrait)
+    // Only search stock footage if AI image was not generated, and ensure high relevance to prompt
+    try {
+      const { stockVideoEngine } = await import('./stockVideoProvider');
+      const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
+      const clipOffset = (sceneIndex * 3) + clipIndex;
+      const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, aspectRatio);
+
+      if (stockVideoUrl) {
+        console.log(`[VideoProvider] Found real HD Video Footage for Scene ${sceneIndex} Clip ${clipIndex} (${aspectRatio}): ${stockVideoUrl.substring(0, 60)}...`);
+        await stockVideoEngine.renderStockVideoScene({
+          videoUrl: stockVideoUrl,
+          durationSec,
+          outputPath,
+          sceneIndex,
+          headline: safeHeadline,
+          niche: safeNiche,
+          accent,
+          aspectRatio,
+        });
+        return;
+      }
+    } catch (stockErr: any) {
+      console.warn(`[VideoProvider] Stock video search/render error: ${stockErr.message}`);
+    }
+
+    // 4. Fallback High-Speed Pollinations AI Turbo with target dimensions
+    if (!generatedAiImage) {
+      try {
+        const polliUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&nologo=true&model=turbo`;
+        const polliRes = await fetch(polliUrl);
+        if (polliRes.ok) {
+          const arrayBuf = await polliRes.arrayBuffer();
+          if (arrayBuf.byteLength > 5000) {
+            await fs.promises.writeFile(tempAiImgPath, Buffer.from(arrayBuf));
+            generatedAiImage = true;
+
+            const filterGraph = [
+              `scale=${width}:${height}:force_original_aspect_ratio=increase`,
+              `crop=${width}:${height}`,
+              `setsar=1`,
+              `zoompan=z='min(zoom+0.0007,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=180:s=${width}x${height}:fps=30`,
+              `eq=contrast=1.05:brightness=0.01:saturation=1.06`,
+              `vignette=PI/5`,
+            ].join(',');
+
+            await execFileAsync(ffmpegPath, [
+              '-y',
+              '-loop',
+              '1',
+              '-i',
+              tempAiImgPath,
+              '-an',
+              '-vf',
+              filterGraph,
+              '-r',
+              '30',
+              '-c:v',
+              'libx264',
+              '-pix_fmt',
+              'yuv420p',
+              '-preset',
+              'fast',
+              '-t',
+              String(durationSec),
+              outputPath,
+            ]);
+            return;
+          }
+        }
+      } catch (polliErr: any) {
+        console.warn(`[VideoProvider] Pollinations AI error (${polliErr.message}).`);
       } finally {
         if (fs.existsSync(tempAiImgPath)) {
           await fs.promises.unlink(tempAiImgPath).catch(() => {});

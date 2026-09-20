@@ -128,12 +128,27 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     try {
       const search = typeof window !== 'undefined' ? window.location.search : '';
       const res = await fetch(`/api/projects/${id}${search}`);
-      if (!res.ok) throw new Error('Project not found or access denied');
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError('Authentication required. Please log in.');
+          return;
+        }
+        if (res.status === 403) {
+          setError('Access denied: You do not have permission to view this project.');
+          return;
+        }
+        if (res.status === 404) {
+          setError('Project does not exist or has been deleted.');
+          return;
+        }
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.error || `Failed to load project details (Error ${res.status})`);
+      }
       const json = await res.json();
       setData(json);
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Failed to load project');
+      setError(err.message || 'Failed to load project details');
     } finally {
       setLoading(false);
     }
@@ -572,14 +587,34 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   }
 
   if (error || !data || !project) {
+    const isAuth = error?.toLowerCase().includes('authentication') || error?.toLowerCase().includes('log in');
     return (
       <div className="studio-page-layout" style={{ padding: '80px 0', textAlign: 'center' }}>
-        <div style={{ color: 'var(--status-error)', fontSize: '15px', marginBottom: '14px' }}>
+        <div style={{ color: 'var(--status-error)', fontSize: '15px', marginBottom: '16px', fontWeight: 500 }}>
           ⚠️ {error || 'Project not found'}
         </div>
-        <Link href="/content" className="btn btn-secondary btn-sm">
-          ← Return to Projects
-        </Link>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}>
+          {isAuth ? (
+            <Link href="/login" className="btn btn-primary btn-sm">
+              Log In
+            </Link>
+          ) : (
+            <button
+              onClick={() => {
+                setLoading(true);
+                setError(null);
+                fetchProject();
+              }}
+              className="btn btn-primary btn-sm"
+              style={{ cursor: 'pointer' }}
+            >
+              🔄 Retry
+            </button>
+          )}
+          <Link href="/content" className="btn btn-secondary btn-sm">
+            ← Return to Projects
+          </Link>
+        </div>
       </div>
     );
   }

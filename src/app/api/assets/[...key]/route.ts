@@ -17,8 +17,55 @@ function getSceneVideoCdnUrl(
 
   let clipList: string[];
 
-  // 1. Space / Stars / Galaxy / Universe / Astronomy / Physics / Sci-Fi
+  // 0. Social Media / Algorithms / Smartphone / Cyber / AI / Digital Psychology / Tech Addiction
   if (
+    (hasAnyWord([
+      'algorithm',
+      'algorithms',
+      'social',
+      'smartphone',
+      'smartphones',
+      'phone',
+      'phones',
+      'screen',
+      'screens',
+      'scroll',
+      'scrolling',
+      'doomscroll',
+      'doomscrolling',
+      'feed',
+      'feeds',
+      'notification',
+      'notifications',
+      'dopamine',
+      'digital',
+      'cyber',
+      'matrix',
+      'coding',
+      'code',
+      'app',
+      'apps',
+      'tiktok',
+      'instagram',
+      'dark',
+    ]) ||
+    normalized.includes(' social media ') ||
+    normalized.includes(' dark psychology ') ||
+    normalized.includes(' phone addiction ')) &&
+    (normalized.includes('algorithm') || normalized.includes('social') || normalized.includes('phone') || normalized.includes('screen') || normalized.includes('cyber') || normalized.includes('digital') || normalized.includes('tech') || normalized.includes('dark') || normalized.includes('psychology'))
+  ) {
+    clipList = [
+      'https://cdn.coverr.co/videos/coverr-google-search-on-a-smartphone-243/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-premium-touching-digital-tablet-screen/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-woman-coding-8692/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-analyzing-cryptocurrency-trends-3453/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4',
+    ];
+  }
+  // 1. Space / Stars / Galaxy / Universe / Astronomy / Physics / Sci-Fi
+  else if (
     hasAnyWord([
       'space',
       'galaxy',
@@ -198,13 +245,13 @@ function getSceneVideoCdnUrl(
     ])
   ) {
     clipList = [
-      'https://cdn.coverr.co/videos/coverr-woman-standing-in-the-tall-grass-9769/1080p.mp4',
-      'https://cdn.coverr.co/videos/coverr-girl-running-in-a-forest-3856/1080p.mp4',
-      'https://cdn.coverr.co/videos/coverr-early-morning-stretching-routine/1080p.mp4',
-      'https://cdn.coverr.co/videos/coverr-motivated-runner-working-out-in-park/1080p.mp4',
-      'https://cdn.coverr.co/videos/coverr-foamy-ocean-waves-at-night-2122/1080p.mp4',
       'https://cdn.coverr.co/videos/coverr-vertical-view-of-nyc-2699/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-foamy-ocean-waves-at-night-2122/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-video-editor-s-production-studio-9994/1080p.mp4',
       'https://cdn.coverr.co/videos/coverr-city-near-mountains-in-tierra-del-fuego-argentina-3041/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-the-architecture-of-the-jeronimos-monastery-856/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-connecting-to-nature-with-tech/1080p.mp4',
+      'https://cdn.coverr.co/videos/coverr-bioluminescent-plankton-illuminate-the-waves-on-a-tropical-beach/1080p.mp4',
     ];
   }
   // 6. Airplane / Aviation / Travel / History / Mystery

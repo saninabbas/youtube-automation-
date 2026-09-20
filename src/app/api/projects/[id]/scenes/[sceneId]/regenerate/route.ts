@@ -36,11 +36,12 @@ export async function POST(
       .get(projectId) as ContentProject | undefined;
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Project does not exist' }, { status: 404 });
     }
 
-    if (project.user_id && project.user_id !== user.id) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
+    if (project.user_id && project.user_id !== user.id && !isAdmin) {
+      return NextResponse.json({ error: 'You do not have access to this project' }, { status: 403 });
     }
 
     // Find the scene

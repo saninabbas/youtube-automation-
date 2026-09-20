@@ -44,8 +44,9 @@ export async function POST(request: Request, { params }: { params: any }) {
       .prepare('SELECT * FROM content_projects WHERE id = ?')
       .get(id) as ContentProject | undefined;
 
-    if (project && project.user_id && project.user_id !== userId) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    const isAdmin = user.role === 'ADMIN' || user.role === 'admin';
+    if (project && project.user_id && project.user_id !== userId && !isAdmin) {
+      return NextResponse.json({ error: 'You do not have access to this project' }, { status: 403 });
     }
 
     // Auto-recover project and channel on serverless cold starts
@@ -59,7 +60,7 @@ export async function POST(request: Request, { params }: { params: any }) {
       }
 
       if (!queryTopic || !queryTopic.trim()) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Project does not exist' }, { status: 404 });
       }
 
       let userChannel = db.prepare('SELECT id FROM channels WHERE user_id = ? LIMIT 1').get(userId) as { id: string } | undefined;
