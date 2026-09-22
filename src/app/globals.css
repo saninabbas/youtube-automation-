@@ -1105,6 +1105,60 @@ a {
   }
 }
 
+/* ───────────────────────────────────────────────────────────
+   MOBILE RESPONSIVE: DASHBOARD & WORKFLOW CANVAS
+─────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  /* Stack dashboard two-column grid on tablets */
+  .dashboard-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Dashboard stat cards: tighter padding on mobile */
+  .autoshort-stat-card {
+    padding: 14px 16px !important;
+    min-width: 0 !important;
+  }
+
+  /* Autoshort panels: tighter padding */
+  .autoshort-panel {
+    padding: 16px !important;
+  }
+
+  /* Workflow canvas: make it scrollable with visual indicator */
+  .workflow-canvas-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100vw;
+  }
+
+  /* Hero section: adjust padding */
+  .autoshort-hero-card {
+    padding: 20px 16px !important;
+  }
+
+  /* Action buttons: allow wrapping */
+  .autoshort-action-btn {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Force single column on very small screens */
+  .autoshort-stat-card {
+    padding: 12px 14px !important;
+  }
+
+  /* Workflow canvas scale for small phones */
+  .workflow-canvas-wrapper {
+    transform-origin: top left;
+  }
+}
+
 @media (max-width: 640px) {
   html, body {
     overflow-x: hidden;

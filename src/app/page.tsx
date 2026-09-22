@@ -125,6 +125,13 @@ export default function HomePage() {
   // Preview Modal State
   const [previewProject, setPreviewProject] = useState<any | null>(null);
 
+  // Remix Modal State
+  const [remixProject, setRemixProject] = useState<any | null>(null);
+  const [remixVariation, setRemixVariation] = useState('Make it funnier and more dramatic');
+  const [remixAspectRatio, setRemixAspectRatio] = useState('9:16');
+  const [remixVoice, setRemixVoice] = useState('Adam (Deep, Narrator)');
+  const [remixSubmitting, setRemixSubmitting] = useState(false);
+
   const topicInputRef = useRef<HTMLInputElement | null>(null);
 
   // Greeting by time of day
@@ -360,20 +367,29 @@ export default function HomePage() {
     }
   };
 
-  // Remix Handler: creates a new project with fresh ID and script variation
-  const handleRemix = async (project: any) => {
+  // Remix Modal Open Handler
+  const handleRemix = (project: any) => {
+    setRemixProject(project);
+    setRemixVoice(project.channel_voice || voiceModel);
+  };
+
+  // Remix Submission Handler (creates a new project leaving original intact)
+  const handleExecuteRemix = async () => {
+    if (!remixProject) return;
+    setRemixSubmitting(true);
     try {
-      toast.info(`Remixing "${project.topic.substring(0, 30)}..." into a new project 🔄`);
+      toast.info(`Remixing "${remixProject.topic.substring(0, 30)}..." into a new project 🔄`);
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          channel_id: project.channel_id,
-          topic: `${project.topic} (Remix Version)`,
-          preset: project.preset || 'EXPLAINER',
-          target_length_minutes: project.target_length_minutes || 1,
-          voice: project.channel_voice || voiceModel,
-          visual_style: project.channel_visual_style || backgroundFootage,
+          channel_id: remixProject.channel_id,
+          topic: `${remixProject.topic} (${remixVariation})`,
+          preset: remixProject.preset || 'EXPLAINER',
+          target_length_minutes: remixProject.target_length_minutes || 1,
+          voice: remixVoice || remixProject.channel_voice || voiceModel,
+          visual_style: remixProject.channel_visual_style || backgroundFootage,
+          aspect_ratio: remixAspectRatio,
           auto_captions: true,
           auto_upload: false,
         }),
@@ -384,10 +400,13 @@ export default function HomePage() {
         throw new Error(err.error || 'Failed to remix project');
       }
 
-      toast.success('Fresh version generated! Added to active generation queue.');
+      toast.success('Fresh remix version created! Added to queue.');
+      setRemixProject(null);
       await fetchDashboardData();
     } catch (err: any) {
       toast.error(err.message || 'Remix failed');
+    } finally {
+      setRemixSubmitting(false);
     }
   };
 
@@ -439,8 +458,18 @@ export default function HomePage() {
     }
   };
 
+  // Show loading state while checking auth (prevents flash of landing page on mobile)
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#71717a', fontSize: '14px', gap: '10px' }}>
+        <div className="autoshort-spinner" style={{ width: '20px', height: '20px' }} />
+        <span>Loading dashboard...</span>
+      </div>
+    );
+  }
+
   // If user is unauthenticated, show public marketing landing page
-  if (!loading && !currentUser) {
+  if (!currentUser) {
     return <LandingPage />;
   }
 
@@ -588,7 +617,7 @@ export default function HomePage() {
                 fontWeight: 700,
                 fontSize: '13px'
               }}
-              title="Pick a proven viral concept from our database"
+              title="Generate viral random idea"
               aria-label="Surprise Me with viral topic"
             >
               🎲 Surprise Me
@@ -606,6 +635,7 @@ export default function HomePage() {
               <button
                 key={idx}
                 type="button"
+                data-chip={chip.label}
                 className={`autoshort-chip ${quickTopic === chip.topic ? 'active' : ''}`}
                 onClick={() => {
                   setQuickTopic(chip.topic);
@@ -631,34 +661,29 @@ export default function HomePage() {
               {VIDEO_FORMATS.map((fmt) => {
                 const isSelected = selectedFormat === fmt.id;
                 return (
-                  <div
+                  <button
                     key={fmt.id}
+                    type="button"
                     role="radio"
+                    data-format={fmt.id}
                     aria-checked={isSelected}
-                    tabIndex={0}
-                    className={`autoshort-format-card ${isSelected ? 'selected' : ''}`}
+                    className={`autoshort-format-card ${isSelected ? 'selected autoshort-format-card-selected border-cyan-500' : ''}`}
                     onClick={() => {
                       setSelectedFormat(fmt.id);
                       setDuration(fmt.defaultDuration);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault();
-                        setSelectedFormat(fmt.id);
-                        setDuration(fmt.defaultDuration);
-                      }
-                    }}
+                    style={{ textAlign: 'left', cursor: 'pointer', background: isSelected ? '#181924' : undefined }}
                   >
-                    <span style={{ fontSize: '24px', lineHeight: 1, marginBottom: '8px' }}>
+                    <span style={{ fontSize: '24px', lineHeight: 1, marginBottom: '8px', display: 'block' }}>
                       {fmt.icon}
                     </span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '4px', display: 'block' }}>
                       {fmt.title}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#71717a', lineHeight: 1.3 }}>
+                    <span style={{ fontSize: '11px', color: '#71717a', lineHeight: 1.3, display: 'block' }}>
                       {fmt.description}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -692,6 +717,7 @@ export default function HomePage() {
               </button>
 
               <button
+                id="generate-video-btn"
                 type="submit"
                 disabled={creating || !quickTopic.trim()}
                 style={{
@@ -796,7 +822,7 @@ export default function HomePage() {
       {/* ─────────────────────────────────────────────────────────────
           5. TWO-COLUMN MAIN WORKSPACE GRID
       ───────────────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="dashboard-main-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)',
         gap: '24px',
@@ -825,6 +851,7 @@ export default function HomePage() {
                     AI Voice Model
                   </label>
                   <select
+                    id="voice-select"
                     className="autoshort-select"
                     value={voiceModel}
                     onChange={(e) => setVoiceModel(e.target.value)}
@@ -843,6 +870,7 @@ export default function HomePage() {
                     Visual Style / Background
                   </label>
                   <select
+                    id="style-select"
                     className="autoshort-select"
                     value={backgroundFootage}
                     onChange={(e) => setBackgroundFootage(e.target.value)}
@@ -852,7 +880,7 @@ export default function HomePage() {
                     <option value="Subway Surfers Gameplay">Subway Surfers</option>
                     <option value="Satisfying Kinetic / Slime">Satisfying Slime</option>
                     <option value="GTA 5 Mega Ramp Stunts">GTA 5 Mega Ramp</option>
-                    <option value="Cinematic 4K Deep Space">Deep Space 4K</option>
+                    <option value="cinematic">Cinematic 4K Deep Space</option>
                     <option value="Relaxing Nature Drone">Nature Cinematic</option>
                   </select>
                 </div>
@@ -864,20 +892,24 @@ export default function HomePage() {
                   <label style={{ fontSize: '12px', fontWeight: 600, color: '#a1a1aa' }}>
                     Duration Limit
                   </label>
-                  <span style={{
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    background: '#18181b',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    padding: '2px 8px',
-                    borderRadius: '6px'
-                  }}>
+                  <span
+                    id="duration-badge"
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      background: '#18181b',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      padding: '2px 8px',
+                      borderRadius: '6px'
+                    }}
+                  >
                     {duration}s
                   </span>
                 </div>
 
                 <input
+                  id="duration-slider"
                   type="range"
                   min={15}
                   max={60}
@@ -913,6 +945,7 @@ export default function HomePage() {
                   </div>
                   <label className="autoshort-switch">
                     <input
+                      id="captions-toggle"
                       type="checkbox"
                       checked={autoCaptions}
                       onChange={(e) => setAutoCaptions(e.target.checked)}
@@ -937,6 +970,7 @@ export default function HomePage() {
                   </div>
                   <label className="autoshort-switch">
                     <input
+                      id="upload-toggle"
                       type="checkbox"
                       checked={autoUpload}
                       onChange={(e) => setAutoUpload(e.target.checked)}
@@ -965,15 +999,15 @@ export default function HomePage() {
                   </div>
                   <div>
                     <span style={{ color: '#71717a' }}>Duration: </span>
-                    <strong style={{ color: '#fff' }}>{duration}s</strong>
+                    <strong id="summary-est-duration" style={{ color: '#fff' }}>{duration}s</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#71717a' }}>Captions: </span>
-                    <strong style={{ color: autoCaptions ? '#22c55e' : '#71717a' }}>{autoCaptions ? 'ON' : 'OFF'}</strong>
+                    <span style={{ color: '#71717a' }}>Scenes: </span>
+                    <strong id="summary-est-scenes" style={{ color: '#fff' }}>{estimatedScenes} scenes</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#71717a' }}>Credits: </span>
-                    <strong style={{ color: '#c084fc' }}>{estimatedCredits}</strong>
+                    <span style={{ color: '#71717a' }}>Cost: </span>
+                    <strong id="summary-credit-cost" style={{ color: '#c084fc' }}>{estimatedCredits} credits</strong>
                   </div>
                 </div>
               </div>
@@ -995,6 +1029,7 @@ export default function HomePage() {
               </div>
 
               <button
+                id="shuffle-ideas-btn"
                 type="button"
                 onClick={handleRefreshIdeas}
                 disabled={isGeneratingIdea}
@@ -1021,7 +1056,7 @@ export default function HomePage() {
                     gap: '12px'
                   }}
                 >
-                  <span style={{ fontSize: '13px', color: '#e4e4e7', fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className="autoshort-idea-text" style={{ fontSize: '13px', color: '#e4e4e7', fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {idea}
                   </span>
                   <button
@@ -1031,7 +1066,7 @@ export default function HomePage() {
                       toast.info('Topic loaded into creator! Click Generate Video to build.');
                       topicInputRef.current?.focus();
                     }}
-                    className="autoshort-action-btn"
+                    className="autoshort-action-btn autoshort-use-idea-btn"
                     style={{ flexShrink: 0, fontSize: '11px', padding: '4px 10px', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.25)' }}
                   >
                     Use Idea
@@ -1062,7 +1097,7 @@ export default function HomePage() {
               {TRENDING_NOW_SUGGESTIONS.map((t, idx) => (
                 <div
                   key={idx}
-                  className="autoshort-tag-card"
+                  className="autoshort-trending-card autoshort-tag-card"
                   onClick={() => {
                     setQuickTopic(t.topic);
                     toast.info(`Loaded trending topic: ${t.topic}`);
@@ -1234,7 +1269,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => setPreviewProject(proj)}
-                        className="autoshort-action-btn"
+                        className="autoshort-action-btn autoshort-preview-btn"
                         style={{ padding: '4px 8px', fontSize: '11px' }}
                         title="Preview video"
                       >
@@ -1244,7 +1279,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => handleRemix(proj)}
-                        className="autoshort-action-btn"
+                        className="autoshort-action-btn autoshort-remix-btn"
                         style={{ padding: '4px 8px', fontSize: '11px', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.25)' }}
                         title="Create a fresh remix of this video"
                       >
@@ -1263,7 +1298,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteProject(proj.id)}
-                        className="autoshort-action-btn autoshort-action-btn-danger"
+                        className="autoshort-action-btn autoshort-action-btn-danger autoshort-delete-btn"
                         style={{ padding: '4px 8px', fontSize: '11px' }}
                         title="Delete video"
                         aria-label="Delete video"
@@ -1530,7 +1565,7 @@ export default function HomePage() {
           12. COMPLETED VIDEO PREVIEW MODAL
       ───────────────────────────────────────────────────────────── */}
       {previewProject && (
-        <div className="autoshort-modal-backdrop" onClick={() => setPreviewProject(null)} role="dialog" aria-modal="true" aria-label="Video Preview Modal">
+        <div id="preview-video-modal" className="autoshort-modal-backdrop" onClick={() => setPreviewProject(null)} role="dialog" aria-modal="true" aria-label="Video Preview Modal">
           <div className="autoshort-modal-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
@@ -1542,6 +1577,7 @@ export default function HomePage() {
                 </h3>
               </div>
               <button
+                id="close-preview-modal-btn"
                 type="button"
                 onClick={() => setPreviewProject(null)}
                 style={{
@@ -1609,6 +1645,135 @@ export default function HomePage() {
                 }}
               >
                 ▶ Publish to YouTube
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          14. REMIX VIDEO MODAL (Creates new project variation)
+      ───────────────────────────────────────────────────────────── */}
+      {remixProject && (
+        <div
+          id="remix-video-modal"
+          className="autoshort-modal-backdrop"
+          onClick={() => setRemixProject(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Video Remix Modal"
+        >
+          <div className="autoshort-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  🔄 Video Remix Studio
+                </span>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: '2px 0 0' }}>
+                  Remix: {remixProject.topic}
+                </h3>
+              </div>
+              <button
+                id="close-remix-modal-btn"
+                type="button"
+                onClick={() => setRemixProject(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#71717a',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  padding: '4px 8px'
+                }}
+                aria-label="Close remix modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '16px 0' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
+                  Variation Prompt
+                </label>
+                <input
+                  type="text"
+                  value={remixVariation}
+                  onChange={(e) => setRemixVariation(e.target.value)}
+                  className="autoshort-hero-input"
+                  style={{ fontSize: '13px', padding: '10px 14px' }}
+                  placeholder="e.g. Make it more dramatic, focus on psychological impact"
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
+                    Aspect Ratio
+                  </label>
+                  <select
+                    value={remixAspectRatio}
+                    onChange={(e) => setRemixAspectRatio(e.target.value)}
+                    className="autoshort-select"
+                  >
+                    <option value="9:16">9:16 (YouTube Shorts / TikTok)</option>
+                    <option value="16:9">16:9 (Landscape YouTube)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
+                    Voice Over
+                  </label>
+                  <select
+                    value={remixVoice}
+                    onChange={(e) => setRemixVoice(e.target.value)}
+                    className="autoshort-select"
+                  >
+                    <option value="Adam (Deep, Narrator)">Adam (Deep, Narrator)</option>
+                    <option value="Rachel (Energetic, Viral)">Rachel (Energetic, Viral)</option>
+                    <option value="Antony (Documentary)">Antony (Documentary)</option>
+                    <option value="Bella (Warm, Friendly)">Bella (Warm, Friendly)</option>
+                    <option value="Josh (Dramatic Storyteller)">Josh (Dramatic Storyteller)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setRemixProject(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#71717a',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '8px 14px'
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                id="submit-remix-btn"
+                type="button"
+                disabled={remixSubmitting}
+                onClick={handleExecuteRemix}
+                style={{
+                  padding: '10px 18px',
+                  background: 'linear-gradient(90deg, #6366f1, #a855f7)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: remixSubmitting ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {remixSubmitting ? 'Creating Remix...' : '✨ Generate Remix (Leaves Original Intact)'}
               </button>
             </div>
           </div>

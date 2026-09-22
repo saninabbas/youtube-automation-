@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface YouTubeStatus {
   status: 'CONNECTED' | 'NOT_CONNECTED' | 'AUTH_REQUIRED';
@@ -16,6 +17,8 @@ interface YouTubeStatus {
 }
 
 export default function SettingsHubPage() {
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
   const [activeTab, setActiveTab] = useState<'account' | 'publishing' | 'preferences' | 'infrastructure'>('account');
 
   // Profile State
@@ -91,6 +94,15 @@ export default function SettingsHubPage() {
     } finally {
       setYtLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    router.push('/login');
+    router.refresh();
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -296,6 +308,32 @@ export default function SettingsHubPage() {
             <Link href="/billing" className="btn btn-secondary btn-sm">
               <span>View Billing & Plans ➔</span>
             </Link>
+          </div>
+
+          {/* Active Session & Sign Out */}
+          <div className="card" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
+                Account Session
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Sign out of your active browser session on this device.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
+            </button>
           </div>
 
           {/* Danger Zone */}

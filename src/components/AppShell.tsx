@@ -14,6 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [credits, setCredits] = useState<any>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showTopbarUserMenu, setShowTopbarUserMenu] = useState(false);
 
   // Check if current route is an unauthenticated auth page, dedicated admin portal, or public landing page
   const isStandalonePage = ['/landing', '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/onboarding', '/admin'].some(
@@ -24,6 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMobileOpen(false);
     setShowUserMenu(false);
+    setShowTopbarUserMenu(false);
     setShowNotifications(false);
   }, [pathname]);
 
@@ -374,7 +376,86 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <div className="sidebar-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', padding: '12px' }}>
+        <div className="sidebar-footer" style={{ position: 'relative', borderTop: '1px solid rgba(255, 255, 255, 0.06)', padding: '12px' }}>
+          {/* User popup menu when clicked */}
+          {showUserMenu && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 'calc(100% + 8px)',
+                left: '10px',
+                right: '10px',
+                background: '#111215',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '10px',
+                padding: '10px',
+                boxShadow: '0 -8px 24px rgba(0,0,0,0.6)',
+                zIndex: 60,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}
+            >
+              <div style={{ padding: '6px 8px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{currentUser?.name || 'Creator'}</div>
+                <div style={{ fontSize: '11px', color: '#71717a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentUser?.email || ''}
+                </div>
+              </div>
+              <Link
+                href="/settings"
+                onClick={() => setShowUserMenu(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 8px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  color: '#d1d5db',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                <span>Settings</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 8px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  color: '#ef4444',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span style={{ fontWeight: 600 }}>Sign Out</span>
+              </button>
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -518,7 +599,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span style={{ color: '#71717a' }}>Dashboard</span>
               <span style={{ color: '#3f3f46' }}>›</span>
               <span style={{ color: '#ffffff', fontWeight: 600 }}>
-                {pathname === '/' ? 'Overview' : pathname.replace('/', '').charAt(0).toUpperCase() + pathname.slice(2)}
+                {pathname === '/' ? 'Overview'
+                  : pathname === '/workflow' ? 'Workflow'
+                  : pathname === '/content' ? 'Content Library'
+                  : pathname === '/content/new' ? 'Generator'
+                  : pathname === '/analytics' ? 'Analytics'
+                  : pathname === '/calendar' ? 'Schedule'
+                  : pathname === '/settings' ? 'Settings'
+                  : pathname?.startsWith('/dashboard/personal-ai') ? 'Personal AI'
+                  : pathname?.replace('/', '').charAt(0).toUpperCase() + (pathname?.slice(2) || '')}
               </span>
             </div>
           </div>
@@ -604,6 +693,109 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </svg>
               <span>+ Create</span>
             </button>
+
+            {/* Topbar User Profile Button & Dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setShowTopbarUserMenu(!showTopbarUserMenu)}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: '#27272a',
+                  color: '#e4e4e7',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                title={currentUser?.name || 'Account'}
+              >
+                {currentUser?.name ? currentUser.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'CR'}
+              </button>
+
+              {showTopbarUserMenu && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    width: '220px',
+                    padding: '12px',
+                    background: '#111215',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+                    zIndex: 50,
+                    borderRadius: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  <div style={{ padding: '4px 6px 8px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{currentUser?.name || 'Creator'}</div>
+                    <div style={{ fontSize: '11px', color: '#71717a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {currentUser?.email || ''}
+                    </div>
+                  </div>
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowTopbarUserMenu(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      color: '#d1d5db',
+                      textDecoration: 'none',
+                      marginTop: '4px',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span>Settings</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => { setShowTopbarUserMenu(false); handleLogout(); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      color: '#ef4444',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    <span style={{ fontWeight: 600 }}>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
