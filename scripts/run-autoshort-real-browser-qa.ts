@@ -428,8 +428,11 @@ async function main() {
     const generateBtn = await page.$('button[type="submit"]');
     if (generateBtn) {
       await generateBtn.click();
-      // Wait for navigation or API response
-      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 }).catch(() => {});
+      // Wait for client router or API response
+      await Promise.race([
+        page.waitForFunction(() => window.location.pathname.includes('/content/'), { timeout: 10000 }).catch(() => {}),
+        new Promise((r) => setTimeout(r, 5000)),
+      ]);
 
       const pass = (interceptedResponseStatus === 201 || interceptedResponseStatus === 202) && !!interceptedResponseJson?.projectId;
       record(
