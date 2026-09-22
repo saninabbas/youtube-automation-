@@ -5,6 +5,7 @@ import util from 'util';
 import {
   getPersonalCreatorProject,
   getPersonalCreatorScenes,
+  createPersonalCreatorScenes,
   updatePersonalCreatorProject,
   updatePersonalCreatorScene,
   getPersonalCreatorAsset,
@@ -13,6 +14,7 @@ import {
 } from '../db';
 import { avatarProvider } from '../providers/avatarProvider';
 import { voiceProvider } from '../providers/voiceProvider';
+import { personalCreatorScriptService } from '../providers/personalCreatorScriptService';
 import { storage, getTempDir } from '../storage';
 import { getFfmpegPath } from '../providers/videoProvider';
 import { getApiKey } from '../db';
@@ -38,9 +40,22 @@ export class PersonalCreatorPipeline {
         error_message: null,
       });
 
-      const scenes = getPersonalCreatorScenes(projectId);
+      let scenes = getPersonalCreatorScenes(projectId);
       if (!scenes || scenes.length === 0) {
-        throw new Error('No scenes found for project.');
+        const scriptText = project.script || `Welcome to ${project.topic || 'Personal AI Creator'}. In this video we break down key insights, practical principles, and next steps for you.`;
+        const analyzed = personalCreatorScriptService.analyzeCustomScript(scriptText, project.topic || 'Personal Video');
+        createPersonalCreatorScenes(
+          projectId,
+          analyzed.scenes.map((s, idx) => ({
+            scene_number: s.sceneNumber || (idx + 1),
+            narration: s.narration,
+            visual_prompt: s.visualPrompt,
+            scene_topic: s.sceneTopic,
+            duration: s.durationSec || 5,
+            status: 'PENDING',
+          }))
+        );
+        scenes = getPersonalCreatorScenes(projectId);
       }
 
       const tempDir = getTempDir(projectId);

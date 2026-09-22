@@ -4,7 +4,6 @@ import { execFile } from 'child_process';
 import util from 'util';
 import {
   getDb,
-  createSession,
   getPersonalCreatorProfile,
   upsertPersonalCreatorProfile,
   createPersonalCreatorProject,
@@ -14,6 +13,7 @@ import {
   getPersonalCreatorAsset,
   deletePersonalCreatorProject,
 } from '../src/lib/db';
+import { createSession } from '../src/lib/auth';
 import { personalCreatorScriptService } from '../src/lib/providers/personalCreatorScriptService';
 import { personalVoiceService } from '../src/lib/providers/personalVoiceService';
 import { avatarProvider } from '../src/lib/providers/avatarProvider';

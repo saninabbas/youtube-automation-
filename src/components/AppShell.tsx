@@ -54,7 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  const navItems = [
+  const createNavItems = [
     {
       label: 'Dashboard',
       href: '/',
@@ -68,16 +68,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ),
     },
     {
-      label: 'Content Library',
-      href: '/content',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="4" width="20" height="16" rx="2" />
-          <polygon points="10 8 16 12 10 16 10 8" />
-        </svg>
-      ),
-    },
-    {
       label: 'Generators',
       href: '/content/new',
       icon: (
@@ -87,33 +77,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </svg>
       ),
     },
+  ];
+
+  const manageNavItems = [
     {
-      label: 'Personal AI',
-      href: '/dashboard/personal-ai',
+      label: 'Content Library',
+      href: '/content',
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="7" r="4" />
-          <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Workflow Engine',
-      href: '/workflow',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Analytics',
-      href: '/analytics',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <polygon points="10 8 16 12 10 16 10 8" />
         </svg>
       ),
     },
@@ -129,9 +102,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </svg>
       ),
     },
+    {
+      label: 'Analytics',
+      href: '/analytics',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      ),
+    },
   ];
 
-  const workflows = [
+  const workflowNavItems = [
     {
       name: 'Reddit Stories',
       href: '/content?tag=reddit',
@@ -141,9 +125,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     {
       name: 'Facts & Trivia',
       href: '/content?tag=facts',
-      status: 'Paused',
-      statusColor: '#f59e0b',
+      status: 'Ready',
+      statusColor: '#38bdf8',
     },
+  ];
+
+  const accountNavItems = [
+    {
+      label: 'Settings',
+      href: '/settings',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      ),
   ];
 
   const isStudioPage = Boolean(pathname?.startsWith('/content/') && pathname !== '/content' && pathname !== '/content/new');
@@ -222,54 +218,114 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <div className="sidebar-nav" style={{ padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {navItems.map((item, itemIdx) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-            return (
-              <Link
-                key={itemIdx}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#ffffff' : '#9ca3af',
-                  background: isActive ? 'rgba(255, 255, 255, 0.07)' : 'transparent',
-                  border: isActive ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent',
-                  transition: 'all 0.15s ease',
-                  textDecoration: 'none'
-                }}
-                title={collapsed && !mobileOpen ? item.label : undefined}
-              >
-                <span style={{ color: isActive ? '#ffffff' : '#6b7280' }}>{item.icon}</span>
-                {(!collapsed || mobileOpen) && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
-
-          {/* WORKFLOWS SECTION */}
-          <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div className="sidebar-nav" style={{ padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+          {/* 1. CREATE SECTION */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
             {(!collapsed || mobileOpen) && (
               <div style={{
-                fontSize: '11px',
-                fontWeight: 700,
+                fontSize: '10px',
+                fontWeight: 800,
                 color: '#52525b',
-                letterSpacing: '0.06em',
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                padding: '6px 12px 4px',
+                padding: '4px 12px 6px',
+              }}>
+                CREATE
+              </div>
+            )}
+            {createNavItems.map((item, idx) => {
+              const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+              return (
+                <Link
+                  key={idx}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? '#ffffff' : '#9ca3af',
+                    background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    border: isActive ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid transparent',
+                    transition: 'all 0.15s ease',
+                    textDecoration: 'none'
+                  }}
+                  title={collapsed && !mobileOpen ? item.label : undefined}
+                >
+                  <span style={{ color: isActive ? '#ffffff' : '#71717a' }}>{item.icon}</span>
+                  {(!collapsed || mobileOpen) && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* 2. MANAGE SECTION */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {(!collapsed || mobileOpen) && (
+              <div style={{
+                fontSize: '10px',
+                fontWeight: 800,
+                color: '#52525b',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                padding: '4px 12px 6px',
+              }}>
+                MANAGE
+              </div>
+            )}
+            {manageNavItems.map((item, idx) => {
+              const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+              return (
+                <Link
+                  key={idx}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? '#ffffff' : '#9ca3af',
+                    background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    border: isActive ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid transparent',
+                    transition: 'all 0.15s ease',
+                    textDecoration: 'none'
+                  }}
+                  title={collapsed && !mobileOpen ? item.label : undefined}
+                >
+                  <span style={{ color: isActive ? '#ffffff' : '#71717a' }}>{item.icon}</span>
+                  {(!collapsed || mobileOpen) && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* 3. WORKFLOWS SECTION */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {(!collapsed || mobileOpen) && (
+              <div style={{
+                fontSize: '10px',
+                fontWeight: 800,
+                color: '#52525b',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                padding: '4px 12px 6px',
               }}>
                 WORKFLOWS
               </div>
             )}
-            {workflows.map((wf, idx) => (
+            {workflowNavItems.map((wf, idx) => (
               <Link
                 key={idx}
                 href={wf.href}
+                onClick={() => setMobileOpen(false)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -281,6 +337,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   textDecoration: 'none',
                   transition: 'background 0.15s ease'
                 }}
+                title={collapsed && !mobileOpen ? wf.name : undefined}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{
@@ -308,6 +365,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </div>
+
+          {/* 4. ACCOUNT SECTION */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {(!collapsed || mobileOpen) && (
+              <div style={{
+                fontSize: '10px',
+                fontWeight: 800,
+                color: '#52525b',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                padding: '4px 12px 6px',
+              }}>
+                ACCOUNT
+              </div>
+            )}
+            {accountNavItems.map((item, idx) => {
+              const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+              return (
+                <Link
+                  key={idx}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? '#ffffff' : '#9ca3af',
+                    background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    border: isActive ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid transparent',
+                    transition: 'all 0.15s ease',
+                    textDecoration: 'none'
+                  }}
+                  title={collapsed && !mobileOpen ? item.label : undefined}
+                >
+                  <span style={{ color: isActive ? '#ffffff' : '#71717a' }}>{item.icon}</span>
+                  {(!collapsed || mobileOpen) && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
         <div className="sidebar-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', padding: '12px' }}>
@@ -321,6 +422,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div
               onClick={() => setShowUserMenu(!showUserMenu)}
               style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, cursor: 'pointer', flex: 1 }}
+              title={currentUser?.email || currentUser?.name || 'Account'}
             >
               <div style={{
                 width: '32px',
@@ -336,15 +438,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 flexShrink: 0,
               }}>
-                {currentUser?.name ? currentUser.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'JD'}
+                {currentUser?.name ? currentUser.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'CR'}
               </div>
               {(!collapsed || mobileOpen) && (
                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {currentUser?.name || 'John Doe'}
+                    {currentUser?.name || 'Creator'}
                   </span>
                   <span style={{ fontSize: '11px', color: '#71717a' }}>
-                    Pro Plan
+                    {credits?.tier ? `${credits.tier.charAt(0).toUpperCase() + credits.tier.slice(1).toLowerCase()} Plan` : 'Creator Plan'}
                   </span>
                 </div>
               )}
@@ -447,9 +549,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
 
-            {/* Create Short Button */}
-            <Link
-              href="/content/new"
+            {/* Create Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (pathname === '/') {
+                  const inputEl = document.getElementById('creator-topic-input');
+                  if (inputEl) {
+                    inputEl.focus();
+                    inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                } else {
+                  router.push('/?create=1');
+                }
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -460,18 +573,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 borderRadius: '9999px',
                 fontSize: '13px',
                 fontWeight: 700,
-                textDecoration: 'none',
+                border: 'none',
+                cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.4)'
               }}
+              aria-label="Create a new video"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="16" />
-                <line x1="8" y1="12" x2="16" y2="12" />
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              <span>Create Short</span>
-            </Link>
+              <span>+ Create</span>
+            </button>
           </div>
         </header>
 

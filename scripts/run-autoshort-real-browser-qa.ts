@@ -196,16 +196,15 @@ async function main() {
 
     for (const r of routesToTest) {
       const tNav = Date.now();
-      await page.goto(`http://localhost:3000${r.path}`, { waitUntil: 'networkidle2' });
+      const res = await page.goto(`http://localhost:3000${r.path}`, { waitUntil: 'networkidle2' });
       const currentUrl = page.url();
-      const pageText = await page.content();
-      const ok = currentUrl.includes(r.path) && !pageText.includes('404') && !pageText.includes('Page Not Found');
+      const ok = !!res && res.status() < 400 && currentUrl.includes(r.path);
       record(
         'Sidebar Navigation',
         `Route: ${r.name} (${r.path})`,
         ok ? 'PASS' : 'FAIL',
-        `Navigated to ${currentUrl} successfully without 404.`,
-        { target: r.path, actual: currentUrl },
+        `Navigated to ${currentUrl} successfully with HTTP ${res?.status() || 'unknown'}.`,
+        { target: r.path, actual: currentUrl, status: res?.status() },
         Date.now() - tNav
       );
     }
@@ -275,7 +274,7 @@ async function main() {
 
     // 8a. Topic Input & Randomize
     const topicInput = await page.$('.autoshort-input');
-    await topicInput?.click({ clickCount: 3 });
+    await (topicInput as any)?.click({ clickCount: 3 });
     await topicInput?.type('The Dark Psychology Behind Social Media Algorithms');
 
     const typedValue = await page.$eval('.autoshort-input', (el: any) => el.value);
@@ -336,12 +335,15 @@ async function main() {
     const slider = await page.$('.autoshort-slider');
     if (slider) {
       await page.evaluate((el: any) => {
-        el.value = '30';
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        nativeInputValueSetter?.call(el, '30');
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      await new Promise((r) => setTimeout(r, 200));
-      const badgeText = await page.$eval('.autoshort-panel span:nth-child(2)', (el) => el.textContent?.trim());
+      }, slider);
+      await new Promise((r) => setTimeout(r, 300));
+      const badgeText = await page.evaluate((el: any) => {
+        return el?.parentElement?.querySelector('span')?.textContent?.trim() || '';
+      }, slider);
       record(
         'Creator Form',
         'Duration Limit Slider (15s-60s)',
@@ -351,17 +353,20 @@ async function main() {
     }
 
     // 8e. Auto Captions & Auto Upload Toggles
-    const switches = await page.$$('.autoshort-switch input');
-    if (switches.length >= 2) {
+    const switchLabels = await page.$$('.autoshort-switch');
+    if (switchLabels.length >= 2) {
       // Toggle Auto Captions OFF then ON
-      await switches[0].click();
-      const capOff = await page.evaluate((el: any) => el.checked, switches[0]);
-      await switches[0].click();
-      const capOn = await page.evaluate((el: any) => el.checked, switches[0]);
+      await switchLabels[0].click();
+      await new Promise((r) => setTimeout(r, 100));
+      const capOff = await page.evaluate((label: any) => label.querySelector('input')?.checked, switchLabels[0]);
+      await switchLabels[0].click();
+      await new Promise((r) => setTimeout(r, 100));
+      const capOn = await page.evaluate((label: any) => label.querySelector('input')?.checked, switchLabels[0]);
 
       // Toggle Auto Upload ON
-      await switches[1].click();
-      const upOn = await page.evaluate((el: any) => el.checked, switches[1]);
+      await switchLabels[1].click();
+      await new Promise((r) => setTimeout(r, 100));
+      const upOn = await page.evaluate((label: any) => label.querySelector('input')?.checked, switchLabels[1]);
 
       record(
         'Creator Form',
