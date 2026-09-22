@@ -480,7 +480,8 @@ class DefaultVideoProvider implements VideoProvider {
       const { stockVideoEngine } = await import('./stockVideoProvider');
       const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
       const clipOffset = (sceneIndex * 3) + clipIndex;
-      const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, aspectRatio);
+      const stockAspectRatio: '9:16' | '16:9' = aspectRatio === '16:9' ? '16:9' : '9:16';
+      const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, stockAspectRatio);
 
       if (stockVideoUrl) {
         console.log(`[VideoProvider] Found real HD Video Footage for Scene ${sceneIndex} Clip ${clipIndex} (${aspectRatio}): ${stockVideoUrl.substring(0, 60)}...`);
@@ -492,7 +493,7 @@ class DefaultVideoProvider implements VideoProvider {
           headline: safeHeadline,
           niche: safeNiche,
           accent,
-          aspectRatio,
+          aspectRatio: stockAspectRatio,
         });
         return;
       }

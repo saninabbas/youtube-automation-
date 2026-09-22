@@ -1,0 +1,1374 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+
+export interface WorkflowNodeData {
+  id: string;
+  name: string;
+  category: 'trigger' | 'agent' | 'model' | 'tool' | 'compositor' | 'publisher';
+  icon: string;
+  subtext: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  status: 'IDLE' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  itemCount?: string;
+  inputs?: Array<{ label: string; type: string }>;
+  outputs?: Array<{ label: string; type: string }>;
+  config?: Record<string, string | number>;
+  liveOutput?: {
+    summary?: string;
+    details?: string;
+    audioUrl?: string;
+    videoUrl?: string;
+    thumbnailUrl?: string;
+    metadata?: Record<string, any>;
+  };
+}
+
+export interface ConnectionWire {
+  fromNode: string;
+  toNode: string;
+  fromPort?: 'right' | 'bottom';
+  toPort?: 'left' | 'top';
+  label?: string;
+  isModelLink?: boolean;
+}
+
+interface InteractiveWorkflowCanvasProps {
+  mode?: 'simulation' | 'live';
+  projectData?: any;
+  currentStage?: string;
+  projectStatus?: string;
+  onRetryStage?: (stageId: string) => void;
+  title?: string;
+  subtitle?: string;
+}
+
+const DEFAULT_PRESET_TOPICS = [
+  'How Quantum Computers Break Encryption',
+  '10 Stoic Habits That Changed My Life',
+  'The Psychology of Money & Financial Freedom',
+  'Secrets of Ancient Rome History Forgot',
+];
+
+export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps> = ({
+  mode = 'simulation',
+  projectData,
+  currentStage = 'SCRIPT',
+  projectStatus = 'PROCESSING',
+  onRetryStage,
+  title,
+  subtitle,
+}) => {
+  // Canvas viewport scale
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('agent');
+  const [selectedTopic, setSelectedTopic] = useState<string>(
+    projectData?.topic || DEFAULT_PRESET_TOPICS[0]
+  );
+  const [customTopicInput, setCustomTopicInput] = useState('');
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [activeSimulationStep, setActiveSimulationStep] = useState<number>(-1);
+  const [logs, setLogs] = useState<Array<{ timestamp: string; node: string; message: string; type: 'info' | 'success' | 'warn' }>>([]);
+  const logsEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Initial node definitions with exact n8n canvas positions
+  const getInitialNodes = (): WorkflowNodeData[] => [
+    {
+      id: 'trigger',
+      name: 'When Topic Prompt Received',
+      category: 'trigger',
+      icon: '⚡',
+      subtext: 'Channel Trigger • Webhook / Schedule',
+      x: 30,
+      y: 130,
+      width: 220,
+      height: 80,
+      status: 'COMPLETED',
+      itemCount: '1 prompt',
+      inputs: [],
+      outputs: [{ label: 'Topic Payload', type: 'json' }],
+      config: {
+        TriggerType: 'Instant Webhook / Topic Form',
+        ChannelNiche: projectData?.channel_niche || 'Technology & Science',
+        TargetDuration: `${projectData?.target_length_minutes || 2} min`,
+        Language: projectData?.language || 'en',
+      },
+      liveOutput: {
+        summary: `Triggered with topic: "${selectedTopic}"`,
+        details: 'Dispatched event payload to Autonomous Orchestrator Agent.',
+      },
+    },
+    {
+      id: 'agent',
+      name: 'AI Script & Story Agent',
+      category: 'agent',
+      icon: '🤖',
+      subtext: 'Tools Agent • Autonomous Orchestration',
+      x: 320,
+      y: 120,
+      width: 230,
+      height: 96,
+      status: 'COMPLETED',
+      itemCount: '5 scenes',
+      inputs: [{ label: 'Input Prompt', type: 'payload' }],
+      outputs: [{ label: 'Scene Plan', type: 'story' }],
+      config: {
+        AgentType: 'Multi-Tool Script Orchestrator',
+        LLMProvider: 'OpenRouter DeepSeek V3 / Gemini 3.8',
+        RetentionFramework: 'High-Hook + Pacing + Call-to-Action',
+        Format: 'Structured JSON Scene Array',
+      },
+      liveOutput: {
+        summary: 'Generated narrative script with 5 visual scenes and viral hook.',
+        details: projectData?.scenes
+          ? projectData.scenes.map((s: any) => `Scene ${s.scene_index}: ${s.narration.slice(0, 70)}...`).join('\n')
+          : 'Scene 1: Hook opening with dramatic visual prompt\nScene 2: Problem introduction & core question\nScene 3: Deep exploration & key insights\nScene 4: Climax & mind-bending takeaway\nScene 5: Call to action & channel subscribe',
+      },
+    },
+    {
+      id: 'model',
+      name: 'OpenRouter DeepSeek V3',
+      category: 'model',
+      icon: '🧠',
+      subtext: 'Chat Model • 671B MoE Parameters',
+      x: 240,
+      y: 280,
+      width: 190,
+      height: 72,
+      status: 'COMPLETED',
+      itemCount: '82 t/s',
+      inputs: [],
+      outputs: [{ label: 'Tokens', type: 'stream' }],
+      config: {
+        ModelID: 'deepseek/deepseek-chat',
+        Temperature: 0.7,
+        MaxTokens: 2048,
+        Fallback: 'Google Gemini 3.8 Flash',
+      },
+      liveOutput: {
+        summary: 'Streamed 480 tokens in 3.4 seconds without errors.',
+      },
+    },
+    {
+      id: 'memory',
+      name: 'Channel Persona & Context',
+      category: 'model',
+      icon: '🗄️',
+      subtext: 'Persistent Style Rules & Tone',
+      x: 450,
+      y: 280,
+      width: 190,
+      height: 72,
+      status: 'COMPLETED',
+      itemCount: 'Active',
+      inputs: [],
+      outputs: [{ label: 'Persona', type: 'context' }],
+      config: {
+        PersonaTone: 'Authoritative, engaging, cinematic',
+        VocabularyFilter: 'Active verbs, no cliches',
+        TargetAudience: 'YouTube Tech & Curiosity Seekers',
+      },
+      liveOutput: {
+        summary: 'Applied channel visual tone and pacing guidelines.',
+      },
+    },
+    {
+      id: 'voice',
+      name: 'Neural Voice Synth',
+      category: 'tool',
+      icon: '🎙️',
+      subtext: 'ElevenLabs / EdgeTTS Studio Audio',
+      x: 630,
+      y: 20,
+      width: 220,
+      height: 80,
+      status: 'COMPLETED',
+      itemCount: '1 master audio',
+      inputs: [{ label: 'Narration Script', type: 'text' }],
+      outputs: [{ label: 'Audio Stream', type: 'audio' }],
+      config: {
+        VoiceName: projectData?.channel_voice || 'en-US-ChristopherNeural',
+        SampleRate: '24kHz Studio Quality',
+        Normalization: '-14 LUFS Broadcast Standard',
+        InAppCloning: 'Supported (Live Mic / Upload)',
+      },
+      liveOutput: {
+        summary: 'Synthesized 5 scene audio segments and merged into master narration track.',
+        audioUrl: projectData?.id ? `/api/assets/voice/${projectData.id}/narration.mp3` : undefined,
+      },
+    },
+    {
+      id: 'visuals',
+      name: 'Visuals & B-Roll Engine',
+      category: 'tool',
+      icon: '🎬',
+      subtext: 'Cloudflare Flux 1 + Pexels 8K Clips',
+      x: 630,
+      y: 120,
+      width: 220,
+      height: 80,
+      status: 'COMPLETED',
+      itemCount: '5 clips',
+      inputs: [{ label: 'Visual Prompts', type: 'array' }],
+      outputs: [{ label: '1080p Video Clips', type: 'video' }],
+      config: {
+        Engine: 'Cloudflare Workers AI (Flux 1 Schnell)',
+        Resolution: '1920x1080 Full HD',
+        Motion: 'Dynamic Ken Burns Zoompan & Pan-Left',
+        StockFallback: 'Pexels High-Definition Curated Clips',
+      },
+      liveOutput: {
+        summary: '5 high-definition scene visuals generated with cinematic camera movements.',
+      },
+    },
+    {
+      id: 'subtitles',
+      name: 'Subtitle Alignment',
+      category: 'tool',
+      icon: '📝',
+      subtext: 'Karaoke-Style Timed SRT & VTT',
+      x: 630,
+      y: 220,
+      width: 220,
+      height: 80,
+      status: 'COMPLETED',
+      itemCount: 'SRT / VTT',
+      inputs: [{ label: 'Audio Timings', type: 'timecodes' }],
+      outputs: [{ label: 'Formatted Subtitles', type: 'captions' }],
+      config: {
+        Style: 'Yellow Glow Bold Centered Lower-Third',
+        MaxWordsPerLine: 5,
+        Format: 'WebVTT & SubRip (.srt)',
+        DynamicColorGlow: 'Active',
+      },
+      liveOutput: {
+        summary: 'Generated 42 timed caption cues aligned with speech boundaries.',
+      },
+    },
+    {
+      id: 'thumbnail',
+      name: 'AI Thumbnail Studio',
+      category: 'tool',
+      icon: '🖼️',
+      subtext: 'High-CTR 1280x720 Graphic Gen',
+      x: 630,
+      y: 320,
+      width: 220,
+      height: 80,
+      status: 'COMPLETED',
+      itemCount: '1 thumbnail',
+      inputs: [{ label: 'Metadata & Title', type: 'text' }],
+      outputs: [{ label: 'Thumbnail Image', type: 'image' }],
+      config: {
+        Aspect: '16:9 (1280x720)',
+        Format: 'PNG (Lossless RGB)',
+        Style: 'Cinematic High-Contrast YouTube Thumbnail',
+      },
+      liveOutput: {
+        summary: 'High-CTR YouTube thumbnail composed with bold focal subject.',
+        thumbnailUrl: projectData?.thumbnail?.url || undefined,
+      },
+    },
+    {
+      id: 'compositor',
+      name: 'FFmpeg Compositor',
+      category: 'compositor',
+      icon: '🎞️',
+      subtext: '1080p H.264 CFR Video Muxer',
+      x: 930,
+      y: 130,
+      width: 230,
+      height: 90,
+      status: 'COMPLETED',
+      itemCount: '1080p MP4',
+      inputs: [
+        { label: 'Video Clips', type: 'video' },
+        { label: 'Master Audio', type: 'audio' },
+        { label: 'Captions', type: 'srt' },
+      ],
+      outputs: [{ label: 'Final Master MP4', type: 'file' }],
+      config: {
+        Resolution: '1920x1080 (16:9)',
+        VideoCodec: 'libx264 (Constant Frame Rate 30fps)',
+        AudioCodec: 'aac (Stereo 192kbps)',
+        Container: 'MP4 (FastStart Web-Optimized)',
+      },
+      liveOutput: {
+        summary: 'Master MP4 rendered successfully with synchronized audio & video.',
+        videoUrl: projectData?.output?.url || undefined,
+      },
+    },
+    {
+      id: 'publisher',
+      name: 'YouTube Publisher',
+      category: 'publisher',
+      icon: '🚀',
+      subtext: 'Data API v3 • Google OAuth 2.0',
+      x: 1230,
+      y: 130,
+      width: 230,
+      height: 90,
+      status: 'COMPLETED',
+      itemCount: 'Ready',
+      inputs: [
+        { label: 'Master MP4', type: 'file' },
+        { label: 'Thumbnail', type: 'image' },
+        { label: 'Title & Tags', type: 'metadata' },
+      ],
+      outputs: [{ label: 'YouTube URL', type: 'url' }],
+      config: {
+        API: 'YouTube Data API v3 (Resumable Upload)',
+        Auth: 'Google OAuth 2.0 Token Vault',
+        Scheduling: '30-Day Auto-Release Calendar',
+        Visibility: 'Private / Unlisted / Public',
+      },
+      liveOutput: {
+        summary: projectData?.publish_url
+          ? `Live Video URL: ${projectData.publish_url}`
+          : 'OAuth verified. Video staged for scheduled YouTube publication.',
+      },
+    },
+  ];
+
+  const [nodes, setNodes] = useState<WorkflowNodeData[]>(getInitialNodes());
+
+  // Connection definitions (Bezier cables)
+  const connections: ConnectionWire[] = [
+    { fromNode: 'trigger', toNode: 'agent', label: '1 topic' },
+    { fromNode: 'agent', toNode: 'model', fromPort: 'bottom', toPort: 'top', isModelLink: true, label: 'Chat Model' },
+    { fromNode: 'agent', toNode: 'memory', fromPort: 'bottom', toPort: 'top', isModelLink: true, label: 'Tone Memory' },
+    { fromNode: 'agent', toNode: 'voice', label: 'narration' },
+    { fromNode: 'agent', toNode: 'visuals', label: 'visual prompts' },
+    { fromNode: 'agent', toNode: 'subtitles', label: 'cues' },
+    { fromNode: 'agent', toNode: 'thumbnail', label: 'title idea' },
+    { fromNode: 'voice', toNode: 'compositor', label: 'audio.mp3' },
+    { fromNode: 'visuals', toNode: 'compositor', label: 'clips[0..4]' },
+    { fromNode: 'subtitles', toNode: 'compositor', label: 'captions.srt' },
+    { fromNode: 'compositor', toNode: 'publisher', label: '1080p.mp4' },
+    { fromNode: 'thumbnail', toNode: 'publisher', label: 'thumb.png' },
+  ];
+
+  // Helper to add timestamped logs
+  const addLog = (nodeName: string, message: string, type: 'info' | 'success' | 'warn' = 'info') => {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLogs((prev) => [...prev.slice(-30), { timestamp: time, node: nodeName, message, type }]);
+  };
+
+  // Sync with real project data when in Live mode
+  useEffect(() => {
+    if (mode === 'live' && projectData) {
+      const stageMap: Record<string, string> = {
+        SCRIPT: 'agent',
+        VOICE: 'voice',
+        VIDEO: 'visuals',
+        SUBTITLES: 'subtitles',
+        FINAL_VIDEO: 'compositor',
+        THUMBNAIL: 'thumbnail',
+        PUBLISH: 'publisher',
+      };
+
+      const stageOrder = ['trigger', 'agent', 'voice', 'visuals', 'subtitles', 'thumbnail', 'compositor', 'publisher'];
+      const activeNodeKey = stageMap[currentStage] || 'agent';
+      const activeIdx = stageOrder.indexOf(activeNodeKey);
+
+      setNodes((prev) =>
+        prev.map((n) => {
+          const nodeIdx = stageOrder.indexOf(n.id);
+          if (projectStatus === 'FAILED' && n.id === activeNodeKey) {
+            return { ...n, status: 'FAILED' };
+          }
+          if (projectStatus === 'COMPLETED' || nodeIdx < activeIdx) {
+            return { ...n, status: 'COMPLETED' };
+          }
+          if (nodeIdx === activeIdx) {
+            return { ...n, status: projectStatus === 'PROCESSING' ? 'RUNNING' : 'COMPLETED' };
+          }
+          return { ...n, status: 'QUEUED' };
+        })
+      );
+    }
+  }, [mode, projectData, currentStage, projectStatus]);
+
+  // Initial simulation greeting log
+  useEffect(() => {
+    if (logs.length === 0) {
+      addLog('System', 'Visual Workflow Engine initialized. Ready for execution.', 'info');
+      addLog('Trigger', `Active topic: "${selectedTopic}"`, 'info');
+    }
+  }, []);
+
+  // Auto-scroll logs drawer to bottom
+  useEffect(() => {
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
+
+  // Interactive Simulation Runner (Step-by-Step Flow Animation)
+  const runSimulation = () => {
+    if (isSimulating) return;
+    setIsSimulating(true);
+    setActiveSimulationStep(0);
+
+    // Reset nodes to queued
+    setNodes((prev) =>
+      prev.map((n) => (n.id === 'trigger' ? { ...n, status: 'RUNNING' } : { ...n, status: 'QUEUED' }))
+    );
+
+    addLog('Pipeline', `▶ Starting Autonomous Simulation for: "${selectedTopic}"`, 'info');
+
+    // Step sequence with realistic timings
+    const steps = [
+      {
+        step: 0,
+        nodeId: 'trigger',
+        duration: 900,
+        action: () => {
+          addLog('Trigger', `[Webhook] Ingested user prompt: "${selectedTopic}"`, 'success');
+          setNodes((prev) =>
+            prev.map((n) =>
+              n.id === 'trigger' ? { ...n, status: 'COMPLETED' } : n.id === 'agent' ? { ...n, status: 'RUNNING' } : n
+            )
+          );
+        },
+      },
+      {
+        step: 1,
+        nodeId: 'agent',
+        duration: 1400,
+        action: () => {
+          addLog('AI Agent', 'Calling OpenRouter DeepSeek V3 with viral retention system prompt...', 'info');
+          addLog('DeepSeek', 'Streaming 5-scene breakdown: Hook, Premise, Twist, Breakdown, Call-to-Action.', 'info');
+          addLog('AI Agent', '✓ Script generated (380 words). Dispatching parallel production jobs...', 'success');
+          setNodes((prev) =>
+            prev.map((n) => {
+              if (n.id === 'agent' || n.id === 'model' || n.id === 'memory') return { ...n, status: 'COMPLETED' };
+              if (['voice', 'visuals', 'subtitles', 'thumbnail'].includes(n.id)) return { ...n, status: 'RUNNING' };
+              return n;
+            })
+          );
+        },
+      },
+      {
+        step: 2,
+        nodeId: 'parallel_tools',
+        duration: 1800,
+        action: () => {
+          addLog('Voice Engine', 'ElevenLabs synthesized studio audio narration (-14 LUFS).', 'success');
+          addLog('Visuals Engine', 'Cloudflare Flux 1 generated 5 continuous 1080p clips with Ken Burns camera zoom.', 'success');
+          addLog('Captions', 'Subtitle aligner synchronized 42 karaoke-style dynamic cues (.srt & .vtt).', 'success');
+          addLog('Thumbnail', 'High-CTR YouTube 1280x720 graphic generated with high contrast subject.', 'success');
+          setNodes((prev) =>
+            prev.map((n) => {
+              if (['voice', 'visuals', 'subtitles', 'thumbnail'].includes(n.id)) return { ...n, status: 'COMPLETED' };
+              if (n.id === 'compositor') return { ...n, status: 'RUNNING' };
+              return n;
+            })
+          );
+        },
+      },
+      {
+        step: 3,
+        nodeId: 'compositor',
+        duration: 1300,
+        action: () => {
+          addLog('FFmpeg', 'Muxing H.264 CFR video stream + stereo AAC audio + burned subtitle cues...', 'info');
+          addLog('FFmpeg', '✓ 1080p MP4 render complete (1920x1080 @ 30fps). File size: 18.4 MB.', 'success');
+          setNodes((prev) =>
+            prev.map((n) => {
+              if (n.id === 'compositor') return { ...n, status: 'COMPLETED' };
+              if (n.id === 'publisher') return { ...n, status: 'RUNNING' };
+              return n;
+            })
+          );
+        },
+      },
+      {
+        step: 4,
+        nodeId: 'publisher',
+        duration: 1100,
+        action: () => {
+          addLog('YouTube Publisher', 'Verifying Google OAuth 2.0 access token...', 'info');
+          addLog('YouTube Publisher', 'Uploading 1080p MP4 via Resumable Upload API endpoint...', 'info');
+          addLog('YouTube Publisher', '✓ Staged to YouTube Studio! Privacy: UNLISTED | Ready for release.', 'success');
+          setNodes((prev) =>
+            prev.map((n) => (n.id === 'publisher' ? { ...n, status: 'COMPLETED' } : n))
+          );
+          setIsSimulating(false);
+          setActiveSimulationStep(-1);
+          addLog('Pipeline', '🎉 Complete Autonomous Workflow Cycle finished with 100% success!', 'success');
+        },
+      },
+    ];
+
+    let currentDelay = 0;
+    steps.forEach((s) => {
+      currentDelay += s.duration;
+      setTimeout(() => {
+        s.action();
+        setActiveSimulationStep(s.step);
+      }, currentDelay);
+    });
+  };
+
+  const handleSelectPresetTopic = (topic: string) => {
+    setSelectedTopic(topic);
+    addLog('Topic Input', `Switched topic preset to: "${topic}"`, 'info');
+  };
+
+  const handleApplyCustomTopic = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customTopicInput.trim()) {
+      setSelectedTopic(customTopicInput.trim());
+      addLog('Topic Input', `Custom topic loaded: "${customTopicInput.trim()}"`, 'info');
+      setCustomTopicInput('');
+    }
+  };
+
+  // Helper to calculate exact port coordinates for SVG bezier wires
+  const getNodePortPos = (nodeId: string, port: 'left' | 'right' | 'top' | 'bottom') => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return { x: 0, y: 0 };
+    const w = node.width || 220;
+    const h = node.height || 80;
+
+    switch (port) {
+      case 'left':
+        return { x: node.x, y: node.y + h / 2 };
+      case 'right':
+        return { x: node.x + w, y: node.y + h / 2 };
+      case 'top':
+        return { x: node.x + w / 2, y: node.y };
+      case 'bottom':
+        return { x: node.x + w / 2, y: node.y + h };
+    }
+  };
+
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId) || nodes[1];
+
+  return (
+    <div
+      style={{
+        background: '#090d16',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7)',
+        overflow: 'hidden',
+        color: '#f4f4f5',
+        fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, sans-serif)',
+        position: 'relative',
+      }}
+    >
+      {/* ─────────────────────────────────────────────────────────────
+          1. TOP CANVAS TOOLBAR & CONTROLS
+      ───────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          padding: '14px 20px',
+          background: 'rgba(15, 23, 42, 0.85)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          position: 'relative',
+          zIndex: 20,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              boxShadow: '0 0 15px rgba(16, 185, 129, 0.35)',
+            }}
+          >
+            ⚡
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff' }}>
+                {title || 'Autonomous Workflow Engine'}
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: mode === 'simulation' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  border: mode === 'simulation' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                  color: mode === 'simulation' ? '#38bdf8' : '#10b981',
+                }}
+              >
+                {mode === 'simulation' ? 'Interactive Demo Mode' : 'Live Production Pipeline'}
+              </span>
+            </div>
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0' }}>
+              {subtitle || 'Visual node architecture connecting AI Scripting, Neural Voice, 1080p Clips, Subtitles & YouTube'}
+            </p>
+          </div>
+        </div>
+
+        {/* Toolbar Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Zoom Controls */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              padding: '2px',
+            }}
+          >
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(0.7, Number((z - 0.1).toFixed(1))))}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#cbd5e1',
+                padding: '4px 8px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                borderRadius: '6px',
+              }}
+              title="Zoom Out"
+            >
+              −
+            </button>
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace', padding: '0 4px', minWidth: '40px', textAlign: 'center' }}>
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(1.2, Number((z + 0.1).toFixed(1))))}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#cbd5e1',
+                padding: '4px 8px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                borderRadius: '6px',
+              }}
+              title="Zoom In"
+            >
+              +
+            </button>
+            <button
+              onClick={() => setZoomLevel(1)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                padding: '4px 8px',
+                fontSize: '10px',
+                cursor: 'pointer',
+                borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+              }}
+              title="Reset View"
+            >
+              ↺ Reset
+            </button>
+          </div>
+
+          {/* Test Workflow Action Button */}
+          {mode === 'simulation' ? (
+            <button
+              onClick={runSimulation}
+              disabled={isSimulating}
+              style={{
+                background: isSimulating
+                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: isSimulating ? 'wait' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: isSimulating
+                  ? '0 0 20px rgba(245, 158, 11, 0.4)'
+                  : '0 0 20px rgba(16, 185, 129, 0.3)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{ fontSize: '14px' }}>{isSimulating ? '⏳' : '⚡'}</span>
+              <span>{isSimulating ? 'Executing Workflow...' : 'Test Workflow'}</span>
+            </button>
+          ) : (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                color: '#10b981',
+                fontFamily: 'monospace',
+              }}
+            >
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+              <span>Live Engine Synced</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. SIMULATION TOPIC PROMPT BAR (Landing Page Mode)
+      ───────────────────────────────────────────────────────────── */}
+      {mode === 'simulation' && (
+        <div
+          style={{
+            padding: '10px 20px',
+            background: 'rgba(10, 15, 26, 0.95)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            position: 'relative',
+            zIndex: 15,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Sample Topics:
+            </span>
+            {DEFAULT_PRESET_TOPICS.map((topic) => (
+              <button
+                key={topic}
+                onClick={() => handleSelectPresetTopic(topic)}
+                style={{
+                  background: selectedTopic === topic ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                  border: selectedTopic === topic ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+                  color: selectedTopic === topic ? '#34d399' : '#cbd5e1',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleApplyCustomTopic} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              type="text"
+              placeholder="Or type custom topic..."
+              value={customTopicInput}
+              onChange={(e) => setCustomTopicInput(e.target.value)}
+              style={{
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '6px',
+                padding: '5px 10px',
+                color: '#fff',
+                fontSize: '11px',
+                outline: 'none',
+                width: '180px',
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '6px',
+                padding: '5px 10px',
+                color: '#fff',
+                fontSize: '11px',
+                cursor: 'pointer',
+              }}
+            >
+              Set
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. MAIN INTERACTIVE 2D NODE CANVAS
+      ───────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          position: 'relative',
+          height: '480px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          background: '#0a0e17',
+          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px)',
+          backgroundSize: '20px 20px',
+          cursor: 'grab',
+        }}
+      >
+        <div
+          style={{
+            position: 'relative',
+            width: '1520px',
+            height: '480px',
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'top left',
+            transition: 'transform 0.15s ease-out',
+          }}
+        >
+          {/* SVG LAYER: Connecting Bezier Curved Cables */}
+          <svg
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              zIndex: 5,
+            }}
+          >
+            <defs>
+              <linearGradient id="activeCableGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="100%" stopColor="#38bdf8" />
+              </linearGradient>
+              <filter id="cableGlow">
+                <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            {connections.map((c, idx) => {
+              const fromPos = getNodePortPos(c.fromNode, c.fromPort || 'right');
+              const toPos = getNodePortPos(c.toNode, c.toPort || 'left');
+
+              const sourceNode = nodes.find((n) => n.id === c.fromNode);
+              const targetNode = nodes.find((n) => n.id === c.toNode);
+
+              const isActive =
+                sourceNode?.status === 'RUNNING' ||
+                (sourceNode?.status === 'COMPLETED' && targetNode?.status === 'RUNNING');
+              const isCompleted = sourceNode?.status === 'COMPLETED' && targetNode?.status === 'COMPLETED';
+
+              // Cubic bezier control points
+              let d = '';
+              if (c.fromPort === 'bottom' && c.toPort === 'top') {
+                const dy = (toPos.y - fromPos.y) / 2;
+                d = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x} ${fromPos.y + dy}, ${toPos.x} ${toPos.y - dy}, ${toPos.x} ${toPos.y}`;
+              } else {
+                const dx = Math.abs(toPos.x - fromPos.x) * 0.45;
+                d = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x + dx} ${fromPos.y}, ${toPos.x - dx} ${toPos.y}, ${toPos.x} ${toPos.y}`;
+              }
+
+              // Cable styling
+              let strokeColor = 'rgba(255, 255, 255, 0.12)';
+              let strokeWidth = 2;
+              let isDashed = c.isModelLink;
+
+              if (isActive) {
+                strokeColor = '#10b981';
+                strokeWidth = 2.8;
+              } else if (isCompleted) {
+                strokeColor = '#059669';
+                strokeWidth = 2;
+              }
+
+              const midX = (fromPos.x + toPos.x) / 2;
+              const midY = (fromPos.y + toPos.y) / 2;
+
+              return (
+                <g key={`${c.fromNode}-${c.toNode}-${idx}`}>
+                  {/* Outer Glow for Active Cables */}
+                  {isActive && (
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth={6}
+                      opacity={0.35}
+                      filter="url(#cableGlow)"
+                    />
+                  )}
+
+                  {/* Main Bezier Cable */}
+                  <path
+                    d={d}
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={isActive ? '6, 6' : isDashed ? '4, 4' : undefined}
+                    style={{
+                      animation: isActive ? 'cablePulse 1.2s linear infinite' : undefined,
+                    }}
+                  />
+
+                  {/* Wire Label Pill */}
+                  {c.label && !c.isModelLink && (
+                    <g transform={`translate(${midX}, ${midY})`}>
+                      <rect
+                        x="-30"
+                        y="-9"
+                        width="60"
+                        height="18"
+                        rx="9"
+                        fill="#0f172a"
+                        stroke={isActive ? '#10b981' : 'rgba(255, 255, 255, 0.15)'}
+                        strokeWidth="1"
+                      />
+                      <text
+                        x="0"
+                        y="3"
+                        textAnchor="middle"
+                        fill={isActive ? '#34d399' : '#94a3b8'}
+                        fontSize="9"
+                        fontFamily="monospace"
+                        fontWeight="600"
+                      >
+                        {c.label}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* RENDER WORKFLOW NODES */}
+          {nodes.map((node) => {
+            const isSelected = selectedNodeId === node.id;
+            let statusBadgeBg = 'rgba(255, 255, 255, 0.05)';
+            let statusBadgeBorder = 'rgba(255, 255, 255, 0.1)';
+            let statusBadgeText = '#94a3b8';
+            let cardGlow = 'none';
+
+            if (node.status === 'COMPLETED') {
+              statusBadgeBg = 'rgba(16, 185, 129, 0.15)';
+              statusBadgeBorder = 'rgba(16, 185, 129, 0.4)';
+              statusBadgeText = '#34d399';
+            } else if (node.status === 'RUNNING') {
+              statusBadgeBg = 'rgba(245, 158, 11, 0.2)';
+              statusBadgeBorder = '#f59e0b';
+              statusBadgeText = '#fbbf24';
+              cardGlow = '0 0 25px rgba(245, 158, 11, 0.35)';
+            } else if (node.status === 'FAILED') {
+              statusBadgeBg = 'rgba(239, 68, 68, 0.2)';
+              statusBadgeBorder = '#ef4444';
+              statusBadgeText = '#f87171';
+              cardGlow = '0 0 25px rgba(239, 68, 68, 0.4)';
+            }
+
+            const isModelOrMemory = node.category === 'model';
+
+            return (
+              <div
+                key={node.id}
+                onClick={() => setSelectedNodeId(node.id)}
+                style={{
+                  position: 'absolute',
+                  left: `${node.x}px`,
+                  top: `${node.y}px`,
+                  width: `${node.width || 220}px`,
+                  minHeight: `${node.height || 80}px`,
+                  background: isModelOrMemory
+                    ? 'rgba(17, 24, 39, 0.95)'
+                    : 'rgba(15, 23, 42, 0.95)',
+                  border: isSelected
+                    ? '1.5px solid #38bdf8'
+                    : node.status === 'RUNNING'
+                    ? '1.5px solid #f59e0b'
+                    : node.status === 'FAILED'
+                    ? '1.5px solid #ef4444'
+                    : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: isModelOrMemory ? '20px' : '12px',
+                  boxShadow: isSelected
+                    ? '0 0 20px rgba(56, 189, 248, 0.45)'
+                    : cardGlow !== 'none'
+                    ? cardGlow
+                    : '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                  padding: '12px 14px',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                {/* Left Input Port Dot */}
+                {node.category !== 'trigger' && !isModelOrMemory && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '-6px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: '#090d16',
+                      border: '2px solid #38bdf8',
+                      boxShadow: '0 0 8px rgba(56, 189, 248, 0.5)',
+                    }}
+                    title="Input Port"
+                  />
+                )}
+
+                {/* Right Output Port Dot */}
+                {node.category !== 'publisher' && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: '-6px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: '#090d16',
+                      border: '2px solid #10b981',
+                      boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)',
+                    }}
+                    title="Output Port"
+                  />
+                )}
+
+                {/* Top Input for Models */}
+                {isModelOrMemory && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: '#090d16',
+                      border: '2px solid #c084fc',
+                    }}
+                  />
+                )}
+
+                {/* Node Card Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>{node.icon}</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                      {node.name}
+                    </span>
+                  </div>
+
+                  {/* Status Indicator Pill */}
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      background: statusBadgeBg,
+                      border: `1px solid ${statusBadgeBorder}`,
+                      color: statusBadgeText,
+                      fontFamily: 'monospace',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    {node.status === 'COMPLETED' && '✓'}
+                    {node.status === 'RUNNING' && '⚡'}
+                    {node.status === 'FAILED' && '✕'}
+                    <span>{node.status}</span>
+                  </span>
+                </div>
+
+                {/* Node Subtext */}
+                <div style={{ fontSize: '10px', color: '#94a3b8', lineHeight: 1.3 }}>
+                  {node.subtext}
+                </div>
+
+                {/* Output Count Badge */}
+                {node.itemCount && (
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                      paddingTop: '6px',
+                      fontSize: '10px',
+                      color: '#cbd5e1',
+                    }}
+                  >
+                    <span style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase' }}>Payload:</span>
+                    <span style={{ fontWeight: 600, color: '#38bdf8', fontFamily: 'monospace' }}>{node.itemCount}</span>
+                  </div>
+                )}
+
+                {/* Failed Node Retry Button */}
+                {node.status === 'FAILED' && onRetryStage && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRetryStage(node.id);
+                    }}
+                    style={{
+                      marginTop: '6px',
+                      width: '100%',
+                      background: '#ef4444',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 8px',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🔄 Retry Node
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          4. BOTTOM DUAL PANELS: LOGS DRAWER & NODE INSPECTOR
+      ───────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'rgba(10, 14, 23, 0.98)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '16px',
+          padding: '16px 20px',
+        }}
+      >
+        {/* PANEL A: Latest Telemetry & Logs Drawer (Inspired by n8n logs) */}
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: '10px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '190px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '8px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              paddingBottom: '6px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px' }}>📋</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#cbd5e1' }}>
+                Latest Logs & Telemetry
+              </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
+              Session: autovideo-{selectedTopic.slice(0, 10).replace(/[^a-zA-Z0-9]/g, '')}
+            </span>
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              lineHeight: 1.5,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}
+          >
+            {logs.map((log, i) => (
+              <div key={i} style={{ display: 'flex', gap: '8px' }}>
+                <span style={{ color: '#475569', fontSize: '10px' }}>{log.timestamp}</span>
+                <span
+                  style={{
+                    color:
+                      log.type === 'success' ? '#34d399' : log.type === 'warn' ? '#fbbf24' : '#38bdf8',
+                    fontWeight: 600,
+                  }}
+                >
+                  [{log.node}]
+                </span>
+                <span style={{ color: '#cbd5e1', flex: 1, wordBreak: 'break-word' }}>{log.message}</span>
+              </div>
+            ))}
+            <div ref={logsEndRef} />
+          </div>
+        </div>
+
+        {/* PANEL B: Node Inspector / Payload Inspector */}
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: '10px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '190px',
+            overflowY: 'auto',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '8px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              paddingBottom: '6px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px' }}>{selectedNode.icon}</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Inspector: {selectedNode.name}
+              </span>
+            </div>
+            <span
+              style={{
+                fontSize: '9px',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                color: '#94a3b8',
+                fontFamily: 'monospace',
+              }}
+            >
+              ID: {selectedNode.id}
+            </span>
+          </div>
+
+          <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.4 }}>
+            {/* Summary */}
+            <div style={{ marginBottom: '8px', color: '#94a3b8', fontSize: '11px' }}>
+              {selectedNode.liveOutput?.summary || selectedNode.subtext}
+            </div>
+
+            {/* Config parameters */}
+            {selectedNode.config && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: '6px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  marginBottom: '8px',
+                }}
+              >
+                {Object.entries(selectedNode.config).map(([k, v]) => (
+                  <div key={k} style={{ fontSize: '10px' }}>
+                    <span style={{ color: '#64748b' }}>{k}: </span>
+                    <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace' }}>{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Media previews if available */}
+            {selectedNode.liveOutput?.audioUrl && (
+              <div style={{ marginTop: '6px' }}>
+                <span style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>
+                  Audible Narration Preview:
+                </span>
+                <audio controls src={selectedNode.liveOutput.audioUrl} style={{ width: '100%', height: '28px' }} />
+              </div>
+            )}
+
+            {selectedNode.liveOutput?.videoUrl && (
+              <div style={{ marginTop: '6px' }}>
+                <a
+                  href={selectedNode.liveOutput.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    color: '#10b981',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>▶ Play Rendered 1080p MP4</span>
+                </a>
+              </div>
+            )}
+
+            {selectedNode.liveOutput?.details && (
+              <pre
+                style={{
+                  margin: '6px 0 0',
+                  padding: '6px',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  color: '#94a3b8',
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  maxHeight: '60px',
+                  overflowY: 'auto',
+                }}
+              >
+                {selectedNode.liveOutput.details}
+              </pre>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Embedded CSS for Cable Pulse Animation */}
+      <style jsx global>{`
+        @keyframes cablePulse {
+          0% {
+            stroke-dashoffset: 24;
+          }
+          100% {
+            stroke-dashoffset: 0;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};

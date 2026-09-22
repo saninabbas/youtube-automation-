@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
+import { InteractiveWorkflowCanvas } from '@/components/InteractiveWorkflowCanvas';
 
 interface StageInfo {
   stage: string;
@@ -58,6 +59,7 @@ interface ProjectData {
     continuity_notes?: string;
     estimated_duration_sec: number;
     subtitle_text: string;
+    quality_report_json?: string;
   }>;
   assets: Array<{
     id: string;
@@ -97,6 +99,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   const [activeSceneIdx, setActiveSceneIdx] = useState(0);
   const [activeInspectorTab, setActiveInspectorTab] = useState<'scenes' | 'scene' | 'copilot' | 'metadata' | 'publish'>('scene');
   const [mobileStudioTab, setMobileStudioTab] = useState<'scenes' | 'inspector' | 'copilot' | 'publish'>('scenes');
+  const [studioViewMode, setStudioViewMode] = useState<'timeline' | 'workflow'>('timeline');
 
   // Video Player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -788,6 +791,58 @@ export default function VideoStudioPage({ params }: { params?: any }) {
             </svg>
             <span>Publish to YouTube</span>
           </button>
+
+          {/* View Mode Toggle: Timeline vs n8n Workflow Canvas */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '8px',
+              padding: '2px',
+              marginLeft: '4px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setStudioViewMode('timeline')}
+              style={{
+                background: studioViewMode === 'timeline' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                color: studioViewMode === 'timeline' ? '#ffffff' : 'var(--text-muted)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '5px 11px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>🎞️ Timeline</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStudioViewMode('workflow')}
+              style={{
+                background: studioViewMode === 'workflow' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
+                color: studioViewMode === 'workflow' ? '#34d399' : 'var(--text-muted)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '5px 11px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>⚡ Workflow (n8n)</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -834,8 +889,21 @@ export default function VideoStudioPage({ params }: { params?: any }) {
         </div>
       )}
 
-      {/* 2. THREE-PANE VIDEO STUDIO WORKSPACE */}
-      <div className="studio-workspace">
+      {/* 2. CONDITIONAL VIEW: INTERACTIVE WORKFLOW CANVAS OR THREE-PANE VIDEO STUDIO */}
+      {studioViewMode === 'workflow' ? (
+        <div style={{ marginBottom: '24px' }}>
+          <InteractiveWorkflowCanvas
+            mode="live"
+            projectData={project ? { ...project, scenes, output: data?.output, thumbnail: data?.thumbnail } : undefined}
+            currentStage={project.current_stage || 'SCRIPT'}
+            projectStatus={project.status || 'PROCESSING'}
+            onRetryStage={(stageId) => handleGenerateVideo(stageId)}
+            title={`${project.topic || 'Video Project'} — Autonomous Pipeline`}
+            subtitle="Live execution topology — real-time node statuses, audio/video previews, and retry actions"
+          />
+        </div>
+      ) : (
+        <div className="studio-workspace">
         {/* LEFT PANE: Scene Cuts List (Hidden on mobile if other tab active) */}
         <div className={`studio-pane studio-pane-left ${mobileStudioTab !== 'scenes' ? 'studio-pane-mobile-hidden' : ''}`}>
           <div className="pane-header">
@@ -1780,6 +1848,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

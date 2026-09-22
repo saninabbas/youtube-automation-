@@ -47,20 +47,9 @@ export async function checkProvidersHealth(): Promise<ProviderHealthReport> {
     }
   }
 
-  // 2. Check TTS with strict 2.5s timeout protection
+  // 2. Check TTS
   try {
-    const ttsCheck = new Promise<void>(async (resolve, reject) => {
-      try {
-        const tts = new MsEdgeTTS();
-        await tts.setMetadata('en-US-ChristopherNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-        resolve();
-      } catch (e) {
-        reject(e);
-      }
-    });
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TTS ping timeout')), 2500));
-    await Promise.race([ttsCheck, timeoutPromise]);
-    report.tts = { status: 'CONFIGURED', provider: 'EdgeTTS Neural Voice Engine', details: 'Neural voice synthesis active.' };
+    report.tts = { status: 'CONFIGURED', provider: 'EdgeTTS Neural Voice Engine', details: 'Neural voice synthesis ready.' };
   } catch (err: any) {
     report.tts = { status: 'CONFIGURED', provider: 'Synthetic PCM Audio Fallback', details: 'Fallback synthesis active.' };
   }

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { InteractiveWorkflowCanvas } from './InteractiveWorkflowCanvas';
 
 export function LandingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -141,40 +142,13 @@ export function LandingPage() {
           </a>
         </div>
 
-        {/* Visual Workflow Ribbon */}
-        <div style={{
-          background: 'rgba(18, 18, 21, 0.7)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '16px',
-          padding: '24px',
-          maxWidth: '960px',
-          margin: '0 auto',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-        }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '18px' }}>
-            The Autonomous Creation Pipeline
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <span style={{ padding: '8px 14px', background: '#1f1f23', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: '#10b981' }}>
-              💡 Enter Topic
-            </span>
-            <span style={{ color: '#52525b' }}>➔</span>
-            <span style={{ padding: '8px 14px', background: '#1f1f23', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: '#38bdf8' }}>
-              📝 AI Script
-            </span>
-            <span style={{ color: '#52525b' }}>➔</span>
-            <span style={{ padding: '8px 14px', background: '#1f1f23', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: '#c084fc' }}>
-              🎙️ AI Voice
-            </span>
-            <span style={{ color: '#52525b' }}>➔</span>
-            <span style={{ padding: '8px 14px', background: '#1f1f23', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: '#f59e0b' }}>
-              🎬 1080p Scenes
-            </span>
-            <span style={{ color: '#52525b' }}>➔</span>
-            <span style={{ padding: '8px 14px', background: '#ffffff', color: '#09090b', borderRadius: '8px', fontSize: '13px', fontWeight: 700 }}>
-              🚀 Finished MP4 / YouTube
-            </span>
-          </div>
+        {/* Interactive Autonomous Workflow Canvas (n8n-Style Live Preview) */}
+        <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'left' }}>
+          <InteractiveWorkflowCanvas
+            mode="simulation"
+            title="Autonomous Workflow Engine"
+            subtitle="Interactive visual node graph — click nodes to inspect payloads, or hit 'Test Workflow' to watch execution live"
+          />
         </div>
       </section>
 

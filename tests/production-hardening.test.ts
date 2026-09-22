@@ -177,7 +177,7 @@ async function runAllTests() {
     const prevAdminPass = process.env.ADMIN_PASSWORD;
 
     try {
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
       process.env.ADMIN_PASSWORD = 'AutoVideoAdmin2026!#'; // default insecure
 
       const validation = validateEnvironment();
@@ -187,7 +187,7 @@ async function runAllTests() {
         'Error should explicitly flag insecure default ADMIN_PASSWORD'
       );
     } finally {
-      process.env.NODE_ENV = prevNodeEnv;
+      (process.env as any).NODE_ENV = prevNodeEnv;
       process.env.ADMIN_PASSWORD = prevAdminPass;
     }
   });

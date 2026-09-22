@@ -54,119 +54,95 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  const navSections = [
+  const navItems = [
     {
-      title: 'Workspace',
-      items: [
-        {
-          label: 'Dashboard',
-          href: '/',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Create Video',
-          href: '/content/new',
-          badge: '⚡ AI',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Projects',
-          href: '/content',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Templates',
-          href: '/templates',
-          badge: '9 Ready',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="12 2 2 7 12 12 22 7 12 2" />
-              <polyline points="2 17 12 22 22 17" />
-              <polyline points="2 12 12 17 22 12" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Channels',
-          href: '/channels',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          ),
-        },
-      ],
+      label: 'Dashboard',
+      href: '/',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      ),
     },
     {
-      title: 'Insights',
-      items: [
-        {
-          label: 'Analytics',
-          href: '/analytics',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Calendar',
-          href: '/calendar',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          ),
-        },
-      ],
+      label: 'Content Library',
+      href: '/content',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <polygon points="10 8 16 12 10 16 10 8" />
+        </svg>
+      ),
     },
     {
-      title: 'Account',
-      items: [
-        {
-          label: 'Billing & Credits',
-          href: '/billing',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-              <line x1="1" y1="10" x2="23" y2="10" />
-            </svg>
-          ),
-        },
-        {
-          label: 'Settings',
-          href: '/settings',
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          ),
-        },
-      ],
+      label: 'Generators',
+      href: '/content/new',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M15 4V2m0 16v-2m8-7h-2M4 11H2m15.5 6.5l-1.5-1.5M6 6L4.5 4.5m13 0l-1.5 1.5M6 16.5l-1.5 1.5" />
+          <polygon points="12 2 15 8 21 9 17 14 18 20 12 17 6 20 7 14 3 9 9 8 12 2" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Personal AI',
+      href: '/dashboard/personal-ai',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="7" r="4" />
+          <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Workflow Engine',
+      href: '/workflow',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Analytics',
+      href: '/analytics',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Schedule',
+      href: '/calendar',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      ),
+    },
+  ];
+
+  const workflows = [
+    {
+      name: 'Reddit Stories',
+      href: '/content?tag=reddit',
+      status: 'Active',
+      statusColor: '#22c55e',
+    },
+    {
+      name: 'Facts & Trivia',
+      href: '/content?tag=facts',
+      status: 'Paused',
+      statusColor: '#f59e0b',
     },
   ];
 
@@ -191,23 +167,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* ─────────────────────────────────────────────────────────────
           SIDEBAR NAVIGATION
       ───────────────────────────────────────────────────────────── */}
-      <aside className={`sidebar ${collapsed ? 'collapsed sidebar-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <Link href="/" className="sidebar-brand">
-            <div className="brand-icon-box">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3" />
+      {/* ─────────────────────────────────────────────────────────────
+          SIDEBAR NAVIGATION (AUTOSHORT)
+      ───────────────────────────────────────────────────────────── */}
+      <aside className={`sidebar ${collapsed ? 'collapsed sidebar-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`} style={{ backgroundColor: '#090a0d', borderRight: '1px solid rgba(255, 255, 255, 0.07)' }}>
+        <div className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <Link href="/" className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '6px',
+              background: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#09090b',
+              flexShrink: 0
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
               </svg>
             </div>
             {!collapsed && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.02em' }}>
-                  AutoVideo
-                </span>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
-                  STUDIO
-                </span>
-              </div>
+              <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                AUTOSHORT
+              </span>
             )}
           </Link>
 
@@ -235,55 +222,164 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <div className="sidebar-nav">
-          {navSections.map((sec, idx) => (
-            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {(!collapsed || mobileOpen) && <div className="nav-section-title">{sec.title}</div>}
-              {sec.items.map((item, itemIdx) => {
-                const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-                return (
-                  <Link
-                    key={itemIdx}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`nav-item ${isActive ? 'active' : ''}`}
-                    title={collapsed && !mobileOpen ? item.label : undefined}
-                  >
-                    <span style={{ color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>{item.icon}</span>
-                    {(!collapsed || mobileOpen) && <span>{item.label}</span>}
-                    {(!collapsed || mobileOpen) && item.badge && <span className="nav-item-badge">{item.badge}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+        <div className="sidebar-nav" style={{ padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {navItems.map((item, itemIdx) => {
+            const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+            return (
+              <Link
+                key={itemIdx}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '9px 12px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  color: isActive ? '#ffffff' : '#9ca3af',
+                  background: isActive ? 'rgba(255, 255, 255, 0.07)' : 'transparent',
+                  border: isActive ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent',
+                  transition: 'all 0.15s ease',
+                  textDecoration: 'none'
+                }}
+                title={collapsed && !mobileOpen ? item.label : undefined}
+              >
+                <span style={{ color: isActive ? '#ffffff' : '#6b7280' }}>{item.icon}</span>
+                {(!collapsed || mobileOpen) && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+
+          {/* WORKFLOWS SECTION */}
+          <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {(!collapsed || mobileOpen) && (
+              <div style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#52525b',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                padding: '6px 12px 4px',
+              }}>
+                WORKFLOWS
+              </div>
+            )}
+            {workflows.map((wf, idx) => (
+              <Link
+                key={idx}
+                href={wf.href}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  color: '#9ca3af',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: wf.statusColor,
+                    boxShadow: `0 0 6px ${wf.statusColor}`
+                  }} />
+                  {(!collapsed || mobileOpen) && <span style={{ color: '#d1d5db' }}>{wf.name}</span>}
+                </div>
+                {(!collapsed || mobileOpen) && (
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    color: '#9ca3af',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    padding: '2px 8px',
+                    borderRadius: '4px'
+                  }}>
+                    {wf.status}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
         </div>
 
-        <div className="sidebar-footer">
-          <div className="user-profile-pill" onClick={() => setShowUserMenu(!showUserMenu)}>
-            <div className="avatar-circle">
-              {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'C'}
-            </div>
-            {(!collapsed || mobileOpen) && (
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {currentUser?.name || 'Creator Workspace'}
-                </span>
-                <span className="tabular-nums" style={{ fontSize: '11px', color: 'var(--accent-emerald)', fontWeight: 600 }}>
-                  ⚡ {credits?.balance ?? 500} Credits
-                </span>
+        <div className="sidebar-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', padding: '12px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '6px 4px',
+            borderRadius: '8px',
+          }}>
+            <div
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, cursor: 'pointer', flex: 1 }}
+            >
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: '#27272a',
+                color: '#e4e4e7',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                flexShrink: 0,
+              }}>
+                {currentUser?.name ? currentUser.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'JD'}
               </div>
+              {(!collapsed || mobileOpen) && (
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {currentUser?.name || 'John Doe'}
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#71717a' }}>
+                    Pro Plan
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {(!collapsed || mobileOpen) && (
+              <Link
+                href="/settings"
+                style={{
+                  color: '#71717a',
+                  padding: '6px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 0.15s ease'
+                }}
+                title="Settings"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </Link>
             )}
           </div>
         </div>
       </aside>
 
       {/* ─────────────────────────────────────────────────────────────
-          MAIN WRAPPER & TOPBAR
+          MAIN WRAPPER & TOPBAR (AUTOSHORT)
       ───────────────────────────────────────────────────────────── */}
       <div className="main-wrapper">
-        <header className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <header className="topbar" style={{ backgroundColor: 'rgba(9, 10, 13, 0.85)', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <button
               type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -297,59 +393,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </svg>
             </button>
 
-            <div className="topbar-search">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search projects, channels..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <span className="search-kbd">⌘K</span>
+            {/* Breadcrumbs matching AUTOSHORT */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+              <span style={{ color: '#71717a' }}>Dashboard</span>
+              <span style={{ color: '#3f3f46' }}>›</span>
+              <span style={{ color: '#ffffff', fontWeight: 600 }}>
+                {pathname === '/' ? 'Overview' : pathname.replace('/', '').charAt(0).toUpperCase() + pathname.slice(2)}
+              </span>
             </div>
           </div>
 
-          <div className="topbar-actions">
-            <Link href="/billing" className="credits-pill" title="Available video creation credits">
-              <span style={{ color: 'var(--accent-emerald)' }}>⚡</span>
-              <span className="tabular-nums">{credits?.balance ?? 500}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Credits</span>
-            </Link>
-
-            <Link href="/content/new" className="btn btn-primary btn-sm">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>Create Video</span>
-            </Link>
-
+          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="btn btn-ghost btn-icon"
-                style={{ position: 'relative', color: 'var(--text-secondary)' }}
+                style={{ position: 'relative', color: '#a1a1aa' }}
                 title="Notifications"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '6px',
-                    right: '6px',
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    background: 'var(--accent-primary)',
-                    boxShadow: '0 0 6px var(--accent-primary)',
-                  }}
-                />
               </button>
 
               {showNotifications && (
@@ -361,71 +426,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     top: 'calc(100% + 8px)',
                     width: '320px',
                     padding: '16px',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-medium)',
-                    boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
+                    background: '#111215',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
                     zIndex: 50,
+                    borderRadius: '12px'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>Notifications</span>
-                    <span style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 600 }}>Mark all read</span>
+                    <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600, cursor: 'pointer' }} onClick={() => setShowNotifications(false)}>Mark all read</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ padding: '8px 10px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', fontSize: '12px' }}>
-                      <p style={{ fontWeight: 600, color: '#fff', marginBottom: '2px' }}>Video Engine Online</p>
-                      <p style={{ color: 'var(--text-secondary)' }}>1080p CFR Compositor & Google Neural TTS active.</p>
+                    <div style={{ padding: '10px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', fontSize: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                      <p style={{ fontWeight: 600, color: '#fff', marginBottom: '2px' }}>AI Video Engine Online</p>
+                      <p style={{ color: '#71717a' }}>1080p FFmpeg Compositor & Neural TTS ready.</p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                <div className="avatar-circle">
-                  {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'C'}
-                </div>
-              </button>
-
-              {showUserMenu && (
-                <div
-                  className="card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    width: '220px',
-                    padding: '8px',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-medium)',
-                    boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
-                    zIndex: 50,
-                  }}
-                >
-                  <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px' }}>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{currentUser?.name || 'Creator'}</p>
-                    <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{currentUser?.email || 'creator@autovideo.ai'}</p>
-                  </div>
-                  <Link href="/settings/account" className="nav-item" style={{ padding: '8px 10px' }}>
-                    Account Settings
-                  </Link>
-                  <Link href="/billing" className="nav-item" style={{ padding: '8px 10px' }}>
-                    Subscription & Plans
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="nav-item"
-                    style={{ width: '100%', padding: '8px 10px', color: 'var(--status-error)', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* Create Short Button */}
+            <Link
+              href="/content/new"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#ffffff',
+                color: '#09090b',
+                padding: '7px 16px',
+                borderRadius: '9999px',
+                fontSize: '13px',
+                fontWeight: 700,
+                textDecoration: 'none',
+                transition: 'all 0.15s ease',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.4)'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+              <span>Create Short</span>
+            </Link>
           </div>
         </header>
 

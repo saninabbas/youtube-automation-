@@ -303,6 +303,81 @@ export function getDb(): Database.Database {
       );
       CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
       CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
+
+      CREATE TABLE IF NOT EXISTS personal_creator_profiles (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL UNIQUE,
+        avatar_asset_id TEXT,
+        voice_asset_id TEXT,
+        default_style TEXT NOT NULL DEFAULT 'PODCAST',
+        default_language TEXT NOT NULL DEFAULT 'en',
+        consent_agreed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_personal_profiles_user ON personal_creator_profiles(user_id);
+
+      CREATE TABLE IF NOT EXISTS personal_creator_projects (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        topic TEXT,
+        script TEXT,
+        style TEXT NOT NULL DEFAULT 'PODCAST',
+        language TEXT NOT NULL DEFAULT 'en',
+        aspect_ratio TEXT NOT NULL DEFAULT '16:9',
+        presenter_position TEXT NOT NULL DEFAULT 'center',
+        presenter_framing TEXT NOT NULL DEFAULT 'medium',
+        camera_motion TEXT NOT NULL DEFAULT 'subtle',
+        captions_enabled INTEGER NOT NULL DEFAULT 1,
+        caption_style TEXT NOT NULL DEFAULT 'YouTube',
+        music_enabled INTEGER NOT NULL DEFAULT 1,
+        music_volume INTEGER NOT NULL DEFAULT 20,
+        duration REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'QUEUED',
+        progress INTEGER NOT NULL DEFAULT 0,
+        current_stage_label TEXT NOT NULL DEFAULT 'Queued',
+        voice_type TEXT NOT NULL DEFAULT 'personal',
+        avatar_status TEXT NOT NULL DEFAULT 'standard_presenter',
+        final_video_url TEXT,
+        final_video_path TEXT,
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_personal_projects_user ON personal_creator_projects(user_id);
+
+      CREATE TABLE IF NOT EXISTS personal_creator_scenes (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        scene_number INTEGER NOT NULL,
+        narration TEXT NOT NULL,
+        visual_prompt TEXT NOT NULL,
+        scene_topic TEXT,
+        avatar_video TEXT,
+        broll_asset TEXT,
+        caption_data TEXT,
+        duration REAL NOT NULL DEFAULT 5,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES personal_creator_projects(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_personal_scenes_proj ON personal_creator_scenes(project_id, scene_number);
+
+      CREATE TABLE IF NOT EXISTS personal_creator_assets (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        storage_key TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        size INTEGER NOT NULL DEFAULT 0,
+        metadata_json TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_personal_assets_user ON personal_creator_assets(user_id, type);
     `);
 
     // Ensure default demo user exists for smooth local development & onboarding
@@ -1041,4 +1116,382 @@ export function deleteUserVoice(userId: string, voiceDbId: string): boolean {
   const res = db.prepare('DELETE FROM user_voices WHERE id = ? AND user_id = ?').run(voiceDbId, userId);
   return res.changes > 0;
 }
+
+// ============================================================
+// PERSONAL AI CREATOR TYPES & HELPERS
+// ============================================================
+
+export interface PersonalCreatorProfile {
+  id: string;
+  user_id: string;
+  avatar_asset_id: string | null;
+  voice_asset_id: string | null;
+  default_style: string;
+  default_language: string;
+  consent_agreed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PersonalCreatorProject {
+  id: string;
+  user_id: string;
+  title: string;
+  topic: string | null;
+  script: string | null;
+  style: string;
+  language: string;
+  aspect_ratio: string;
+  presenter_position: string;
+  presenter_framing: string;
+  camera_motion: string;
+  captions_enabled: number;
+  caption_style: string;
+  music_enabled: number;
+  music_volume: number;
+  duration: number;
+  status: string;
+  progress: number;
+  current_stage_label: string;
+  voice_type: string;
+  avatar_status: string;
+  final_video_url: string | null;
+  final_video_path: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PersonalCreatorScene {
+  id: string;
+  project_id: string;
+  scene_number: number;
+  narration: string;
+  visual_prompt: string;
+  scene_topic?: string | null;
+  avatar_video?: string | null;
+  broll_asset?: string | null;
+  caption_data?: string | null;
+  duration: number;
+  status: string;
+  created_at: string;
+}
+
+export interface PersonalCreatorAsset {
+  id: string;
+  user_id: string;
+  type: string;
+  storage_key: string;
+  mime_type: string;
+  size: number;
+  metadata_json?: string | null;
+  created_at: string;
+}
+
+export function getPersonalCreatorProfile(userId: string): PersonalCreatorProfile | null {
+  const db = getDb();
+  try {
+    const row = db.prepare('SELECT * FROM personal_creator_profiles WHERE user_id = ?').get(userId) as any;
+    return row || null;
+  } catch (err) {
+    console.error('[getPersonalCreatorProfile] Error:', err);
+    return null;
+  }
+}
+
+export function upsertPersonalCreatorProfile(
+  userId: string,
+  data: Partial<PersonalCreatorProfile>
+): PersonalCreatorProfile {
+  const db = getDb();
+  const existing = getPersonalCreatorProfile(userId);
+  const now = new Date().toISOString();
+
+  if (existing) {
+    db.prepare(`
+      UPDATE personal_creator_profiles
+      SET avatar_asset_id = COALESCE(?, avatar_asset_id),
+          voice_asset_id = COALESCE(?, voice_asset_id),
+          default_style = COALESCE(?, default_style),
+          default_language = COALESCE(?, default_language),
+          consent_agreed_at = COALESCE(?, consent_agreed_at),
+          updated_at = ?
+      WHERE user_id = ?
+    `).run(
+      data.avatar_asset_id !== undefined ? data.avatar_asset_id : null,
+      data.voice_asset_id !== undefined ? data.voice_asset_id : null,
+      data.default_style !== undefined ? data.default_style : null,
+      data.default_language !== undefined ? data.default_language : null,
+      data.consent_agreed_at !== undefined ? data.consent_agreed_at : null,
+      now,
+      userId
+    );
+    return getPersonalCreatorProfile(userId)!;
+  } else {
+    const id = `prof_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
+    db.prepare(`
+      INSERT INTO personal_creator_profiles (
+        id, user_id, avatar_asset_id, voice_asset_id, default_style, default_language, consent_agreed_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      userId,
+      data.avatar_asset_id || null,
+      data.voice_asset_id || null,
+      data.default_style || 'PODCAST',
+      data.default_language || 'en',
+      data.consent_agreed_at || null,
+      now,
+      now
+    );
+    return getPersonalCreatorProfile(userId)!;
+  }
+}
+
+export function createPersonalCreatorAsset(data: {
+  userId: string;
+  type: string;
+  storageKey: string;
+  mimeType: string;
+  size: number;
+  metadata?: any;
+}): PersonalCreatorAsset {
+  const db = getDb();
+  const id = `ast_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
+  const now = new Date().toISOString();
+  const metaJson = data.metadata ? JSON.stringify(data.metadata) : null;
+
+  db.prepare(`
+    INSERT INTO personal_creator_assets (id, user_id, type, storage_key, mime_type, size, metadata_json, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, data.userId, data.type, data.storageKey, data.mimeType, data.size, metaJson, now);
+
+  return {
+    id,
+    user_id: data.userId,
+    type: data.type,
+    storage_key: data.storageKey,
+    mime_type: data.mimeType,
+    size: data.size,
+    metadata_json: metaJson,
+    created_at: now,
+  };
+}
+
+export function getPersonalCreatorAsset(assetId: string, userId?: string): PersonalCreatorAsset | null {
+  const db = getDb();
+  try {
+    if (userId) {
+      return (db.prepare('SELECT * FROM personal_creator_assets WHERE id = ? AND user_id = ?').get(assetId, userId) as any) || null;
+    }
+    return (db.prepare('SELECT * FROM personal_creator_assets WHERE id = ?').get(assetId) as any) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function deletePersonalCreatorAsset(assetId: string, userId: string): boolean {
+  const db = getDb();
+  const res = db.prepare('DELETE FROM personal_creator_assets WHERE id = ? AND user_id = ?').run(assetId, userId);
+  return res.changes > 0;
+}
+
+export function createPersonalCreatorProject(
+  data: Partial<PersonalCreatorProject> & { userId: string; title: string }
+): PersonalCreatorProject {
+  const db = getDb();
+  const id = `pcp_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
+  const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO personal_creator_projects (
+      id, user_id, title, topic, script, style, language, aspect_ratio,
+      presenter_position, presenter_framing, camera_motion, captions_enabled,
+      caption_style, music_enabled, music_volume, duration, status, progress,
+      current_stage_label, voice_type, avatar_status, final_video_url, final_video_path,
+      error_message, created_at, updated_at
+    ) VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?
+    )
+  `).run(
+    id,
+    data.userId,
+    data.title,
+    data.topic || null,
+    data.script || null,
+    data.style || 'PODCAST',
+    data.language || 'en',
+    data.aspect_ratio || '16:9',
+    data.presenter_position || 'center',
+    data.presenter_framing || 'medium',
+    data.camera_motion || 'subtle',
+    data.captions_enabled !== undefined ? data.captions_enabled : 1,
+    data.caption_style || 'YouTube',
+    data.music_enabled !== undefined ? data.music_enabled : 1,
+    data.music_volume !== undefined ? data.music_volume : 20,
+    data.duration || 0,
+    data.status || 'QUEUED',
+    data.progress || 0,
+    data.current_stage_label || 'Queued',
+    data.voice_type || 'personal',
+    data.avatar_status || 'standard_presenter',
+    data.final_video_url || null,
+    data.final_video_path || null,
+    data.error_message || null,
+    now,
+    now
+  );
+
+  return getPersonalCreatorProject(id, data.userId)!;
+}
+
+export function getPersonalCreatorProject(projectId: string, userId?: string): PersonalCreatorProject | null {
+  const db = getDb();
+  try {
+    if (userId) {
+      return (db.prepare('SELECT * FROM personal_creator_projects WHERE id = ? AND user_id = ?').get(projectId, userId) as any) || null;
+    }
+    return (db.prepare('SELECT * FROM personal_creator_projects WHERE id = ?').get(projectId) as any) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function listPersonalCreatorProjects(userId: string): PersonalCreatorProject[] {
+  const db = getDb();
+  try {
+    return db.prepare('SELECT * FROM personal_creator_projects WHERE user_id = ? ORDER BY created_at DESC').all(userId) as any[];
+  } catch (err) {
+    console.error('[listPersonalCreatorProjects] Error:', err);
+    return [];
+  }
+}
+
+export function updatePersonalCreatorProject(
+  projectId: string,
+  userId: string,
+  data: Partial<PersonalCreatorProject>
+): boolean {
+  const db = getDb();
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  const allowedKeys: (keyof PersonalCreatorProject)[] = [
+    'title', 'topic', 'script', 'style', 'language', 'aspect_ratio',
+    'presenter_position', 'presenter_framing', 'camera_motion', 'captions_enabled',
+    'caption_style', 'music_enabled', 'music_volume', 'duration', 'status',
+    'progress', 'current_stage_label', 'voice_type', 'avatar_status',
+    'final_video_url', 'final_video_path', 'error_message'
+  ];
+
+  for (const key of allowedKeys) {
+    if (data[key] !== undefined) {
+      fields.push(`${key} = ?`);
+      values.push(data[key]);
+    }
+  }
+
+  if (fields.length === 0) return false;
+
+  fields.push('updated_at = ?');
+  values.push(new Date().toISOString());
+
+  // Where clause
+  values.push(projectId);
+  if (userId) {
+    values.push(userId);
+    const sql = `UPDATE personal_creator_projects SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`;
+    const res = db.prepare(sql).run(...values);
+    return res.changes > 0;
+  } else {
+    const sql = `UPDATE personal_creator_projects SET ${fields.join(', ')} WHERE id = ?`;
+    const res = db.prepare(sql).run(...values);
+    return res.changes > 0;
+  }
+}
+
+export function deletePersonalCreatorProject(projectId: string, userId: string): boolean {
+  const db = getDb();
+  const res = db.prepare('DELETE FROM personal_creator_projects WHERE id = ? AND user_id = ?').run(projectId, userId);
+  return res.changes > 0;
+}
+
+export function createPersonalCreatorScenes(
+  projectId: string,
+  scenes: Array<Partial<PersonalCreatorScene>>
+): void {
+  const db = getDb();
+  const insertStmt = db.prepare(`
+    INSERT INTO personal_creator_scenes (
+      id, project_id, scene_number, narration, visual_prompt,
+      scene_topic, avatar_video, broll_asset, caption_data, duration, status, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const now = new Date().toISOString();
+  const transaction = db.transaction((rows: Array<Partial<PersonalCreatorScene>>) => {
+    for (let i = 0; i < rows.length; i++) {
+      const s = rows[i];
+      const id = `pcs_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
+      insertStmt.run(
+        id,
+        projectId,
+        s.scene_number ?? (i + 1),
+        s.narration || '',
+        s.visual_prompt || '',
+        s.scene_topic || null,
+        s.avatar_video || null,
+        s.broll_asset || null,
+        s.caption_data || null,
+        s.duration || 5,
+        s.status || 'PENDING',
+        now
+      );
+    }
+  });
+
+  transaction(scenes);
+}
+
+export function getPersonalCreatorScenes(projectId: string): PersonalCreatorScene[] {
+  const db = getDb();
+  try {
+    return db.prepare('SELECT * FROM personal_creator_scenes WHERE project_id = ? ORDER BY scene_number ASC').all(projectId) as any[];
+  } catch (err) {
+    console.error('[getPersonalCreatorScenes] Error:', err);
+    return [];
+  }
+}
+
+export function updatePersonalCreatorScene(
+  sceneId: string,
+  data: Partial<PersonalCreatorScene>
+): boolean {
+  const db = getDb();
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  const allowedKeys: (keyof PersonalCreatorScene)[] = [
+    'narration', 'visual_prompt', 'scene_topic', 'avatar_video', 'broll_asset', 'caption_data', 'duration', 'status'
+  ];
+
+  for (const key of allowedKeys) {
+    if (data[key] !== undefined) {
+      fields.push(`${key} = ?`);
+      values.push(data[key]);
+    }
+  }
+
+  if (fields.length === 0) return false;
+
+  values.push(sceneId);
+  const sql = `UPDATE personal_creator_scenes SET ${fields.join(', ')} WHERE id = ?`;
+  const res = db.prepare(sql).run(...values);
+  return res.changes > 0;
+}
+
 

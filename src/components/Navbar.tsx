@@ -38,6 +38,12 @@ export function Navbar() {
             Calendar
           </Link>
           <Link
+            href="/dashboard/personal-ai"
+            className={`nav-link ${pathname.startsWith('/dashboard/personal-ai') ? 'active' : ''}`}
+          >
+            Personal AI
+          </Link>
+          <Link
             href="/settings/publishing"
             className={`nav-link ${pathname.startsWith('/settings') ? 'active' : ''}`}
           >
