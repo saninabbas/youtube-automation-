@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { LandingPage } from '@/components/LandingPage';
 import { useToast } from '@/components/Toast';
 
@@ -92,7 +92,6 @@ const TRENDING_NOW_SUGGESTIONS = [
 
 export default function HomePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const toast = useToast();
 
   // Primary Data State
@@ -138,11 +137,14 @@ export default function HomePage() {
 
   // Focus topic input if `?create=1` query param present
   useEffect(() => {
-    if (searchParams?.get('create') === '1' && topicInputRef.current) {
-      topicInputRef.current.focus();
-      topicInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('create') === '1' && topicInputRef.current) {
+        topicInputRef.current.focus();
+        topicInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
-  }, [searchParams]);
+  }, []);
 
   // Initial load
   useEffect(() => {
