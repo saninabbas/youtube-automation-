@@ -72,7 +72,15 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [activeSimulationStep, setActiveSimulationStep] = useState<number>(-1);
   const [logs, setLogs] = useState<Array<{ timestamp: string; node: string; message: string; type: 'info' | 'success' | 'warn' }>>([]);
+  const [showBottomPanels, setShowBottomPanels] = useState<boolean>(false);
   const logsEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-detect mobile viewport and adapt default zoom
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setZoomLevel(0.55);
+    }
+  }, []);
 
   // Initial node definitions with exact n8n canvas positions
   const getInitialNodes = (): WorkflowNodeData[] => [
@@ -816,22 +824,26 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           3. MAIN INTERACTIVE 2D NODE CANVAS
       ───────────────────────────────────────────────────────────── */}
       <div
+        className="workflow-canvas-scroll-container"
         style={{
           position: 'relative',
-          height: '480px',
+          height: showBottomPanels ? '460px' : 'calc(100vh - 120px)',
+          minHeight: '480px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          background: '#0a0e17',
+          background: '#07090e',
           backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px)',
           backgroundSize: '20px 20px',
           cursor: 'grab',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <div
           style={{
             position: 'relative',
             width: '1520px',
-            height: '480px',
+            height: '100%',
+            minHeight: '480px',
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'top left',
             transition: 'transform 0.15s ease-out',
@@ -986,7 +998,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
             return (
               <div
                 key={node.id}
-                onClick={() => setSelectedNodeId(node.id)}
+                onClick={() => {
+                  setSelectedNodeId(node.id);
+                  setShowBottomPanels(true);
+                }}
                 style={{
                   position: 'absolute',
                   left: `${node.x}px`,
@@ -1154,11 +1169,116 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
             );
           })}
         </div>
+
+        {/* Floating Right-Hand Action Bar (matching user reference screenshot) */}
+        <div
+          style={{
+            position: 'absolute',
+            right: '16px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            background: 'rgba(15, 23, 42, 0.85)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '10px',
+            padding: '6px',
+            zIndex: 30,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setShowBottomPanels(!showBottomPanels)}
+            title={showBottomPanels ? 'Hide logs & details drawer' : 'Open logs & telemetry drawer'}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              background: showBottomPanels ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+              border: showBottomPanels ? '1px solid #38bdf8' : 'none',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            📋
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoomLevel((z) => Math.min(1.4, Number((z + 0.1).toFixed(1))))}
+            title="Zoom in"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              background: 'transparent',
+              border: 'none',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 700,
+            }}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoomLevel((z) => Math.max(0.4, Number((z - 0.1).toFixed(1))))}
+            title="Zoom out"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              background: 'transparent',
+              border: 'none',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 700,
+            }}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoomLevel(typeof window !== 'undefined' && window.innerWidth < 768 ? 0.55 : 1)}
+            title="Reset to optimal fit"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              background: 'transparent',
+              border: 'none',
+              color: '#38bdf8',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 700,
+            }}
+          >
+            FIT
+          </button>
+        </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          4. BOTTOM DUAL PANELS: LOGS DRAWER & NODE INSPECTOR
+          4. BOTTOM DUAL PANELS: LOGS DRAWER & NODE INSPECTOR (COLLAPSIBLE)
       ───────────────────────────────────────────────────────────── */}
+      {showBottomPanels && (
       <div
         style={{
           borderTop: '1px solid rgba(255, 255, 255, 0.08)',
@@ -1357,6 +1477,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           </div>
         </div>
       </div>
+      )}
 
       {/* Embedded CSS for Cable Pulse Animation */}
       <style jsx global>{`

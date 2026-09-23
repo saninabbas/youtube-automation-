@@ -562,262 +562,168 @@ export default function HomePage() {
     <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px', padding: '4px 0 48px' }}>
 
       {/* ─────────────────────────────────────────────────────────────
-          1. NEW HERO SECTION (CREATOR WORKSPACE ENTRYPOINT)
+          1. TOP STAT CARDS (EXACT AUTOSHORT REFERENCE DESIGN)
       ───────────────────────────────────────────────────────────── */}
-      <section className="autoshort-hero-card" aria-label="Create Video Workspace">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '22px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+      <div className="dashboard-stats-row" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: '16px',
+        width: '100%'
+      }}>
+        {/* Card 1: Total Views */}
+        <div className="autoshort-stat-card" style={{
+          background: '#111215',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          padding: '18px 20px',
+          position: 'relative'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#a1a1aa'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </div>
             <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#22c55e',
-              boxShadow: '0 0 8px #22c55e'
-            }} />
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {getGreeting()}, {currentUser?.name || 'Creator'} 👋
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#22c55e',
+              background: 'rgba(34, 197, 94, 0.15)',
+              padding: '2px 8px',
+              borderRadius: '9999px'
+            }}>
+              +12%
             </span>
           </div>
-
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.025em', margin: 0 }}>
-            What are we creating today?
-          </h1>
-
-          <p style={{ fontSize: '14px', color: '#71717a', margin: 0 }}>
-            Turn an idea into a YouTube-ready video in minutes.
-          </p>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+            1.2M
+          </div>
+          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+            Total Views
+          </div>
         </div>
 
-        {/* Large Prominent Topic Input Form */}
-        <form onSubmit={handleGenerateShort} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <div className="autoshort-hero-input-wrapper">
-            <input
-              id="creator-topic-input"
-              ref={topicInputRef}
-              type="text"
-              className="autoshort-hero-input"
-              style={{ paddingRight: '120px' }}
-              placeholder="What do you want to make a video about? (e.g. The future of AI agents)"
-              value={quickTopic}
-              onChange={(e) => setQuickTopic(e.target.value)}
-              aria-label="Video topic input"
-            />
-            <button
-              type="button"
-              onClick={handleSurpriseMe}
-              className="autoshort-action-btn"
-              style={{
-                position: 'absolute',
-                right: '10px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                background: 'rgba(168, 85, 247, 0.12)',
-                borderColor: 'rgba(168, 85, 247, 0.3)',
-                color: '#c084fc',
-                fontWeight: 700,
-                fontSize: '13px'
-              }}
-              title="Generate viral random idea"
-              aria-label="Surprise Me with viral topic"
-            >
-              🎲 Surprise Me
-            </button>
-          </div>
-
-          {/* ─────────────────────────────────────────────────────────────
-              2. QUICK TOPIC CHIPS
-          ───────────────────────────────────────────────────────────── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#71717a', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              🔥 Trending:
+        {/* Card 2: Subscribers */}
+        <div className="autoshort-stat-card" style={{
+          background: '#111215',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          padding: '18px 20px',
+          position: 'relative'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#a1a1aa'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#22c55e',
+              background: 'rgba(34, 197, 94, 0.15)',
+              padding: '2px 8px',
+              borderRadius: '9999px'
+            }}>
+              +4%
             </span>
-            {QUICK_TOPIC_CHIPS.map((chip, idx) => (
-              <button
-                key={idx}
-                type="button"
-                data-chip={chip.label}
-                className={`autoshort-chip ${quickTopic === chip.topic ? 'active' : ''}`}
-                onClick={() => {
-                  setQuickTopic(chip.topic);
-                  setSelectedFormat(chip.format);
-                  toast.info(`Selected "${chip.label}": loaded topic and preset format`);
-                }}
-                title={`Generate video about ${chip.topic}`}
-              >
-                {chip.label}
-              </button>
-            ))}
           </div>
-
-          {/* ─────────────────────────────────────────────────────────────
-              3. VIDEO FORMAT SELECTOR (5 SELECTABLE CARDS)
-          ───────────────────────────────────────────────────────────── */}
-          <div style={{ marginTop: '10px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#a1a1aa', marginBottom: '10px' }}>
-              What type of video?
-            </div>
-
-            <div className="autoshort-format-grid" role="radiogroup" aria-label="Video Format Selector">
-              {VIDEO_FORMATS.map((fmt) => {
-                const isSelected = selectedFormat === fmt.id;
-                return (
-                  <button
-                    key={fmt.id}
-                    type="button"
-                    role="radio"
-                    data-format={fmt.id}
-                    aria-checked={isSelected}
-                    className={`autoshort-format-card ${isSelected ? 'selected autoshort-format-card-selected border-cyan-500' : ''}`}
-                    onClick={() => {
-                      setSelectedFormat(fmt.id);
-                      setDuration(fmt.defaultDuration);
-                    }}
-                    style={{ textAlign: 'left', cursor: 'pointer', background: isSelected ? '#181924' : undefined }}
-                  >
-                    <span style={{ fontSize: '24px', lineHeight: 1, marginBottom: '8px', display: 'block' }}>
-                      {fmt.icon}
-                    </span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '4px', display: 'block' }}>
-                      {fmt.title}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#71717a', lineHeight: 1.3, display: 'block' }}>
-                      {fmt.description}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+            24.5k
           </div>
-
-          {/* Generation CTA Button Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px', color: '#71717a' }}>
-              <span>Estimated duration: <strong style={{ color: '#fff' }}>{duration}s</strong></span>
-              <span>•</span>
-              <span>Scenes: <strong style={{ color: '#fff' }}>{estimatedScenes}</strong></span>
-              <span>•</span>
-              <span>Estimated credits: <strong style={{ color: '#c084fc' }}>{estimatedCredits}</strong></span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={handleResetConfig}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#71717a',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '6px 10px'
-                }}
-              >
-                Reset
-              </button>
-
-              <button
-                id="generate-video-btn"
-                type="submit"
-                disabled={creating || !quickTopic.trim()}
-                style={{
-                  padding: '12px 24px',
-                  background: '#ffffff',
-                  color: '#09090b',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontWeight: 800,
-                  fontSize: '14px',
-                  cursor: creating || !quickTopic.trim() ? 'not-allowed' : 'pointer',
-                  opacity: creating || !quickTopic.trim() ? 0.7 : 1,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 14px rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {creating ? (
-                  <>
-                    <div className="autoshort-spinner" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#000', width: '16px', height: '16px' }} />
-                    <span>Dispatching Job...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>✨</span>
-                    <span>Generate Video</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          4. PERSONAL AI CREATOR HIGHLIGHT CARD
-      ───────────────────────────────────────────────────────────── */}
-      <section className="autoshort-personal-card" aria-label="Personal AI Creator">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '18px', minWidth: '280px', flex: '1 1 auto' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '22px',
-            flexShrink: 0,
-            boxShadow: '0 0 16px rgba(168, 85, 247, 0.4)'
-          }}>
-            👤
-          </div>
-          <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                CREATE WITH YOUR FACE & VOICE
-              </span>
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
-              Turn yourself into an AI-powered YouTube creator.
-            </div>
-            <p style={{ fontSize: '13px', color: '#9ca3af', margin: '4px 0 0' }}>
-              Use your own face and voice for presenter-style videos.
-            </p>
+          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+            Subscribers
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <Link
-            href="/dashboard/personal-ai?tab=avatar"
-            className="autoshort-action-btn"
-            style={{ padding: '8px 14px' }}
-          >
-            📸 Upload Your Photo
-          </Link>
-          <Link
-            href="/dashboard/personal-ai?tab=voice"
-            className="autoshort-action-btn"
-            style={{ padding: '8px 14px' }}
-          >
-            🎙️ Add Your Voice
-          </Link>
-          <Link
-            href="/dashboard/personal-ai?tab=create"
-            className="autoshort-action-btn"
-            style={{
-              padding: '8px 16px',
-              background: 'linear-gradient(90deg, #6366f1, #a855f7)',
-              color: '#ffffff',
-              border: 'none',
-              fontWeight: 700
-            }}
-          >
-            ✨ Create Personal Video
-          </Link>
+        {/* Card 3: Saved Time */}
+        <div className="autoshort-stat-card" style={{
+          background: '#111215',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          padding: '18px 20px',
+          position: 'relative'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#a1a1aa'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+            1h 42m
+          </div>
+          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+            Saved Time
+          </div>
         </div>
-      </section>
+
+        {/* Card 4: Credits Left */}
+        <div className="autoshort-stat-card" style={{
+          background: '#111215',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          padding: '18px 20px',
+          position: 'relative'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#a1a1aa'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            </div>
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+            {currentUser?.credits ?? 840}
+          </div>
+          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+            Credits Left
+          </div>
+        </div>
+      </div>
 
       {/* ─────────────────────────────────────────────────────────────
           5. TWO-COLUMN MAIN WORKSPACE GRID
@@ -832,18 +738,81 @@ export default function HomePage() {
         {/* ── LEFT COLUMN: CREATION SETTINGS, SMART SUMMARY & IDEAS ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-          {/* Creation Settings Panel */}
+          {/* New Automation Panel (Exact match for reference design) */}
           <div className="autoshort-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                Video Settings
+                New Automation
               </h2>
-              <span style={{ fontSize: '11px', color: '#71717a' }}>
-                Preset: <strong style={{ color: '#fff' }}>{selectedFormat.toUpperCase()}</strong>
-              </span>
+              <button
+                type="button"
+                onClick={handleResetConfig}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#71717a',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '4px 8px'
+                }}
+              >
+                Reset Config
+              </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <form onSubmit={handleGenerateShort} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Video Topic or Script Input */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '8px' }}>
+                  Video Topic or Script
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="creator-topic-input"
+                    ref={topicInputRef}
+                    type="text"
+                    value={quickTopic}
+                    onChange={(e) => setQuickTopic(e.target.value)}
+                    placeholder="e.g. Top 5 mysterious places in the world..."
+                    className="autoshort-input autoshort-hero-input"
+                    style={{
+                      width: '100%',
+                      background: '#13141a',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      padding: '12px 42px 12px 14px',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      outline: 'none',
+                    }}
+                    aria-label="Video Topic or Script"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSurpriseMe}
+                    title="Randomize viral topic"
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#a1a1aa',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    aria-label="Randomize topic"
+                  >
+                    🎲
+                  </button>
+                </div>
+              </div>
+
               {/* Row with Voice & Style Dropdowns */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
                 <div>
@@ -867,14 +836,14 @@ export default function HomePage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
-                    Visual Style / Background
+                    Background Footage
                   </label>
                   <select
                     id="style-select"
                     className="autoshort-select"
                     value={backgroundFootage}
                     onChange={(e) => setBackgroundFootage(e.target.value)}
-                    aria-label="Visual Style or Footage"
+                    aria-label="Background Footage"
                   >
                     <option value="Minecraft Parkour">Minecraft Parkour</option>
                     <option value="Subway Surfers Gameplay">Subway Surfers</option>
@@ -941,7 +910,7 @@ export default function HomePage() {
                 }}>
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff' }}>Auto Captions</div>
-                    <div style={{ fontSize: '10px', color: '#71717a' }}>Karaoke sync</div>
+                    <div style={{ fontSize: '10px', color: '#71717a' }}>Karaoke style animation</div>
                   </div>
                   <label className="autoshort-switch">
                     <input
@@ -966,7 +935,7 @@ export default function HomePage() {
                 }}>
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff' }}>Auto Upload</div>
-                    <div style={{ fontSize: '10px', color: '#71717a' }}>To linked YouTube</div>
+                    <div style={{ fontSize: '10px', color: '#71717a' }}>Post to linked channel</div>
                   </div>
                   <label className="autoshort-switch">
                     <input
@@ -981,36 +950,96 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* ─────────────────────────────────────────────────────────────
-                  9. SMART CREATION SUMMARY
-              ───────────────────────────────────────────────────────────── */}
-              <div className="autoshort-summary-card">
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-                  YOUR VIDEO CONFIGURATION
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', fontSize: '12px' }}>
-                  <div>
-                    <span style={{ color: '#71717a' }}>Format: </span>
-                    <strong style={{ color: '#fff' }}>{VIDEO_FORMATS.find((f) => f.id === selectedFormat)?.title}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#71717a' }}>Voice: </span>
-                    <strong style={{ color: '#fff' }}>{voiceModel.split(' ')[0]}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#71717a' }}>Duration: </span>
-                    <strong id="summary-est-duration" style={{ color: '#fff' }}>{duration}s</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#71717a' }}>Scenes: </span>
-                    <strong id="summary-est-scenes" style={{ color: '#fff' }}>{estimatedScenes} scenes</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#71717a' }}>Cost: </span>
-                    <strong id="summary-credit-cost" style={{ color: '#c084fc' }}>{estimatedCredits} credits</strong>
-                  </div>
-                </div>
+              {/* Big Generate Short Button matching reference */}
+              <button
+                id="generate-video-btn"
+                type="submit"
+                disabled={creating || !quickTopic.trim()}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: '#ffffff',
+                  color: '#09090b',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '14px',
+                  cursor: creating || !quickTopic.trim() ? 'not-allowed' : 'pointer',
+                  opacity: creating || !quickTopic.trim() ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(255, 255, 255, 0.2)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {creating ? (
+                  <>
+                    <div className="autoshort-spinner" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#000', width: '16px', height: '16px' }} />
+                    <span>Dispatching Job...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    <span>Generate Short</span>
+                  </>
+                )}
+              </button>
+
+              {/* Configuration Summary line */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: '#71717a', padding: '0 4px' }}>
+                <span>Estimated: <strong style={{ color: '#fff' }}>{duration}s</strong> • <strong style={{ color: '#fff' }}>{estimatedScenes} scenes</strong></span>
+                <span>Cost: <strong id="summary-credit-cost" style={{ color: '#c084fc' }}>{estimatedCredits} credits</strong></span>
               </div>
+            </form>
+          </div>
+
+          {/* ─────────────────────────────────────────────────────────────
+              Trending Hashtags Section (Exact match for reference design)
+          ───────────────────────────────────────────────────────────── */}
+          <div>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '12px' }}>
+              Trending Hashtags
+            </h3>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              gap: '10px'
+            }}>
+              {[
+                { tag: '#AIrevolution', velocity: '2.1M views/hr', topic: 'The Secret AI Revolution No One Is Talking About' },
+                { tag: '#CodingLife', velocity: '850K views/hr', topic: '5 Coding Habits That Made Me a Senior Engineer' },
+                { tag: '#FactsDaily', velocity: '1.4M views/hr', topic: 'Top 5 Mind-Blowing Facts About Deep Ocean Creatures' },
+                { tag: '#Motivation', velocity: '3.2M views/hr', topic: '10 Stoic Lessons for Unstoppable Mental Discipline' },
+              ].map((h, i) => (
+                <div
+                  key={i}
+                  className="autoshort-tag-card"
+                  onClick={() => {
+                    setQuickTopic(h.topic);
+                    toast.info(`Selected ${h.tag}: "${h.topic}"`);
+                  }}
+                  style={{
+                    background: '#111215',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={`Use topic for ${h.tag}`}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8', marginBottom: '4px' }}>
+                    {h.tag}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#71717a' }}>
+                    {h.velocity}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
