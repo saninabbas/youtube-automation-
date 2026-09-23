@@ -564,20 +564,9 @@ export default function HomePage() {
       {/* ─────────────────────────────────────────────────────────────
           1. TOP STAT CARDS (EXACT AUTOSHORT REFERENCE DESIGN)
       ───────────────────────────────────────────────────────────── */}
-      <div className="dashboard-stats-row" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '16px',
-        width: '100%'
-      }}>
+      <div className="dashboard-stats-row">
         {/* Card 1: Total Views */}
-        <div className="autoshort-stat-card" style={{
-          background: '#111215',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '18px 20px',
-          position: 'relative'
-        }}>
+        <div className="autoshort-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -605,22 +594,16 @@ export default function HomePage() {
               +12%
             </span>
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+          <div className="stat-value" style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
             1.2M
           </div>
-          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+          <div className="stat-label" style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
             Total Views
           </div>
         </div>
 
         {/* Card 2: Subscribers */}
-        <div className="autoshort-stat-card" style={{
-          background: '#111215',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '18px 20px',
-          position: 'relative'
-        }}>
+        <div className="autoshort-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -650,22 +633,16 @@ export default function HomePage() {
               +4%
             </span>
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+          <div className="stat-value" style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
             24.5k
           </div>
-          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+          <div className="stat-label" style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
             Subscribers
           </div>
         </div>
 
         {/* Card 3: Saved Time */}
-        <div className="autoshort-stat-card" style={{
-          background: '#111215',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '18px 20px',
-          position: 'relative'
-        }}>
+        <div className="autoshort-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -683,22 +660,16 @@ export default function HomePage() {
               </svg>
             </div>
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+          <div className="stat-value" style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
             1h 42m
           </div>
-          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+          <div className="stat-label" style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
             Saved Time
           </div>
         </div>
 
         {/* Card 4: Credits Left */}
-        <div className="autoshort-stat-card" style={{
-          background: '#111215',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '18px 20px',
-          position: 'relative'
-        }}>
+        <div className="autoshort-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -716,10 +687,10 @@ export default function HomePage() {
               </svg>
             </div>
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+          <div className="stat-value" style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
             {currentUser?.credits ?? 840}
           </div>
-          <div style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
+          <div className="stat-label" style={{ fontSize: '12px', color: '#71717a', marginTop: '6px' }}>
             Credits Left
           </div>
         </div>
@@ -728,12 +699,7 @@ export default function HomePage() {
       {/* ─────────────────────────────────────────────────────────────
           5. TWO-COLUMN MAIN WORKSPACE GRID
       ───────────────────────────────────────────────────────────── */}
-      <div className="dashboard-main-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)',
-        gap: '24px',
-        alignItems: 'start'
-      }}>
+      <div className="dashboard-main-grid">
 
         {/* ── LEFT COLUMN: CREATION SETTINGS, SMART SUMMARY & IDEAS ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -774,7 +740,7 @@ export default function HomePage() {
                     type="text"
                     value={quickTopic}
                     onChange={(e) => setQuickTopic(e.target.value)}
-                    placeholder="e.g. Top 5 mysterious places in the world..."
+                    placeholder="Enter a video topic or headline (e.g. Top 5 mysterious places in the world...)"
                     className="autoshort-input autoshort-hero-input"
                     style={{
                       width: '100%',
@@ -814,7 +780,7 @@ export default function HomePage() {
               </div>
 
               {/* Row with Voice & Style Dropdowns */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+              <div className="autoshort-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
                     AI Voice Model
@@ -898,7 +864,7 @@ export default function HomePage() {
               </div>
 
               {/* Toggles Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+              <div className="autoshort-toggles-row">
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',

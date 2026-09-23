@@ -496,14 +496,14 @@ function ContentLibraryList() {
                     {new Date(p.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase()}
                   </span>
 
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     {isReady && (
                       <a
                         href={`/api/assets/video/${p.id}/final_video.mp4`}
                         download={`${p.topic.replace(/[^a-zA-Z0-9]/g, '_')}.mp4`}
                         onClick={(e) => e.stopPropagation()}
                         className="btn btn-secondary btn-sm"
-                        style={{ padding: '2px 8px', fontSize: '11px', height: '24px', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}
+                        style={{ padding: '6px 12px', fontSize: '12px', minHeight: '36px', height: '36px', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
                         title="Download Final MP4"
                       >
                         ⬇️ MP4
@@ -514,14 +514,14 @@ function ContentLibraryList() {
                       <button
                         onClick={(e) => handleRetryProject(p.id, e)}
                         className="btn btn-secondary btn-sm"
-                        style={{ padding: '2px 8px', fontSize: '11px', height: '24px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                        style={{ padding: '6px 12px', fontSize: '12px', minHeight: '36px', height: '36px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', display: 'inline-flex', alignItems: 'center', fontWeight: 600 }}
                         title="Retry Pipeline"
                       >
                         Retry
                       </button>
                     )}
 
-                    <span className="btn btn-secondary btn-sm" style={{ padding: '2px 8px', fontSize: '11px', height: '24px' }}>
+                    <span className="btn btn-secondary btn-sm" style={{ padding: '6px 12px', fontSize: '12px', minHeight: '36px', height: '36px', display: 'inline-flex', alignItems: 'center', fontWeight: 600 }}>
                       Studio ➔
                     </span>
                   </div>

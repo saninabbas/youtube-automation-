@@ -40,4 +40,6 @@ product_page.html
 browser-qa-results.json
 *-qa-results.json
 screenshot-*.png
+qa-screenshots/
+mobile-ux-audit-results.json
 

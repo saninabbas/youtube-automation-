@@ -38,23 +38,23 @@ async function main() {
 
   // 1. Laptop Dashboard (1366x768) - matches user dashboard screenshot
   await page.setViewport({ width: 1366, height: 768, isMobile: false });
-  await page.goto('http://localhost:3000/', { waitUntil: 'networkidle2' });
-  await page.waitForSelector('.dashboard-main-grid', { timeout: 10000 });
+  await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForSelector('.dashboard-main-grid', { timeout: 15000 });
   await new Promise((r) => setTimeout(r, 600));
   await page.screenshot({ path: path.join(process.cwd(), 'screenshot-laptop-dashboard.png'), fullPage: false });
   console.log('Captured screenshot-laptop-dashboard.png');
 
   // 2. Laptop Workflow (1366x768) - matches user workflow screenshot
-  await page.goto('http://localhost:3000/workflow', { waitUntil: 'networkidle2' });
-  await page.waitForSelector('.workflow-canvas-scroll-container', { timeout: 10000 });
+  await page.goto('http://localhost:3000/workflow', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForSelector('.workflow-canvas-scroll-container', { timeout: 15000 });
   await new Promise((r) => setTimeout(r, 600));
   await page.screenshot({ path: path.join(process.cwd(), 'screenshot-laptop-workflow.png'), fullPage: false });
   console.log('Captured screenshot-laptop-workflow.png');
 
   // 3. Mobile Dashboard (375x812)
   await page.setViewport({ width: 375, height: 812, isMobile: true, hasTouch: true });
-  await page.goto('http://localhost:3000/', { waitUntil: 'networkidle2' });
-  await page.waitForSelector('.dashboard-main-grid', { timeout: 10000 });
+  await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForSelector('.dashboard-main-grid', { timeout: 15000 });
   await new Promise((r) => setTimeout(r, 600));
   await page.screenshot({ path: path.join(process.cwd(), 'screenshot-mobile-dashboard.png'), fullPage: false });
   console.log('Captured screenshot-mobile-dashboard.png');
@@ -80,8 +80,8 @@ async function main() {
   }
 
   // 6. Mobile Workflow (375x812)
-  await page.goto('http://localhost:3000/workflow', { waitUntil: 'networkidle2' });
-  await page.waitForSelector('.workflow-canvas-scroll-container', { timeout: 10000 });
+  await page.goto('http://localhost:3000/workflow', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForSelector('.workflow-canvas-scroll-container', { timeout: 15000 });
   await new Promise((r) => setTimeout(r, 600));
   await page.screenshot({ path: path.join(process.cwd(), 'screenshot-mobile-workflow.png'), fullPage: false });
   console.log('Captured screenshot-mobile-workflow.png');

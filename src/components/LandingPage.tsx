@@ -7,6 +7,7 @@ import { InteractiveWorkflowCanvas } from './InteractiveWorkflowCanvas';
 export function LandingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const faqs = [
     {
@@ -28,15 +29,32 @@ export function LandingPage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090b', color: '#f4f4f5', fontFamily: 'var(--font-sans, sans-serif)' }}>
+    <div style={{ minHeight: '100vh', background: '#09090b', color: '#f4f4f5', fontFamily: 'var(--font-sans, sans-serif)', overflowX: 'hidden', width: '100%', maxWidth: '100vw' }}>
       <style>{`
         @media (max-width: 768px) {
           .desktop-nav {
             display: none !important;
           }
+          .desktop-auth {
+            display: none !important;
+          }
+          .mobile-menu-btn {
+            display: inline-flex !important;
+          }
           .hero-pipeline-ribbon {
             flex-direction: column !important;
             gap: 8px !important;
+          }
+          .landing-header-inner {
+            padding: 0 16px !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .mobile-menu-btn {
+            display: none !important;
+          }
+          .mobile-nav-drawer {
+            display: none !important;
           }
         }
       `}</style>
@@ -51,15 +69,15 @@ export function LandingPage() {
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
+        <div className="landing-header-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
+            <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
                 <polygon points="5 3 19 12 5 21 5 3" fill="#fff" />
               </svg>
             </div>
-            <span style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.02em' }}>AutoVideo</span>
-            <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>SaaS</span>
+            <span style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.02em' }}>AutoVideo</span>
+            <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '20px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>SaaS</span>
           </Link>
 
           {/* Desktop Nav Links */}
@@ -71,7 +89,8 @@ export function LandingPage() {
             <a href="#pricing" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Pricing</a>
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Desktop Auth Links */}
+          <div className="desktop-auth" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Link href="/login" style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '14px', fontWeight: 500, padding: '8px 14px' }}>
               Log In
             </Link>
@@ -90,7 +109,150 @@ export function LandingPage() {
               Start Creating ➔
             </Link>
           </div>
+
+          {/* Mobile Right Controls: CTA + Hamburger */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link href="/signup" style={{
+              background: '#ffffff',
+              color: '#09090b',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 700,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              whiteSpace: 'nowrap'
+            }}>
+              Start ➔
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="mobile-menu-btn"
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ffffff',
+                display: 'none',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                padding: 0
+              }}
+              aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {mobileMenuOpen ? (
+                  <path d="M18 6L6 18M6 6l12 12" />
+                ) : (
+                  <>
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </>
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Navigation Drawer / Dropdown */}
+        {mobileMenuOpen && (
+          <div
+            className="mobile-nav-drawer"
+            style={{
+              background: '#111215',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              padding: '16px 20px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.8)'
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <a
+                href="#how-it-works"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '15px', fontWeight: 600, padding: '8px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
+              >
+                How It Works
+              </a>
+              <a
+                href="#integrations"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '15px', fontWeight: 600, padding: '8px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
+              >
+                Integrations
+              </a>
+              <a
+                href="#ai-models"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '15px', fontWeight: 600, padding: '8px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
+              >
+                AI Models
+              </a>
+              <a
+                href="#voices"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '15px', fontWeight: 600, padding: '8px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
+              >
+                Voices
+              </a>
+              <a
+                href="#pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '15px', fontWeight: 600, padding: '8px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
+              >
+                Pricing
+              </a>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  fontWeight: 600
+                }}
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  background: '#ffffff',
+                  color: '#09090b',
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  fontWeight: 700
+                }}
+              >
+                Sign Up
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ─────────────────────────────────────────────────────────────
@@ -143,7 +305,7 @@ export function LandingPage() {
         </div>
 
         {/* Interactive Autonomous Workflow Canvas (n8n-Style Live Preview) */}
-        <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'left' }}>
+        <div style={{ maxWidth: '1100px', width: '100%', margin: '0 auto', textAlign: 'left', overflow: 'hidden', borderRadius: '12px' }}>
           <InteractiveWorkflowCanvas
             mode="simulation"
             title="Autonomous Workflow Engine"

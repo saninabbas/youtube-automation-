@@ -748,6 +748,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       ───────────────────────────────────────────────────────────── */}
       {mode === 'simulation' && (
         <div
+          className="workflow-sample-topics-bar"
           style={{
             padding: '10px 20px',
             background: 'rgba(10, 15, 26, 0.95)',
