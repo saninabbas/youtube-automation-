@@ -410,14 +410,22 @@ export class VideoPipelineWorker {
         const MAX_QC_ATTEMPTS = 2;
         let previousScene: VideoScene | null = null;
 
+        let projectAspectRatio: AspectRatio = project.target_length_minutes >= 2 ? '16:9' : '9:16';
+        try {
+          if (project.metadata_json) {
+            const meta = JSON.parse(project.metadata_json);
+            if (meta.aspectRatio) projectAspectRatio = meta.aspectRatio;
+          }
+        } catch {}
+
         for (const scene of scenes) {
           let attempt = 1;
           let currentPrompt = scene.visual_prompt;
-          let bestClip: { clipIndex: number; storageKey: string; url: string; durationSec: number } | null = null;
+          let bestClips: Array<{ clipIndex: number; storageKey: string; url: string; durationSec: number }> = [];
           let latestQcReport: QualityReport | null = null;
 
           while (attempt <= MAX_QC_ATTEMPTS) {
-            console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS})...`);
+            console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio})...`);
 
             const clips = await videoProvider.generateVideoClipsForScene({
               projectId: project.id,
@@ -432,15 +440,16 @@ export class VideoPipelineWorker {
               lighting: scene.lighting || undefined,
               colorStyle: scene.color_style || undefined,
               continuityNotes: scene.continuity_notes || undefined,
-              aspectRatio: '9:16',
+              aspectRatio: projectAspectRatio,
             });
 
             if (clips && clips.length > 0) {
-              bestClip = clips[0];
+              bestClips = clips;
             }
 
-            // Quality Control Validation
-            const clipPath = bestClip ? storage.getFilePath(bestClip.storageKey) : '';
+            // Quality Control Validation on the primary clip
+            const primaryClip = bestClips[0];
+            const clipPath = primaryClip ? storage.getFilePath(primaryClip.storageKey) : '';
             latestQcReport = await sceneQualityChecker.validateSceneClip({
               scene: {
                 ...scene,
@@ -483,8 +492,8 @@ export class VideoPipelineWorker {
             }
           }
 
-          // Persist approved clip asset
-          if (bestClip) {
+          // Persist ALL approved clip assets for the scene so the entire timeline duration is covered
+          for (const clip of bestClips) {
             db.prepare(
               `INSERT INTO generated_assets (id, project_id, scene_id, asset_type, storage_key, url, duration_sec, metadata_json, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -493,12 +502,13 @@ export class VideoPipelineWorker {
               project.id,
               scene.id,
               'clip',
-              bestClip.storageKey,
-              bestClip.url,
-              bestClip.durationSec,
+              clip.storageKey,
+              clip.url,
+              clip.durationSec,
               JSON.stringify({
-                clipIndex: bestClip.clipIndex,
+                clipIndex: clip.clipIndex,
                 sceneIndex: scene.scene_index,
+                aspectRatio: projectAspectRatio,
                 qualityScore: latestQcReport?.overallScore || 85,
                 qcPassed: latestQcReport?.passed ?? true,
                 failedChecks: latestQcReport?.failedChecks || [],
@@ -622,14 +632,25 @@ export class VideoPipelineWorker {
         const subPath = subAsset ? storage.getFilePath(subAsset.storage_key) : undefined;
 
         const totalClipDuration = clipAssets.reduce((sum, c) => sum + (c.duration_sec || 0), 0);
+        const effectiveDurationSec = (audioAsset && audioAsset.duration_sec > 0)
+          ? audioAsset.duration_sec
+          : (totalClipDuration > 0 ? totalClipDuration : project.target_length_minutes * 60);
+
+        let finalAspectRatio: AspectRatio = project.target_length_minutes >= 2 ? '16:9' : '9:16';
+        try {
+          if (project.metadata_json) {
+            const meta = JSON.parse(project.metadata_json);
+            if (meta.aspectRatio) finalAspectRatio = meta.aspectRatio;
+          }
+        } catch {}
 
         const composition = await ffmpegCompositor.composeVideo({
           projectId: project.id,
           clipFilePaths: clipPaths,
           audioFilePath: audioPath,
           subtitleFilePath: subPath,
-          totalDurationSec: totalClipDuration,
-          aspectRatio: '9:16',
+          totalDurationSec: effectiveDurationSec,
+          aspectRatio: finalAspectRatio,
         });
 
         // Store video output record

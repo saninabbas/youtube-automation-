@@ -52,7 +52,7 @@ export default function WorkflowPage() {
   const activeProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
 
   return (
-    <div style={{ width: '100%', height: 'calc(100vh - 65px)', minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: 'calc(100vh - 85px)', minHeight: '520px', display: 'flex', flexDirection: 'column' }}>
       {/* Main Interactive Workflow Canvas */}
       <InteractiveWorkflowCanvas
         mode={activeProject ? 'live' : 'simulation'}

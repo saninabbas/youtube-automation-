@@ -32,13 +32,13 @@ export async function checkProvidersHealth(): Promise<ProviderHealthReport> {
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (geminiKey) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }] }),
       });
       if (res.ok) {
-        report.gemini = { status: 'CONFIGURED', details: 'Gemini 1.5 Flash API active and verified.' };
+        report.gemini = { status: 'CONFIGURED', details: 'Gemini 3.6 Flash API active and verified.' };
       } else {
         report.gemini = { status: 'FAILED', details: `Gemini API returned status ${res.status}: ${res.statusText}` };
       }

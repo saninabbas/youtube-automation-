@@ -161,7 +161,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     },
   ];
 
-  const isStudioPage = Boolean(pathname?.startsWith('/content/') && pathname !== '/content' && pathname !== '/content/new');
+  const isStudioPage = Boolean(
+    (pathname?.startsWith('/content/') && pathname !== '/content' && pathname !== '/content/new') ||
+    pathname === '/workflow'
+  );
 
   return (
     <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>

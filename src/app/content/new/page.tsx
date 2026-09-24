@@ -502,6 +502,7 @@ function CreateVideoWizardContent() {
           channel_id: targetChannelId || 'default_channel',
           topic: topic.trim(),
           target_length_minutes: videoLength,
+          aspect_ratio: videoLength >= 2 ? '16:9' : '9:16',
           voice: activeVoice,
           visual_style: visualStyle,
         }),
@@ -946,9 +947,21 @@ function CreateVideoWizardContent() {
                       color: '#fff'
                     }}
                   >
-                    <option value={1}>Short Format (1 Minute)</option>
-                    <option value={3}>Standard Breakdown (3 Minutes)</option>
-                    <option value={5}>Full Story (5 Minutes)</option>
+                    <optgroup label="📱 YouTube Shorts (9:16 Vertical HD)">
+                      <option value={0.25}>15s - Micro Short (9:16 Vertical)</option>
+                      <option value={0.5}>30s - Standard Short (9:16 Vertical)</option>
+                      <option value={0.75}>45s - Extended Short (9:16 Vertical)</option>
+                      <option value={1}>60s - Full Short (9:16 Vertical)</option>
+                    </optgroup>
+                    <optgroup label="🎬 YouTube Long-Form (16:9 Widescreen 1080p)">
+                      <option value={2}>2 min - Quick Topic Overview (16:9)</option>
+                      <option value={3}>3 min - Standard Breakdown (16:9)</option>
+                      <option value={5}>5 min - Deep Dive Chapter (16:9)</option>
+                      <option value={8}>8 min - Documentary Short (16:9)</option>
+                      <option value={10}>10 min - Complete Masterclass (16:9)</option>
+                      <option value={15}>15 min - Extended Analysis (16:9)</option>
+                      <option value={20}>20 min - Full Feature Story (16:9)</option>
+                    </optgroup>
                   </select>
                 </div>
               </div>

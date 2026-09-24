@@ -109,6 +109,7 @@ export default function HomePage() {
   const [selectedFormat, setSelectedFormat] = useState<string>('explainer');
   const [voiceModel, setVoiceModel] = useState('Adam (Deep, Narrator)');
   const [backgroundFootage, setBackgroundFootage] = useState('Minecraft Parkour');
+  const [durationMode, setDurationMode] = useState<'shorts' | 'longform'>('shorts');
   const [duration, setDuration] = useState<number>(45);
   const [autoCaptions, setAutoCaptions] = useState(true);
   const [autoUpload, setAutoUpload] = useState(false);
@@ -344,7 +345,8 @@ export default function HomePage() {
           channel_id: targetChannelId || 'default_channel',
           topic: quickTopic.trim(),
           preset: activeFormatObj.preset,
-          target_length_minutes: Math.max(1, Math.round(duration / 60)),
+          target_length_minutes: duration < 60 ? Math.round((duration / 60) * 100) / 100 : Math.round(duration / 60),
+          aspect_ratio: duration >= 120 ? '16:9' : '9:16',
           voice: voiceModel,
           visual_style: backgroundFootage,
           auto_captions: autoCaptions,
@@ -821,46 +823,192 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Duration Slider */}
+              {/* Duration & Aspect Ratio Selector (Shorts vs Long-Form) */}
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: '#a1a1aa' }}>
-                    Duration Limit
+                    Target Format & Duration
                   </label>
                   <span
                     id="duration-badge"
                     style={{
                       fontSize: '12px',
                       fontWeight: 700,
-                      color: '#ffffff',
-                      background: '#18181b',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      padding: '2px 8px',
+                      color: duration >= 120 ? '#60a5fa' : '#c084fc',
+                      background: duration >= 120 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                      border: duration >= 120 ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(168, 85, 247, 0.3)',
+                      padding: '3px 10px',
                       borderRadius: '6px'
                     }}
                   >
-                    {duration}s
+                    {duration < 60 ? `${duration}s` : duration === 60 ? '60s (1 min)' : `${Math.round(duration / 60)} min`}
                   </span>
                 </div>
 
-                <input
-                  id="duration-slider"
-                  type="range"
-                  min={15}
-                  max={60}
-                  step={15}
-                  value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                  className="autoshort-slider"
-                  aria-label="Duration Slider"
-                />
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '11px', color: '#71717a', fontWeight: 600 }}>
-                  <span style={{ color: duration === 15 ? '#fff' : '#71717a' }}>15s</span>
-                  <span style={{ color: duration === 30 ? '#fff' : '#71717a' }}>30s</span>
-                  <span style={{ color: duration === 45 ? '#fff' : '#71717a' }}>45s</span>
-                  <span style={{ color: duration === 60 ? '#fff' : '#71717a' }}>60s</span>
+                {/* Mode Selector Tabs */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '6px',
+                  background: '#09090b',
+                  padding: '4px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  marginBottom: '10px'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDurationMode('shorts');
+                      if (duration > 60) setDuration(45);
+                    }}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: durationMode === 'shorts' ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : 'transparent',
+                      color: durationMode === 'shorts' ? '#ffffff' : '#a1a1aa',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>📱</span>
+                    <span>Shorts (15–60s)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDurationMode('longform');
+                      if (duration <= 60) setDuration(600);
+                    }}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: durationMode === 'longform' ? 'linear-gradient(135deg, #2563eb 0%, #06b6d4 100%)' : 'transparent',
+                      color: durationMode === 'longform' ? '#ffffff' : '#a1a1aa',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>🎬</span>
+                    <span>Long-Form (2–20m)</span>
+                  </button>
                 </div>
+
+                {/* Preset Chips */}
+                {durationMode === 'shorts' ? (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '8px' }}>
+                      {[
+                        { label: '15s', value: 15 },
+                        { label: '30s', value: 30 },
+                        { label: '45s', value: 45 },
+                        { label: '60s', value: 60 },
+                      ].map((item) => {
+                        const isSelected = duration === item.value;
+                        return (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => setDuration(item.value)}
+                            style={{
+                              padding: '8px 4px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              border: isSelected ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.08)',
+                              background: isSelected ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255, 255, 255, 0.02)',
+                              color: isSelected ? '#ffffff' : '#a1a1aa',
+                              textAlign: 'center',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '11px',
+                      color: '#a1a1aa',
+                      padding: '6px 10px',
+                      background: 'rgba(168, 85, 247, 0.06)',
+                      border: '1px solid rgba(168, 85, 247, 0.15)',
+                      borderRadius: '6px'
+                    }}>
+                      <span>📱</span>
+                      <span><strong>9:16 Vertical HD</strong> (1080×1920) • Optimized for YouTube Shorts & Reels</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(64px, 1fr))', gap: '6px', marginBottom: '8px' }}>
+                      {[
+                        { label: '2 min', value: 120 },
+                        { label: '3 min', value: 180 },
+                        { label: '5 min', value: 300 },
+                        { label: '8 min', value: 480 },
+                        { label: '10 min', value: 600 },
+                        { label: '15 min', value: 900 },
+                        { label: '20 min', value: 1200 },
+                      ].map((item) => {
+                        const isSelected = duration === item.value;
+                        return (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => setDuration(item.value)}
+                            style={{
+                              padding: '8px 2px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              border: isSelected ? '1px solid #60a5fa' : '1px solid rgba(255, 255, 255, 0.08)',
+                              background: isSelected ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.02)',
+                              color: isSelected ? '#ffffff' : '#a1a1aa',
+                              textAlign: 'center',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '11px',
+                      color: '#93c5fd',
+                      padding: '6px 10px',
+                      background: 'rgba(59, 130, 246, 0.08)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '6px'
+                    }}>
+                      <span>🎬</span>
+                      <span><strong>16:9 Widescreen 1080p</strong> (1920×1080) • Full Masterclass (~{Math.round((duration / 60) * 138)} words)</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Toggles Row */}

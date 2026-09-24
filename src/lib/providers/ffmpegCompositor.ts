@@ -86,6 +86,8 @@ export class FfmpegCompositor {
 
     const videoFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`;
 
+    const encodingTimeout = Math.max(300000, Math.round(totalDurationSec * 2000));
+
     // Audio & Video Composition
     if (!composed && fs.existsSync(audioFilePath)) {
       const hasBgm = backgroundMusicPath && fs.existsSync(backgroundMusicPath);
@@ -95,6 +97,7 @@ export class FfmpegCompositor {
         // Mix voiceover with subtle background music
         args = [
           '-y',
+          '-stream_loop', '-1',
           '-f', 'concat',
           '-safe', '0',
           '-i', concatListPath,
@@ -119,6 +122,7 @@ export class FfmpegCompositor {
         // Standard narration audio overlay with scaling filter
         args = [
           '-y',
+          '-stream_loop', '-1',
           '-f', 'concat',
           '-safe', '0',
           '-i', concatListPath,
@@ -137,7 +141,7 @@ export class FfmpegCompositor {
       }
 
       try {
-        await execFileAsync(ffmpegPath, args, { timeout: 90000 });
+        await execFileAsync(ffmpegPath, args, { timeout: encodingTimeout });
         composed = true;
       } catch (err: any) {
         console.warn('[FfmpegCompositor] Primary composition failed, trying fallback merge...', err.message);
@@ -159,9 +163,10 @@ export class FfmpegCompositor {
           '-pix_fmt', 'yuv420p',
           '-preset', 'ultrafast',
           '-movflags', '+faststart',
+          '-t', String(totalDurationSec || 60),
           finalFilePath,
         ];
-        await execFileAsync(ffmpegPath, fallbackArgs, { timeout: 60000 });
+        await execFileAsync(ffmpegPath, fallbackArgs, { timeout: encodingTimeout });
         composed = true;
       } catch (fbErr: any) {
         console.warn('[FfmpegCompositor] Concat merge fallback error:', fbErr.message);

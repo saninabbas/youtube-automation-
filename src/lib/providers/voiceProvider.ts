@@ -59,34 +59,61 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     if (!apiKey) throw new Error('ElevenLabs API key not configured');
 
     const voiceId = this.resolveElevenLabsVoiceId(voiceName);
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(15000),
-      headers: {
-        'xi-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-        },
-      }),
-    });
 
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`ElevenLabs API HTTP ${res.status}: ${errText.substring(0, 120)}`);
+    // Split text into manageable chunks if it exceeds 2000 characters for long-form reliability
+    const chunks: string[] = [];
+    if (text.length <= 2000) {
+      chunks.push(text);
+    } else {
+      const paragraphs = text.split(/\n\n+/).filter(Boolean);
+      let currentChunk = '';
+      for (const p of paragraphs) {
+        if ((currentChunk + '\n\n' + p).length > 2000 && currentChunk.trim()) {
+          chunks.push(currentChunk.trim());
+          currentChunk = p;
+        } else {
+          currentChunk += (currentChunk ? '\n\n' : '') + p;
+        }
+      }
+      if (currentChunk.trim()) chunks.push(currentChunk.trim());
     }
 
-    const arrayBuf = await res.arrayBuffer();
-    const buf = Buffer.from(arrayBuf);
-    if (buf.length < 500) {
+    const audioBuffers: Buffer[] = [];
+    for (const chunk of chunks) {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(45000),
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: chunk,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`ElevenLabs API HTTP ${res.status}: ${errText.substring(0, 120)}`);
+      }
+
+      const arrayBuf = await res.arrayBuffer();
+      const buf = Buffer.from(arrayBuf);
+      if (buf.length >= 500) {
+        audioBuffers.push(buf);
+      }
+    }
+
+    if (audioBuffers.length === 0) {
       throw new Error('ElevenLabs returned empty or invalid audio payload');
     }
-    return buf;
+
+    return Buffer.concat(audioBuffers);
   }
 
   // Engine 1: Google TTS Streaming Engine (Neural Natural Spoken Voice via HTTP)
@@ -116,32 +143,38 @@ class MultiEngineVoiceProvider implements VoiceProvider {
       }
     }
 
-    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-    const targetSentences = sentences.slice(0, isServerless ? 3 : 15);
+    // Process all sentences with batching to ensure full narration without truncation
     const audioBuffers: Buffer[] = [];
+    const BATCH_SIZE = 5;
 
-    const fetchPromises = targetSentences.map(async (sentence) => {
-      if (!sentence.trim()) return null;
-      try {
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(sentence)}`;
-        const res = await fetch(url, {
-          signal: AbortSignal.timeout(2500),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          },
-        });
+    for (let i = 0; i < sentences.length; i += BATCH_SIZE) {
+      const batch = sentences.slice(i, i + BATCH_SIZE);
+      const batchPromises = batch.map(async (sentence) => {
+        if (!sentence.trim()) return null;
+        try {
+          const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(sentence)}`;
+          const res = await fetch(url, {
+            signal: AbortSignal.timeout(4000),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+          });
 
-        if (res.ok) {
-          const arrayBuf = await res.arrayBuffer();
-          return Buffer.from(arrayBuf);
-        }
-      } catch {}
-      return null;
-    });
+          if (res.ok) {
+            const arrayBuf = await res.arrayBuffer();
+            return Buffer.from(arrayBuf);
+          }
+        } catch {}
+        return null;
+      });
 
-    const results = await Promise.all(fetchPromises);
-    for (const b of results) {
-      if (b) audioBuffers.push(b);
+      const results = await Promise.all(batchPromises);
+      for (const b of results) {
+        if (b) audioBuffers.push(b);
+      }
+      if (i + BATCH_SIZE < sentences.length) {
+        await this.sleep(80);
+      }
     }
 
     if (audioBuffers.length === 0) {
@@ -167,11 +200,23 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     // Write text to plain data file — completely isolated from executable code
     await fs.promises.writeFile(tempTextFile, text, 'utf8');
 
+    // Parse speed
+    let rateNum = 0;
+    if (voiceSpeed) {
+      const match = voiceSpeed.match(/([\d.]+)/);
+      if (match) {
+        const val = parseFloat(match[1]);
+        if (val > 1.0) rateNum = Math.min(5, Math.round((val - 1.0) * 8));
+        else if (val < 1.0) rateNum = Math.max(-5, Math.round((val - 1.0) * 8));
+      }
+    }
+
     // Completely static PowerShell script that accepts file paths as parameters
     const psContent = `
-param([string]$textFile, [string]$wavFile)
+param([string]$textFile, [string]$wavFile, [int]$rate)
 Add-Type -AssemblyName System.Speech
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+$synth.Rate = $rate
 $synth.SetOutputToWaveFile($wavFile)
 $content = [System.IO.File]::ReadAllText($textFile, [System.Text.Encoding]::UTF8)
 $synth.Speak($content)
@@ -189,14 +234,15 @@ $synth.Dispose()
         tempScript,
         tempTextFile,
         tempWav,
-      ]);
+        String(rateNum),
+      ], { timeout: 300000 }); // 5 minutes timeout for multi-thousand-word scripts
 
       if (!fs.existsSync(tempWav)) {
         throw new Error('Windows SAPI synthesis did not produce output WAV.');
       }
 
       // Convert WAV to MP3
-      await execFileAsync(ffmpegPath, ['-y', '-i', tempWav, '-c:a', 'libmp3lame', '-b:a', '192k', tempMp3]);
+      await execFileAsync(ffmpegPath, ['-y', '-i', tempWav, '-c:a', 'libmp3lame', '-b:a', '192k', tempMp3], { timeout: 120000 });
       const mp3Buf = await fs.promises.readFile(tempMp3);
       return mp3Buf;
     } finally {

@@ -141,18 +141,23 @@ export async function POST(request: Request) {
       deductUserCredits(userId, 25, 'GENERATE_VIDEO', `Generated video: ${topic.trim().substring(0, 40)}`, projectId);
     } catch {}
 
+    const numericLength = Number(target_length_minutes);
+    const parsedLength = !isNaN(numericLength) && numericLength > 0 ? numericLength : 5;
+    const resolvedAspectRatio = body.aspect_ratio || (parsedLength >= 2 ? '16:9' : '9:16');
+    const projectMetadata = JSON.stringify({ aspectRatio: resolvedAspectRatio });
+
     db.prepare(
       `INSERT INTO content_projects (
         id, user_id, channel_id, topic, target_length_minutes, preset,
         language, platform, visibility, status, current_stage, publishing_status,
-        scheduled_at, auto_publish, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        scheduled_at, auto_publish, metadata_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       projectId,
       userId,
       channel_id,
       cleanTopic,
-      Number(target_length_minutes) || 5,
+      parsedLength,
       preset,
       language || channel.language,
       platform || channel.publishing_platform,
@@ -162,6 +167,7 @@ export async function POST(request: Request) {
       initialPublishStatus,
       scheduled_at,
       willAutoPublish,
+      projectMetadata,
       now,
       now
     );

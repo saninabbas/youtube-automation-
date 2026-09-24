@@ -62,8 +62,18 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   title,
   subtitle,
 }) => {
-  // Canvas viewport scale
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  // Canvas viewport scale & panning
+  const [zoomLevel, setZoomLevel] = useState<number>(0.8);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragStartRef = useRef<{ startX: number; startY: number; initialPanX: number; initialPanY: number }>({
+    startX: 0,
+    startY: 0,
+    initialPanX: 0,
+    initialPanY: 0,
+  });
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>('agent');
   const [selectedTopic, setSelectedTopic] = useState<string>(
     projectData?.topic || DEFAULT_PRESET_TOPICS[0]
@@ -75,11 +85,55 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   const [showBottomPanels, setShowBottomPanels] = useState<boolean>(false);
   const logsEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-detect mobile viewport and adapt default zoom
+  // Dynamic Auto-Fit: measures available width & height and scales/centers the 1520px graph
+  const handleAutoFit = () => {
+    if (!containerRef.current) return;
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+
+    if (!containerWidth || containerWidth <= 0) return;
+
+    // Content bounds: 1520px wide (nodes up to x=1460px + margins), 440px high
+    const contentWidth = 1520;
+    const contentHeight = 440;
+
+    const horizontalMargin = containerWidth < 768 ? 24 : 64;
+    const verticalMargin = 36;
+
+    const scaleX = (containerWidth - horizontalMargin) / contentWidth;
+    const scaleY = containerHeight > 100 ? (containerHeight - verticalMargin) / contentHeight : scaleX;
+
+    // Fit smoothly to container
+    let fitScale = Math.min(scaleX, scaleY > 0.35 ? scaleY : scaleX);
+    fitScale = Math.max(0.35, Math.min(1.05, fitScale));
+    fitScale = Number(fitScale.toFixed(2));
+
+    setZoomLevel(fitScale);
+
+    // Center the graph horizontally if container has room
+    const scaledWidth = contentWidth * fitScale;
+    const offsetX = containerWidth > scaledWidth ? Math.round((containerWidth - scaledWidth) / 2) : 12;
+    const scaledHeight = contentHeight * fitScale;
+    const offsetY = containerHeight > scaledHeight ? Math.round((containerHeight - scaledHeight) / 2) : 10;
+
+    setPanOffset({ x: offsetX, y: offsetY });
+  };
+
+  // Auto-detect viewport and fit on mount and window resize
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setZoomLevel(0.55);
-    }
+    const timer = setTimeout(() => {
+      handleAutoFit();
+    }, 60);
+
+    const handleResize = () => {
+      handleAutoFit();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   // Initial node definitions with exact n8n canvas positions
@@ -555,6 +609,90 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
     }
   };
 
+  // Canvas Mouse & Touch Drag-to-Pan Handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('.workflow-interactive-node') ||
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('a') ||
+      target.closest('.workflow-floating-controls')
+    ) {
+      return;
+    }
+    setIsDragging(true);
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialPanX: panOffset.x,
+      initialPanY: panOffset.y,
+    };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+    setPanOffset({
+      x: Math.round(dragStartRef.current.initialPanX + dx),
+      y: Math.round(dragStartRef.current.initialPanY + dy),
+    });
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging) setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.workflow-interactive-node') ||
+        target.closest('button') ||
+        target.closest('input') ||
+        target.closest('a') ||
+        target.closest('.workflow-floating-controls')
+      ) {
+        return;
+      }
+      setIsDragging(true);
+      dragStartRef.current = {
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        initialPanX: panOffset.x,
+        initialPanY: panOffset.y,
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - dragStartRef.current.startX;
+    const dy = e.touches[0].clientY - dragStartRef.current.startY;
+    setPanOffset({
+      x: Math.round(dragStartRef.current.initialPanX + dx),
+      y: Math.round(dragStartRef.current.initialPanY + dy),
+    });
+  };
+
+  const handleTouchEnd = () => {
+    if (isDragging) setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.05 : -0.05;
+      setZoomLevel((z) => Math.max(0.3, Math.min(1.5, Number((z + delta).toFixed(2)))));
+    } else {
+      setPanOffset((prev) => ({
+        x: Math.round(prev.x - e.deltaX),
+        y: Math.round(prev.y - e.deltaY),
+      }));
+    }
+  };
+
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || nodes[1];
 
   return (
@@ -568,6 +706,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
         color: '#f4f4f5',
         fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, sans-serif)',
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: '520px',
       }}
     >
       {/* ─────────────────────────────────────────────────────────────
@@ -644,7 +786,8 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
             }}
           >
             <button
-              onClick={() => setZoomLevel((z) => Math.max(0.7, Number((z - 0.1).toFixed(1))))}
+              type="button"
+              onClick={() => setZoomLevel((z) => Math.max(0.35, Number((z - 0.1).toFixed(2))))}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -658,11 +801,12 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
             >
               −
             </button>
-            <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace', padding: '0 4px', minWidth: '40px', textAlign: 'center' }}>
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace', padding: '0 4px', minWidth: '42px', textAlign: 'center' }}>
               {Math.round(zoomLevel * 100)}%
             </span>
             <button
-              onClick={() => setZoomLevel((z) => Math.min(1.2, Number((z + 0.1).toFixed(1))))}
+              type="button"
+              onClick={() => setZoomLevel((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -677,19 +821,37 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
               +
             </button>
             <button
-              onClick={() => setZoomLevel(1)}
+              type="button"
+              onClick={handleAutoFit}
+              style={{
+                background: 'rgba(56, 189, 248, 0.15)',
+                border: 'none',
+                color: '#38bdf8',
+                padding: '4px 8px',
+                fontSize: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '0 4px 4px 0',
+              }}
+              title="Fit all nodes to view"
+            >
+              Fit View
+            </button>
+            <button
+              type="button"
+              onClick={() => { setZoomLevel(1); setPanOffset({ x: 20, y: 10 }); }}
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#94a3b8',
-                padding: '4px 8px',
+                color: '#71717a',
+                padding: '4px 6px',
                 fontSize: '10px',
                 cursor: 'pointer',
-                borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
               }}
-              title="Reset View"
+              title="100% Scale"
             >
-              ↺ Reset
+              100%
             </button>
           </div>
 
@@ -822,32 +984,44 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          3. MAIN INTERACTIVE 2D NODE CANVAS
+          3. MAIN INTERACTIVE 2D NODE CANVAS (Pan & Zoom Responsive)
       ───────────────────────────────────────────────────────────── */}
       <div
+        ref={containerRef}
         className="workflow-canvas-scroll-container"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
         style={{
           position: 'relative',
-          height: showBottomPanels ? '460px' : 'calc(100vh - 120px)',
-          minHeight: '480px',
-          overflowX: 'auto',
-          overflowY: 'hidden',
+          flex: 1,
+          height: showBottomPanels ? '400px' : 'calc(100vh - 140px)',
+          minHeight: '440px',
+          overflow: 'hidden',
           background: '#07090e',
           backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px)',
           backgroundSize: '20px 20px',
-          cursor: 'grab',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: isDragging ? 'none' : 'auto',
           WebkitOverflowScrolling: 'touch',
         }}
       >
         <div
           style={{
-            position: 'relative',
+            position: 'absolute',
+            left: 0,
+            top: 0,
             width: '1520px',
-            height: '100%',
-            minHeight: '480px',
-            transform: `scale(${zoomLevel})`,
+            height: '460px',
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
             transformOrigin: 'top left',
-            transition: 'transform 0.15s ease-out',
+            transition: isDragging ? 'none' : 'transform 0.12s ease-out',
+            pointerEvents: 'auto',
           }}
         >
           {/* SVG LAYER: Connecting Bezier Curved Cables */}
@@ -999,7 +1173,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
             return (
               <div
                 key={node.id}
-                onClick={() => {
+                className="workflow-interactive-node"
+                onClick={(e) => {
+                  e.stopPropagation();
                   setSelectedNodeId(node.id);
                   setShowBottomPanels(true);
                 }}
@@ -1212,8 +1388,8 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           </button>
           <button
             type="button"
-            onClick={() => setZoomLevel((z) => Math.min(1.4, Number((z + 0.1).toFixed(1))))}
-            title="Zoom in"
+            onClick={() => setZoomLevel((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))}
+            title="Zoom in (+)"
             style={{
               width: '32px',
               height: '32px',
@@ -1233,8 +1409,8 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           </button>
           <button
             type="button"
-            onClick={() => setZoomLevel((z) => Math.max(0.4, Number((z - 0.1).toFixed(1))))}
-            title="Zoom out"
+            onClick={() => setZoomLevel((z) => Math.max(0.35, Number((z - 0.1).toFixed(2))))}
+            title="Zoom out (−)"
             style={{
               width: '32px',
               height: '32px',
@@ -1254,21 +1430,22 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           </button>
           <button
             type="button"
-            onClick={() => setZoomLevel(typeof window !== 'undefined' && window.innerWidth < 768 ? 0.55 : 1)}
-            title="Reset to optimal fit"
+            onClick={handleAutoFit}
+            title="Auto fit all 9 nodes to screen"
             style={{
               width: '32px',
               height: '32px',
               borderRadius: '6px',
-              background: 'transparent',
-              border: 'none',
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
               color: '#38bdf8',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: 700,
+              letterSpacing: '0.04em',
             }}
           >
             FIT
