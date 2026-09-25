@@ -82,7 +82,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [activeSimulationStep, setActiveSimulationStep] = useState<number>(-1);
   const [logs, setLogs] = useState<Array<{ timestamp: string; node: string; message: string; type: 'info' | 'success' | 'warn' }>>([]);
-  const [showBottomPanels, setShowBottomPanels] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'graph' | 'steps'>('graph');
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(false);
+  const [inspectorTab, setInspectorTab] = useState<'details' | 'logs'>('details');
   const logsEndRef = useRef<HTMLDivElement | null>(null);
 
   // Dynamic Auto-Fit: measures available width & height and scales/centers the 1520px graph
@@ -135,6 +137,17 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  // Close inspector on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isInspectorOpen) {
+        setIsInspectorOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isInspectorOpen]);
 
   // Initial node definitions with exact n8n canvas positions
   const getInitialNodes = (): WorkflowNodeData[] => [
@@ -773,7 +786,62 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
         </div>
 
         {/* Toolbar Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* View Mode Switcher: Flow Graph vs Pipeline Steps */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              padding: '2px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setViewMode('graph')}
+              style={{
+                background: viewMode === 'graph' ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                border: viewMode === 'graph' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
+                color: viewMode === 'graph' ? '#38bdf8' : '#94a3b8',
+                padding: '5px 11px',
+                fontSize: '11px',
+                fontWeight: 600,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>☩</span>
+              <span>Flow Graph</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('steps')}
+              style={{
+                background: viewMode === 'steps' ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                border: viewMode === 'steps' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
+                color: viewMode === 'steps' ? '#38bdf8' : '#94a3b8',
+                padding: '5px 11px',
+                fontSize: '11px',
+                fontWeight: 600,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>☰</span>
+              <span>Pipeline Steps</span>
+            </button>
+          </div>
+
           {/* Zoom Controls */}
           <div
             style={{
@@ -1000,8 +1068,8 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
         style={{
           position: 'relative',
           flex: 1,
-          height: showBottomPanels ? '400px' : 'calc(100vh - 140px)',
-          minHeight: '440px',
+          height: 'calc(100vh - 140px)',
+          minHeight: '520px',
           overflow: 'hidden',
           background: '#07090e',
           backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px)',
@@ -1011,9 +1079,11 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
+        {viewMode === 'graph' ? (
+          <>
+            <div
+              style={{
+                position: 'absolute',
             left: 0,
             top: 0,
             width: '1520px',
@@ -1177,7 +1247,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedNodeId(node.id);
-                  setShowBottomPanels(true);
+                  setIsInspectorOpen(true);
                 }}
                 style={{
                   position: 'absolute',
@@ -1347,73 +1417,56 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           })}
         </div>
 
-        {/* Floating Right-Hand Action Bar (matching user reference screenshot) */}
+        {/* Floating Canvas Controls (Bottom-Right corner to never collide with extensions/overlays) */}
         <div
+          className="workflow-floating-controls"
           style={{
             position: 'absolute',
-            right: '16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
+            right: '20px',
+            bottom: '20px',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '10px',
-            padding: '6px',
-            zIndex: 30,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(10px)',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'rgba(15, 23, 42, 0.92)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+            borderRadius: '12px',
+            padding: '6px 10px',
+            zIndex: 35,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(14px)',
           }}
         >
           <button
             type="button"
-            onClick={() => setShowBottomPanels(!showBottomPanels)}
-            title={showBottomPanels ? 'Hide logs & details drawer' : 'Open logs & telemetry drawer'}
+            onClick={() => setIsInspectorOpen(!isInspectorOpen)}
+            title={isInspectorOpen ? 'Close Inspector Drawer' : 'Open Inspector & Logs Drawer'}
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '6px',
-              background: showBottomPanels ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
-              border: showBottomPanels ? '1px solid #38bdf8' : 'none',
-              color: '#ffffff',
-              display: 'flex',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: isInspectorOpen ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              border: isInspectorOpen ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.1)',
+              color: isInspectorOpen ? '#38bdf8' : '#e2e8f0',
+              display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: '6px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '11px',
+              fontWeight: 600,
             }}
           >
-            📋
+            <span>📋</span>
+            <span>Inspector</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setZoomLevel((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))}
-            title="Zoom in (+)"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '6px',
-              background: 'transparent',
-              border: 'none',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 700,
-            }}
-          >
-            +
-          </button>
+
+          <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.12)' }} />
+
           <button
             type="button"
             onClick={() => setZoomLevel((z) => Math.max(0.35, Number((z - 0.1).toFixed(2))))}
             title="Zoom out (−)"
             style={{
-              width: '32px',
-              height: '32px',
+              width: '28px',
+              height: '28px',
               borderRadius: '6px',
               background: 'transparent',
               border: 'none',
@@ -1428,236 +1481,587 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           >
             −
           </button>
+
+          <span
+            onClick={handleAutoFit}
+            title="Click to reset zoom"
+            style={{
+              fontSize: '11px',
+              color: '#94a3b8',
+              fontFamily: 'monospace',
+              minWidth: '40px',
+              textAlign: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {Math.round(zoomLevel * 100)}%
+          </span>
+
           <button
             type="button"
-            onClick={handleAutoFit}
-            title="Auto fit all 9 nodes to screen"
+            onClick={() => setZoomLevel((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))}
+            title="Zoom in (+)"
             style={{
-              width: '32px',
-              height: '32px',
+              width: '28px',
+              height: '28px',
               borderRadius: '6px',
-              background: 'rgba(56, 189, 248, 0.15)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              color: '#38bdf8',
+              background: 'transparent',
+              border: 'none',
+              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              fontSize: '10px',
+              fontSize: '16px',
               fontWeight: 700,
-              letterSpacing: '0.04em',
             }}
           >
-            FIT
+            +
           </button>
-        </div>
-      </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          4. BOTTOM DUAL PANELS: LOGS DRAWER & NODE INSPECTOR (COLLAPSIBLE)
-      ───────────────────────────────────────────────────────────── */}
-      {showBottomPanels && (
-      <div
-        style={{
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-          background: 'rgba(10, 14, 23, 0.98)',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '16px',
-          padding: '16px 20px',
-        }}
-      >
-        {/* PANEL A: Latest Telemetry & Logs Drawer (Inspired by n8n logs) */}
-        <div
-          style={{
-            background: 'rgba(0, 0, 0, 0.4)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            borderRadius: '10px',
-            padding: '12px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '190px',
-          }}
-        >
-          <div
+          <button
+            type="button"
+            onClick={handleAutoFit}
+            title="Auto fit all 10 nodes to screen"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '8px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-              paddingBottom: '6px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '12px' }}>📋</span>
-              <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#cbd5e1' }}>
-                Latest Logs & Telemetry
-              </span>
-            </div>
-            <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
-              Session: autovideo-{selectedTopic.slice(0, 10).replace(/[^a-zA-Z0-9]/g, '')}
-            </span>
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              fontFamily: 'monospace',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: '#38bdf8',
               fontSize: '11px',
-              lineHeight: 1.5,
-              display: 'flex',
-              flexDirection: 'column',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
               gap: '4px',
             }}
           >
-            {logs.map((log, i) => (
-              <div key={i} style={{ display: 'flex', gap: '8px' }}>
-                <span style={{ color: '#475569', fontSize: '10px' }}>{log.timestamp}</span>
-                <span
-                  style={{
-                    color:
-                      log.type === 'success' ? '#34d399' : log.type === 'warn' ? '#fbbf24' : '#38bdf8',
-                    fontWeight: 600,
-                  }}
-                >
-                  [{log.node}]
-                </span>
-                <span style={{ color: '#cbd5e1', flex: 1, wordBreak: 'break-word' }}>{log.message}</span>
-              </div>
-            ))}
-            <div ref={logsEndRef} />
-          </div>
+            <span>⛶</span>
+            <span>Fit</span>
+          </button>
         </div>
-
-        {/* PANEL B: Node Inspector / Payload Inspector */}
-        <div
-          style={{
-            background: 'rgba(0, 0, 0, 0.4)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            borderRadius: '10px',
-            padding: '12px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '190px',
-            overflowY: 'auto',
-          }}
-        >
-          <div
+      </>
+    ) : (
+      /* ─────────────────────────────────────────────────────────────
+         PIPELINE STEPS VIEW (Linear, 100% Mobile & Laptop Friendly)
+      ───────────────────────────────────────────────────────────── */
+      <div
+        style={{
+          flex: 1,
+          height: '100%',
+          overflowY: 'auto',
+          padding: '24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          maxWidth: '900px',
+          margin: '0 auto',
+          width: '100%',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Linear Execution Pipeline ({nodes.length} Stages)
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsInspectorOpen(true)}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '8px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-              paddingBottom: '6px',
+              fontSize: '11px',
+              padding: '5px 12px',
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: '#38bdf8',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 600,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px' }}>{selectedNode.icon}</span>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Inspector: {selectedNode.name}
-              </span>
-            </div>
-            <span
+            Open Inspector 📋
+          </button>
+        </div>
+
+        {nodes.map((node, index) => {
+          const isSelected = selectedNodeId === node.id;
+          let statusColor = '#94a3b8';
+          let statusBg = 'rgba(255, 255, 255, 0.05)';
+          let statusBorder = 'rgba(255, 255, 255, 0.1)';
+
+          if (node.status === 'COMPLETED') {
+            statusColor = '#34d399';
+            statusBg = 'rgba(16, 185, 129, 0.12)';
+            statusBorder = '#10b981';
+          } else if (node.status === 'RUNNING') {
+            statusColor = '#fbbf24';
+            statusBg = 'rgba(245, 158, 11, 0.15)';
+            statusBorder = '#f59e0b';
+          } else if (node.status === 'FAILED') {
+            statusColor = '#f87171';
+            statusBg = 'rgba(239, 68, 68, 0.15)';
+            statusBorder = '#ef4444';
+          }
+
+          return (
+            <div
+              key={node.id}
+              onClick={() => {
+                setSelectedNodeId(node.id);
+                setIsInspectorOpen(true);
+              }}
               style={{
-                fontSize: '9px',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                background: 'rgba(255, 255, 255, 0.06)',
-                color: '#94a3b8',
-                fontFamily: 'monospace',
+                background: isSelected ? 'rgba(30, 41, 59, 0.9)' : 'rgba(15, 23, 42, 0.75)',
+                border: isSelected ? '1.5px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                boxShadow: isSelected ? '0 0 20px rgba(56, 189, 248, 0.25)' : 'none',
+                flexWrap: 'wrap',
               }}
             >
-              ID: {selectedNode.id}
-            </span>
-          </div>
-
-          <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.4 }}>
-            {/* Summary */}
-            <div style={{ marginBottom: '8px', color: '#94a3b8', fontSize: '11px' }}>
-              {selectedNode.liveOutput?.summary || selectedNode.subtext}
-            </div>
-
-            {/* Config parameters */}
-            {selectedNode.config && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                  gap: '6px',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  padding: '8px',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(255, 255, 255, 0.04)',
-                  marginBottom: '8px',
-                }}
-              >
-                {Object.entries(selectedNode.config).map(([k, v]) => (
-                  <div key={k} style={{ fontSize: '10px' }}>
-                    <span style={{ color: '#64748b' }}>{k}: </span>
-                    <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace' }}>{String(v)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Media previews if available */}
-            {selectedNode.liveOutput?.audioUrl && (
-              <div style={{ marginTop: '6px' }}>
-                <span style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>
-                  Audible Narration Preview:
-                </span>
-                <audio controls src={selectedNode.liveOutput.audioUrl} style={{ width: '100%', height: '28px' }} />
-              </div>
-            )}
-
-            {selectedNode.liveOutput?.videoUrl && (
-              <div style={{ marginTop: '6px' }}>
-                <a
-                  href={selectedNode.liveOutput.videoUrl}
-                  target="_blank"
-                  rel="noreferrer"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '1 1 260px' }}>
+                <span
                   style={{
-                    color: '#10b981',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     fontSize: '11px',
-                    fontWeight: 600,
-                    textDecoration: 'none',
+                    fontWeight: 700,
+                    color: '#94a3b8',
+                    fontFamily: 'monospace',
+                    flexShrink: 0,
+                  }}
+                >
+                  #{index + 1}
+                </span>
+                <span style={{ fontSize: '22px', flexShrink: 0 }}>{node.icon}</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
+                    {node.name}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                    {node.subtext}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {node.itemCount && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      color: '#38bdf8',
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      border: '1px solid rgba(56, 189, 248, 0.2)',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {node.itemCount}
+                  </span>
+                )}
+
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '3px 8px',
+                    borderRadius: '12px',
+                    background: statusBg,
+                    border: `1px solid ${statusBorder}`,
+                    color: statusColor,
+                    fontFamily: 'monospace',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
                   }}
                 >
-                  <span>▶ Play Rendered 1080p MP4</span>
-                </a>
-              </div>
-            )}
+                  {node.status === 'COMPLETED' && '✓'}
+                  {node.status === 'RUNNING' && '⚡'}
+                  {node.status === 'FAILED' && '✕'}
+                  <span>{node.status}</span>
+                </span>
 
-            {selectedNode.liveOutput?.details && (
-              <pre
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedNodeId(node.id);
+                    setIsInspectorOpen(true);
+                  }}
+                  style={{
+                    padding: '5px 10px',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: '#cbd5e1',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Inspect →
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+
+    {/* ─────────────────────────────────────────────────────────────
+        SLIDE-OVER NODE INSPECTOR & TELEMETRY DRAWER (DOCKED RIGHT)
+    ───────────────────────────────────────────────────────────── */}
+    {isInspectorOpen && (
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 'min(440px, 94vw)',
+          background: 'rgba(11, 15, 25, 0.98)',
+          backdropFilter: 'blur(20px)',
+          borderLeft: '1px solid rgba(255, 255, 255, 0.12)',
+          boxShadow: '-12px 0 45px rgba(0, 0, 0, 0.75)',
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        {/* Drawer Header */}
+        <div
+          style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(15, 23, 42, 0.75)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '20px' }}>{selectedNode.icon}</span>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+                {selectedNode.name}
+              </div>
+              <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                ID: {selectedNode.id} • Category: {selectedNode.category}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsInspectorOpen(false)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: 'none',
+              borderRadius: '6px',
+              width: '28px',
+              height: '28px',
+              color: '#94a3b8',
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Close Inspector (Esc)"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Inspector Navigation Tabs */}
+        <div
+          style={{
+            display: 'flex',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'rgba(0, 0, 0, 0.25)',
+            padding: '0 16px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setInspectorTab('details')}
+            style={{
+              padding: '10px 14px',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: inspectorTab === 'details' ? '2px solid #38bdf8' : '2px solid transparent',
+              color: inspectorTab === 'details' ? '#38bdf8' : '#94a3b8',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Config & Payloads
+          </button>
+          <button
+            type="button"
+            onClick={() => setInspectorTab('logs')}
+            style={{
+              padding: '10px 14px',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: inspectorTab === 'logs' ? '2px solid #38bdf8' : '2px solid transparent',
+              color: inspectorTab === 'logs' ? '#38bdf8' : '#94a3b8',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>Live Logs</span>
+            <span
+              style={{
+                fontSize: '9px',
+                padding: '1px 6px',
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.2)',
+                color: '#38bdf8',
+              }}
+            >
+              {logs.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Drawer Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {inspectorTab === 'details' ? (
+            <>
+              {/* Status Banner */}
+              <div
                 style={{
-                  margin: '6px 0 0',
-                  padding: '6px',
-                  background: 'rgba(0, 0, 0, 0.5)',
-                  borderRadius: '4px',
-                  fontSize: '10px',
-                  color: '#94a3b8',
-                  fontFamily: 'monospace',
-                  whiteSpace: 'pre-wrap',
-                  maxHeight: '60px',
-                  overflowY: 'auto',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                 }}
               >
-                {selectedNode.liveOutput.details}
-              </pre>
-            )}
-          </div>
+                <div>
+                  <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase' }}>Current State</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0', marginTop: '2px' }}>
+                    {selectedNode.status}
+                  </div>
+                </div>
+                {selectedNode.itemCount && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase' }}>Payload</div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#38bdf8', fontFamily: 'monospace', marginTop: '2px' }}>
+                      {selectedNode.itemCount}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Summary */}
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                  Stage Summary
+                </div>
+                <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  {selectedNode.liveOutput?.summary || selectedNode.subtext}
+                </div>
+              </div>
+
+              {/* Config parameters */}
+              {selectedNode.config && (
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Configuration Parameters
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                      gap: '6px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                    }}
+                  >
+                    {Object.entries(selectedNode.config).map(([k, v]) => (
+                      <div key={k} style={{ fontSize: '11px' }}>
+                        <span style={{ color: '#64748b' }}>{k}: </span>
+                        <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace' }}>{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Media previews if available */}
+              {selectedNode.liveOutput?.audioUrl && (
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Audible Narration Preview
+                  </div>
+                  <audio controls src={selectedNode.liveOutput.audioUrl} style={{ width: '100%', height: '32px' }} />
+                </div>
+              )}
+
+              {selectedNode.liveOutput?.thumbnailUrl && (
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Generated Thumbnail
+                  </div>
+                  <img
+                    src={selectedNode.liveOutput.thumbnailUrl}
+                    alt="Thumbnail"
+                    style={{ width: '100%', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}
+                  />
+                </div>
+              )}
+
+              {selectedNode.liveOutput?.videoUrl && (
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Rendered Video Output
+                  </div>
+                  <a
+                    href={selectedNode.liveOutput.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      color: '#10b981',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                    }}
+                  >
+                    <span>▶ Play Rendered 1080p MP4</span>
+                  </a>
+                </div>
+              )}
+
+              {selectedNode.liveOutput?.details && (
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Raw Output Payload
+                  </div>
+                  <pre
+                    style={{
+                      margin: 0,
+                      padding: '10px 12px',
+                      background: 'rgba(0, 0, 0, 0.5)',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      color: '#cbd5e1',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      maxHeight: '160px',
+                      overflowY: 'auto',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                    }}
+                  >
+                    {selectedNode.liveOutput.details}
+                  </pre>
+                </div>
+              )}
+
+              {selectedNode.status === 'FAILED' && onRetryStage && (
+                <button
+                  type="button"
+                  onClick={() => onRetryStage(selectedNode.id)}
+                  style={{
+                    marginTop: '10px',
+                    background: '#ef4444',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  🔄 Retry This Failed Node
+                </button>
+              )}
+            </>
+          ) : (
+            /* Logs Tab */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
+                Session: autovideo-{selectedTopic.slice(0, 10).replace(/[^a-zA-Z0-9]/g, '')}
+              </div>
+              {logs.length === 0 ? (
+                <div style={{ fontSize: '12px', color: '#64748b', padding: '20px 0', textAlign: 'center' }}>
+                  No logs generated yet. Click &quot;Test Workflow&quot; to run simulation.
+                </div>
+              ) : (
+                logs.map((log, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.04)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px' }}>
+                      <span
+                        style={{
+                          color: log.type === 'success' ? '#34d399' : log.type === 'warn' ? '#fbbf24' : '#38bdf8',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        [{log.node}]
+                      </span>
+                      <span style={{ color: '#64748b', fontFamily: 'monospace' }}>{log.timestamp}</span>
+                    </div>
+                    <div style={{ color: '#cbd5e1', fontSize: '11px', fontFamily: 'monospace', wordBreak: 'break-word', marginTop: '2px' }}>
+                      {log.message}
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={logsEndRef} />
+            </div>
+          )}
         </div>
       </div>
-      )}
+    )}
+  </div>
 
-      {/* Embedded CSS for Cable Pulse Animation */}
+      {/* Embedded CSS for Cable Pulse Animation & Drawer Slide */}
       <style jsx global>{`
         @keyframes cablePulse {
           0% {
@@ -1665,6 +2069,16 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           }
           100% {
             stroke-dashoffset: 0;
+          }
+        }
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
           }
         }
       `}</style>
