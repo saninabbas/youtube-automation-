@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0 -p 3000",
     "scheduler": "npx -y tsx scripts/run-scheduler.ts",
     "worker": "npx -y tsx scripts/run-scheduler.ts",
     "test": "npx -y tsx test-final-browser-qa.ts",
