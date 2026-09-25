@@ -10,32 +10,37 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'AutoVideo.ai — Turn Ideas into 1080p YouTube Videos in 60 Seconds',
+  title: 'AUTORA — AI Video Automation',
   description:
-    'Autonomous AI video generator with neural voiceover, cinematic B-roll composition, dynamic subtitles, custom thumbnails, and 30-day scheduled YouTube publishing.',
+    'Create ready-to-publish videos with AI-powered scripts, voiceovers, visuals and captions using AUTORA.',
   keywords: [
+    'AUTORA',
+    'AI Video Automation',
     'AI Video Generator',
     'YouTube Automation',
-    'FFmpeg 1080p',
-    'Video Studio',
     'Neural Voiceover',
+    'Video Studio',
     'Content Calendar',
-    'AutoVideo',
+    'autora.live',
   ],
-  authors: [{ name: 'AutoVideo.ai Team' }],
+  authors: [{ name: 'AUTORA Team' }],
+  metadataBase: new URL('https://autora.live'),
+  alternates: {
+    canonical: 'https://autora.live',
+  },
   openGraph: {
-    title: 'AutoVideo.ai — Autonomous AI Video Studio & YouTube Autopilot',
+    title: 'AUTORA — AI Video Automation',
     description:
-      'Create and auto-publish broadcast-quality 1080p YouTube videos on a 30-day autopilot calendar with viral scripts, neural voices, and native FFmpeg rendering.',
+      'Turn your ideas into ready-to-publish videos with AI-powered scripting, voiceovers, visuals, captions, and rendering.',
     type: 'website',
-    url: 'https://autovideo.ai',
-    siteName: 'AutoVideo.ai',
+    url: 'https://autora.live',
+    siteName: 'AUTORA',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AutoVideo.ai — Turn Ideas into 1080p YouTube Videos in 60 Seconds',
+    title: 'AUTORA — AI Video Automation',
     description:
-      'Autonomous AI video generation with neural voiceovers, dynamic subtitles, and 30-day YouTube auto-publishing.',
+      'Turn your ideas into ready-to-publish videos with AI-powered scripting, voiceovers, visuals, captions, and rendering.',
   },
   icons: {
     icon: '/favicon.ico',

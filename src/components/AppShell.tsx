@@ -210,8 +210,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </svg>
             </div>
             {!collapsed && (
-              <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
-                AUTOSHORT
+              <span style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.04em' }}>
+                AUTORA
               </span>
             )}
           </Link>

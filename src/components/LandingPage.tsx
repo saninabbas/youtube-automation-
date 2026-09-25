@@ -76,8 +76,7 @@ export function LandingPage() {
                 <polygon points="5 3 19 12 5 21 5 3" fill="#fff" />
               </svg>
             </div>
-            <span style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.02em' }}>AutoVideo</span>
-            <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '20px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>SaaS</span>
+            <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.04em' }}>AUTORA</span>
           </Link>
 
           {/* Desktop Nav Links */}
@@ -100,13 +99,13 @@ export function LandingPage() {
               padding: '8px 18px',
               borderRadius: '6px',
               fontSize: '13px',
-              fontWeight: 600,
+              fontWeight: 700,
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px'
             }}>
-              Start Creating ➔
+              Create Your First Video ➔
             </Link>
           </div>
 
@@ -125,7 +124,7 @@ export function LandingPage() {
               gap: '4px',
               whiteSpace: 'nowrap'
             }}>
-              Start ➔
+              Create ➔
             </Link>
 
             <button
@@ -262,16 +261,16 @@ export function LandingPage() {
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', marginBottom: '24px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
           <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#e4e4e7' }}>
-            AI-Powered YouTube Automation
+            AI Video Automation
           </span>
         </div>
 
         <h1 style={{ fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 auto 24px', maxWidth: '900px', color: '#ffffff' }}>
-          Create YouTube Videos Automatically From Any Topic
+          Turn your ideas into ready-to-publish videos.
         </h1>
 
-        <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#a1a1aa', maxWidth: '720px', margin: '0 auto 36px', lineHeight: 1.6 }}>
-          Enter a topic, choose a voice, and let AI create your script, scenes, voiceover and finished video — ready to download or publish to YouTube.
+        <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#a1a1aa', maxWidth: '740px', margin: '0 auto 36px', lineHeight: 1.6 }}>
+          Create engaging videos with AI-powered scripting, voiceover, visuals, captions and rendering — all from one simple workflow.
         </p>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '48px' }}>
@@ -288,7 +287,7 @@ export function LandingPage() {
             gap: '8px',
             boxShadow: '0 4px 20px rgba(255,255,255,0.15)'
           }}>
-            Start Creating ➔
+            Create Your First Video ➔
           </Link>
           <a href="#how-it-works" style={{
             background: 'rgba(255, 255, 255, 0.06)',
@@ -539,7 +538,7 @@ export function LandingPage() {
             You Don't Need to Be a Video Editor
           </h2>
           <p style={{ color: '#a1a1aa', fontSize: '15px' }}>
-            Compare creating videos the manual way versus automated with AutoVideo.
+            Compare creating videos the manual way versus automated with AUTORA.
           </p>
         </div>
 
@@ -556,9 +555,9 @@ export function LandingPage() {
             </ul>
           </div>
 
-          {/* The AutoVideo Way */}
+          {/* The AUTORA Way */}
           <div style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '12px', padding: '28px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '16px' }}>✓ The AutoVideo Way (30 Seconds)</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '16px' }}>✓ The AUTORA Way (30 Seconds)</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', color: '#e4e4e7', fontSize: '14px' }}>
               <li>✓ Type your video topic or headline</li>
               <li>✓ Pick your favorite studio or custom voice</li>

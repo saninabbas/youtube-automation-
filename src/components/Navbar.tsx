@@ -16,7 +16,7 @@ export function Navbar() {
       <div className="navbar-inner">
         <Link href="/content" className="navbar-brand">
           <span className="brand-dot" />
-          <span>AutoVideo</span>
+          <span style={{ fontWeight: 800, letterSpacing: '0.04em' }}>AUTORA</span>
         </Link>
         <div className="navbar-links">
           <Link
