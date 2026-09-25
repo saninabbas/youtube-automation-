@@ -144,8 +144,8 @@ Length: ~${lengthMinutes} minutes`;
           headers: {
             Authorization: `Bearer ${openRouterKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://autovideo.ai',
-            'X-Title': 'AutoVideo Personal AI Creator',
+            'HTTP-Referer': 'https://autora.live',
+            'X-Title': 'AUTORA Personal AI Creator',
           },
           body: JSON.stringify({
             model: 'deepseek/deepseek-chat',

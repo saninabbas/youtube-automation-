@@ -1,5 +1,5 @@
 /**
- * Video Quality Control (QC) Layer for AutoVideo SaaS
+ * Video Quality Control (QC) Layer for AUTORA SaaS
  * Validates generated scene video clips against 8 strict production quality criteria:
  * 1. Visual matches the narration
  * 2. Correct subject and objects

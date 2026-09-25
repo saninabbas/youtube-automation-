@@ -125,7 +125,7 @@ export const PLANS: Plan[] = [
       '3 YouTube Channels & Auto-Publisher',
       '1080p Full HD & FastStart MP4',
       'ElevenLabs Ultra-Realistic Voices',
-      'AutoVideo Studio AI Copilot',
+      'AUTORA Studio AI Copilot',
       'Multi-Concept High-CTR Thumbnails',
       'Automated Content Scheduler',
     ],

@@ -76,7 +76,7 @@ export default function OnboardingPage() {
                 autoFocus
               />
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                This will be the name of your AutoVideo workspace.
+                This will be the name of your AUTORA workspace.
               </span>
             </div>
             <button

@@ -1,5 +1,5 @@
 /**
- * AutoVideo SaaS Production Environment Validator
+ * AUTORA SaaS Production Environment Validator
  * Enforces security and operational requirements before allowing production workloads.
  */
 

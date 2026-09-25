@@ -726,8 +726,8 @@ export function LandingPage() {
       <footer style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '40px 24px', background: '#09090b', color: '#71717a', fontSize: '13px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 700, color: '#fff' }}>AutoVideo</span>
-            <span>— AI-Powered YouTube Automation</span>
+            <span style={{ fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>AUTORA</span>
+            <span>— AI Video Automation</span>
           </div>
 
           <div style={{ display: 'flex', gap: '24px' }}>
@@ -738,7 +738,7 @@ export function LandingPage() {
           </div>
 
           <div>
-            © {new Date().getFullYear()} AutoVideo. All rights reserved.
+            © {new Date().getFullYear()} AUTORA. All rights reserved.
           </div>
         </div>
       </footer>

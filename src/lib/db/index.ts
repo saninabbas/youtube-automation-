@@ -386,7 +386,7 @@ export function getDb(): Database.Database {
       if (!defaultUser) {
         dbInstance.prepare(`
           INSERT INTO users (id, email, password_hash, salt, name, email_verified, role, status, onboarding_completed, created_at, updated_at)
-          VALUES (?, 'creator@autovideo.ai', 'demo_hash_seeded', 'demo_salt', 'Creative Director', 1, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
+          VALUES (?, 'creator@autora.live', 'demo_hash_seeded', 'demo_salt', 'Creative Director', 1, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
         `).run(DEFAULT_USER_ID, new Date().toISOString(), new Date().toISOString());
       }
     } catch {}

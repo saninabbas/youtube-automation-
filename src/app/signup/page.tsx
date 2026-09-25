@@ -77,12 +77,12 @@ export default function SignupPage() {
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
             </div>
-            <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
-              AutoVideo<span style={{ color: '#94a3b8' }}>.ai</span>
+            <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
+              AUTORA
             </span>
           </Link>
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', marginBottom: '4px' }}>Create your account</h1>
-          <p style={{ fontSize: '13px', color: '#94a3b8' }}>Start automating your video pipeline today</p>
+          <p style={{ fontSize: '13px', color: '#94a3b8' }}>Start automating your video pipeline with AUTORA</p>
         </div>
 
         <div style={{ padding: '28px', background: '#0f121a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px' }}>

@@ -186,7 +186,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           SIDEBAR NAVIGATION
       ───────────────────────────────────────────────────────────── */}
       {/* ─────────────────────────────────────────────────────────────
-          SIDEBAR NAVIGATION (AUTOSHORT)
+          SIDEBAR NAVIGATION (AUTORA)
       ───────────────────────────────────────────────────────────── */}
       <aside className={`sidebar ${collapsed ? 'collapsed sidebar-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`} style={{ backgroundColor: '#090a0d', borderRight: '1px solid rgba(255, 255, 255, 0.07)' }}>
         <div className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
@@ -579,7 +579,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ─────────────────────────────────────────────────────────────
-          MAIN WRAPPER & TOPBAR (AUTOSHORT)
+          MAIN WRAPPER & TOPBAR (AUTORA)
       ───────────────────────────────────────────────────────────── */}
       <div className="main-wrapper">
         <header className="topbar" style={{ backgroundColor: 'rgba(9, 10, 13, 0.85)', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
@@ -597,7 +597,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </svg>
             </button>
 
-            {/* Breadcrumbs matching AUTOSHORT */}
+            {/* Breadcrumbs matching AUTORA */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
               <span style={{ color: '#71717a' }}>Dashboard</span>
               <span style={{ color: '#3f3f46' }}>›</span>

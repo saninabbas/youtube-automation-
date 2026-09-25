@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     const res = NextResponse.json(
       {
         success: true,
-        message: 'Account created successfully. Welcome to AutoVideo!',
+        message: 'Account created successfully. Welcome to AUTORA!',
         user,
         verificationToken,
       },

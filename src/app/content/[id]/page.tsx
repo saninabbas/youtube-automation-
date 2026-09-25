@@ -584,7 +584,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   if (loading) {
     return (
       <div className="studio-page-layout" style={{ padding: '80px 0', textAlign: 'center' }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Loading AutoVideo Studio...</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Loading AUTORA Studio...</div>
       </div>
     );
   }
@@ -1384,7 +1384,7 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           </div>
         </div>
 
-        {/* RIGHT PANE: AI Inspector, AutoVideo Copilot & Publishing (Hidden on mobile if scenes tab is active) */}
+        {/* RIGHT PANE: AI Inspector, AUTORA Copilot & Publishing (Hidden on mobile if scenes tab is active) */}
         <div className={`studio-pane studio-pane-right ${mobileStudioTab === 'scenes' ? 'studio-pane-mobile-hidden' : ''}`}>
           {/* Tab Switcher */}
           <div className="pane-header" style={{ padding: '8px 12px' }}>
@@ -1679,12 +1679,12 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                 </div>
               </>
             ) : activeInspectorTab === 'copilot' ? (
-              /* AutoVideo Copilot Tab */
+              /* AUTORA Copilot Tab */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                     <span style={{ fontSize: '14px' }}>⚡</span>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>AutoVideo Studio Copilot</h3>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>AUTORA Studio Copilot</h3>
                   </div>
                   <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                     Contextual AI assistant for rewriting scene prompts, hooks, and thumbnail concepts.

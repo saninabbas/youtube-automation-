@@ -2015,7 +2015,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
             /* Logs Tab */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
-                Session: autovideo-{selectedTopic.slice(0, 10).replace(/[^a-zA-Z0-9]/g, '')}
+                Session: autora-{selectedTopic.slice(0, 10).replace(/[^a-zA-Z0-9]/g, '')}
               </div>
               {logs.length === 0 ? (
                 <div style={{ fontSize: '12px', color: '#64748b', padding: '20px 0', textAlign: 'center' }}>

@@ -1,5 +1,5 @@
 /**
- * Global Visual Style System for AutoVideo SaaS
+ * Global Visual Style System for AUTORA SaaS
  * Provides project-wide visual style configuration ensuring visual cohesion,
  * lighting consistency, color grading harmony, and 9:16 vertical composition across all scenes.
  */
