@@ -71,7 +71,7 @@ export function LandingPage() {
       }}>
         <div className="landing-header-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="autora-logo-pulse" style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
                 <polygon points="5 3 19 12 5 21 5 3" fill="#fff" />
               </svg>
@@ -93,7 +93,7 @@ export function LandingPage() {
             <Link href="/login" style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '14px', fontWeight: 500, padding: '8px 14px' }}>
               Log In
             </Link>
-            <Link href="/signup" style={{
+            <Link href="/signup" className="autora-btn-gleam" style={{
               background: '#ffffff',
               color: '#09090b',
               padding: '8px 18px',
@@ -111,7 +111,7 @@ export function LandingPage() {
 
           {/* Mobile Right Controls: CTA + Hamburger */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Link href="/signup" style={{
+            <Link href="/signup" className="autora-btn-gleam" style={{
               background: '#ffffff',
               color: '#09090b',
               padding: '6px 12px',
@@ -235,6 +235,7 @@ export function LandingPage() {
               <Link
                 href="/signup"
                 onClick={() => setMobileMenuOpen(false)}
+                className="autora-btn-gleam"
                 style={{
                   flex: 1,
                   textAlign: 'center',
@@ -257,24 +258,26 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           2. HERO SECTION
       ───────────────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px 60px', maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', marginBottom: '24px' }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+      <section style={{ padding: '80px 24px 60px', maxWidth: '1100px', margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+        <div className="autora-hero-aura" />
+
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
+          <span className="autora-badge-beacon" />
           <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#e4e4e7' }}>
             AI Video Automation
           </span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 auto 24px', maxWidth: '900px', color: '#ffffff' }}>
+        <h1 className="autora-shimmer-headline" style={{ fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 auto 24px', maxWidth: '900px', color: '#ffffff', position: 'relative', zIndex: 1 }}>
           Turn your ideas into ready-to-publish videos.
         </h1>
 
-        <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#a1a1aa', maxWidth: '740px', margin: '0 auto 36px', lineHeight: 1.6 }}>
+        <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#a1a1aa', maxWidth: '740px', margin: '0 auto 36px', lineHeight: 1.6, position: 'relative', zIndex: 1 }}>
           Create engaging videos with AI-powered scripting, voiceover, visuals, captions and rendering — all from one simple workflow.
         </p>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '48px' }}>
-          <Link href="/signup" style={{
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '48px', position: 'relative', zIndex: 1 }}>
+          <Link href="/signup" className="autora-btn-gleam" style={{
             background: '#ffffff',
             color: '#09090b',
             padding: '14px 28px',
@@ -330,32 +333,32 @@ export function LandingPage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#10b981', marginBottom: '12px', fontFamily: 'monospace' }}>01</div>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
+            <div className="autora-step-num" style={{ fontSize: '28px', fontWeight: 800, color: '#10b981', marginBottom: '12px', fontFamily: 'monospace' }}>01</div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Enter Your Topic</h3>
             <p style={{ color: '#a1a1aa', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
               Tell the AI what you want your video to be about, e.g. "10 foods that support healthy aging" or "Quantum Computing explained".
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#38bdf8', marginBottom: '12px', fontFamily: 'monospace' }}>02</div>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
+            <div className="autora-step-num" style={{ fontSize: '28px', fontWeight: 800, color: '#38bdf8', marginBottom: '12px', fontFamily: 'monospace' }}>02</div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Choose Your Voice</h3>
             <p style={{ color: '#a1a1aa', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
               Select from curated studio voices (Rachel, Adam, Antoni, Bella, Christopher) or connect your personal cloned voice.
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#c084fc', marginBottom: '12px', fontFamily: 'monospace' }}>03</div>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
+            <div className="autora-step-num" style={{ fontSize: '28px', fontWeight: 800, color: '#c084fc', marginBottom: '12px', fontFamily: 'monospace' }}>03</div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>AI Creates Your Video</h3>
             <p style={{ color: '#a1a1aa', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
               AI writes the script, structures the story, generates natural narration, matches 1080p visual scenes, and renders the video.
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b', marginBottom: '12px', fontFamily: 'monospace' }}>04</div>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '28px 24px' }}>
+            <div className="autora-step-num" style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b', marginBottom: '12px', fontFamily: 'monospace' }}>04</div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Download or Publish</h3>
             <p style={{ color: '#a1a1aa', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
               Download your complete 1080p MP4 file immediately, or schedule it automatically to your connected YouTube channel.
@@ -381,7 +384,7 @@ export function LandingPage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ fontSize: '22px' }}>🌐</span>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>OpenRouter</h3>
@@ -392,7 +395,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ fontSize: '22px' }}>✨</span>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>Google Gemini</h3>
@@ -403,7 +406,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ fontSize: '22px' }}>🎙️</span>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>ElevenLabs</h3>
@@ -414,7 +417,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ fontSize: '22px' }}>🔊</span>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>Google Neural TTS</h3>
@@ -425,7 +428,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ fontSize: '22px' }}>▶️</span>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>YouTube Data API</h3>
@@ -436,7 +439,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ fontSize: '22px' }}>☁️</span>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>Cloudflare R2 & AI</h3>
@@ -466,7 +469,7 @@ export function LandingPage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#10b981', fontFamily: 'monospace', marginBottom: '8px' }}>PRIMARY MODEL</div>
             <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>DeepSeek-Chat</h3>
             <p style={{ color: '#a1a1aa', fontSize: '13px', lineHeight: 1.6, margin: 0 }}>
@@ -474,7 +477,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', fontFamily: 'monospace', marginBottom: '8px' }}>SYNTHESIS & STRUCTURE</div>
             <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>GPT-4o Mini</h3>
             <p style={{ color: '#a1a1aa', fontSize: '13px', lineHeight: 1.6, margin: 0 }}>
@@ -482,7 +485,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+          <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace', marginBottom: '8px' }}>HIGH-SPEED FALLBACK</div>
             <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Gemini 3.8 Flash</h3>
             <p style={{ color: '#a1a1aa', fontSize: '13px', lineHeight: 1.6, margin: 0 }}>
@@ -517,7 +520,7 @@ export function LandingPage() {
             { name: 'Christopher', tone: 'Broadcast Journalist', gender: 'Male' },
             { name: 'My Voice', tone: 'Your ElevenLabs Cloned Voice', gender: 'Custom ID' },
           ].map((v, i) => (
-            <div key={i} style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '20px' }}>
+            <div key={i} className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ fontSize: '24px', marginBottom: '10px' }}>🎙️</div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>{v.name}</div>
               <div style={{ fontSize: '13px', color: '#a1a1aa', marginBottom: '8px' }}>{v.tone}</div>
@@ -544,7 +547,7 @@ export function LandingPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
           {/* The Hard Way */}
-          <div style={{ background: 'rgba(244, 63, 94, 0.04)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: '12px', padding: '28px' }}>
+          <div className="autora-card-interactive" style={{ background: 'rgba(244, 63, 94, 0.04)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: '12px', padding: '28px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#f43f5e', marginBottom: '16px' }}>❌ The Manual Way (Hours of Work)</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', color: '#a1a1aa', fontSize: '14px' }}>
               <li>❌ Research and write 1,000+ words manually</li>
@@ -556,7 +559,7 @@ export function LandingPage() {
           </div>
 
           {/* The AUTORA Way */}
-          <div style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '12px', padding: '28px' }}>
+          <div className="autora-card-interactive" style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '12px', padding: '28px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '16px' }}>✓ The AUTORA Way (30 Seconds)</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', color: '#e4e4e7', fontSize: '14px' }}>
               <li>✓ Type your video topic or headline</li>
@@ -618,7 +621,7 @@ export function LandingPage() {
         </div>
 
         {/* Pricing Card */}
-        <div style={{
+        <div className="autora-card-interactive" style={{
           background: '#121215',
           border: '1px solid rgba(255, 255, 255, 0.15)',
           borderRadius: '16px',
@@ -663,7 +666,7 @@ export function LandingPage() {
             ))}
           </ul>
 
-          <Link href="/signup" style={{
+          <Link href="/signup" className="autora-btn-gleam" style={{
             display: 'block',
             width: '100%',
             textAlign: 'center',

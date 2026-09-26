@@ -1868,3 +1868,177 @@ a {
   border-color: rgba(244, 63, 94, 0.35);
   color: #f43f5e;
 }
+
+/* ==============================================================================
+   AUTORA PREMIUM ANIMATIONS & MICRO-INTERACTIONS
+   ============================================================================== */
+
+@keyframes autoraAuraGlow {
+  0%, 100% {
+    transform: translate(-50%, -10%) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(-50%, -6%) scale(1.12);
+    opacity: 0.85;
+  }
+}
+
+@keyframes autoraBeaconPing {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes autoraTextShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes autoraGleamSweep {
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+  }
+  25%, 100% {
+    transform: translateX(250%) rotate(25deg);
+  }
+}
+
+@keyframes autoraFloating {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes autoraPulseBorder {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(16, 185, 129, 0.35);
+  }
+}
+
+@keyframes cableFlow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes cablePulse {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.cable-flow-anim {
+  animation: cableFlow 0.8s linear infinite !important;
+}
+
+.autora-hero-aura {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 720px;
+  max-width: 95vw;
+  height: 420px;
+  background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.16) 0%, rgba(56, 189, 248, 0.10) 45%, transparent 70%);
+  filter: blur(55px);
+  pointer-events: none;
+  z-index: 0;
+  animation: autoraAuraGlow 7s ease-in-out infinite;
+}
+
+.autora-badge-beacon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  animation: autoraBeaconPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.autora-shimmer-headline {
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 45%, #38bdf8 75%, #10b981 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: autoraTextShimmer 7s linear infinite;
+}
+
+.autora-btn-gleam {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.autora-btn-gleam::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(60deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%);
+  transform: rotate(25deg) translateX(-150%);
+  animation: autoraGleamSweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.autora-btn-gleam:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(255, 255, 255, 0.25) !important;
+}
+
+.autora-card-interactive {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease !important;
+}
+
+.autora-card-interactive:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.75), 0 0 24px rgba(56, 189, 248, 0.08) !important;
+}
+
+.autora-card-interactive:hover .autora-step-num {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+}
+
+.autora-step-num {
+  transition: transform 0.2s ease, filter 0.2s ease;
+  display: inline-block;
+}
+
+.autora-logo-pulse {
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.autora-logo-pulse:hover {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));
+}
+
