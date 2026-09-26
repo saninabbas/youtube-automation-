@@ -16,11 +16,15 @@ export function getDb(): Database.Database {
     }
 
     const dbPath = path.join(dataDir, 'app.db');
+    console.log(`[DB] Initializing database at ${dbPath}`);
     dbInstance = new Database(dbPath);
-    if (!isServerless) {
-      dbInstance.pragma('journal_mode = WAL');
+    try {
+      dbInstance.pragma('journal_mode = DELETE');
+      dbInstance.pragma('synchronous = NORMAL');
+      dbInstance.pragma('foreign_keys = ON');
+    } catch (pragmaErr: any) {
+      console.warn('[DB] Pragma initialization warning:', pragmaErr.message);
     }
-    dbInstance.pragma('foreign_keys = ON');
 
     // Run schema initialization
     const schemaPath = path.join(__dirname, 'schema.sql');

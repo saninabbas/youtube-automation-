@@ -13,14 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Ensure storage and data directories exist with write permissions
-RUN mkdir -p /app/data /app/storage && chmod 777 /app/data /app/storage
+RUN mkdir -p /app/data /app/storage && chmod -R 777 /app/data /app/storage
 
-# Install dependencies
+# Install dependencies (build native C++ modules from source for Linux glibc)
 COPY package.json package-lock.json* ./
 RUN npm install
-
-# Rebuild native modules for current glibc architecture
-RUN npm rebuild better-sqlite3
+RUN npm rebuild better-sqlite3 --build-from-source
 
 # Copy application source
 COPY . .

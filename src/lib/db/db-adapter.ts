@@ -72,10 +72,13 @@ export function getSqliteDb(): BetterSqlite3.Database {
 
     const dbPath = path.join(dataDir, 'app.db');
     sqliteInstance = new BetterSqlite3(dbPath);
-    if (!isServerless) {
-      sqliteInstance.pragma('journal_mode = WAL');
+    try {
+      sqliteInstance.pragma('journal_mode = DELETE');
+      sqliteInstance.pragma('synchronous = NORMAL');
+      sqliteInstance.pragma('foreign_keys = ON');
+    } catch (e: any) {
+      console.warn('[DB-Adapter] SQLite pragma warning:', e.message);
     }
-    sqliteInstance.pragma('foreign_keys = ON');
   }
   return sqliteInstance;
 }
