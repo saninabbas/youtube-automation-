@@ -1,19 +1,28 @@
-# Production Dockerfile for AutoVideo Next.js SaaS
-FROM node:18-alpine AS base
+# Production Dockerfile for AUTORA Next.js SaaS (Debian glibc for rock-solid better-sqlite3 and ffmpeg)
+FROM node:20-slim AS base
 
-# Install build dependencies for better-sqlite3 and ffmpeg
-RUN apk add --no-cache libc6-compat python3 make g++ ffmpeg
+# Install ffmpeg, python, make, g++ for native C++ addons
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    python3 \
+    make \
+    g++ \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install dependencies based on package.json
-COPY package.json package-lock.json* ./
-RUN npm ci || npm install
+# Ensure storage and data directories exist with write permissions
+RUN mkdir -p /app/data /app/storage && chmod 777 /app/data /app/storage
 
-# Rebuild better-sqlite3 for current architecture
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Rebuild native modules for current glibc architecture
 RUN npm rebuild better-sqlite3
 
-# Copy the rest of the application
+# Copy application source
 COPY . .
 
 # Build Next.js application
@@ -21,11 +30,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 RUN npm run build
 
-# Expose Next.js default port
+# Expose default port
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the Next.js production server
+# Start production server
 CMD ["npm", "run", "start"]
