@@ -31,6 +31,19 @@ export function LandingPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#09090b', color: '#f4f4f5', fontFamily: 'var(--font-sans, sans-serif)', overflowX: 'hidden', width: '100%', maxWidth: '100vw' }}>
       <style>{`
+        .nav-pill-link {
+          color: #a1a1aa;
+          text-decoration: none;
+          font-size: 13.5px;
+          font-weight: 500;
+          padding: 6px 14px;
+          border-radius: 20px;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .nav-pill-link:hover {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.08);
+        }
         @media (max-width: 768px) {
           .desktop-nav {
             display: none !important;
@@ -38,8 +51,8 @@ export function LandingPage() {
           .desktop-auth {
             display: none !important;
           }
-          .mobile-menu-btn {
-            display: inline-flex !important;
+          .mobile-only-controls {
+            display: flex !important;
           }
           .hero-pipeline-ribbon {
             flex-direction: column !important;
@@ -50,6 +63,9 @@ export function LandingPage() {
           }
         }
         @media (min-width: 769px) {
+          .mobile-only-controls {
+            display: none !important;
+          }
           .mobile-menu-btn {
             display: none !important;
           }
@@ -65,57 +81,72 @@ export function LandingPage() {
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        background: 'rgba(9, 9, 11, 0.85)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+        background: 'rgba(9, 9, 11, 0.80)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.07)'
       }}>
-        <div className="landing-header-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
-            <div className="autora-logo-pulse" style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="landing-header-inner" style={{ maxWidth: '1240px', margin: '0 auto', padding: '0 24px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
+            <div className="autora-logo-pulse" style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #10b981 0%, #38bdf8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(16, 185, 129, 0.35)' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
                 <polygon points="5 3 19 12 5 21 5 3" fill="#fff" />
               </svg>
             </div>
-            <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.04em' }}>AUTORA</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.04em', color: '#ffffff' }}>AUTORA</span>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '1px 6px', borderRadius: '10px', letterSpacing: '0.04em' }}>
+                AI
+              </span>
+            </div>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <nav className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-            <a href="#how-it-works" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>How It Works</a>
-            <a href="#integrations" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Integrations</a>
-            <a href="#ai-models" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>AI Models</a>
-            <a href="#voices" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Voices</a>
-            <a href="#pricing" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Pricing</a>
+          {/* Desktop Nav Links (Sleek Floating Pill) */}
+          <nav className="desktop-nav" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.07)',
+            padding: '4px 6px',
+            borderRadius: '24px',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <a href="#how-it-works" className="nav-pill-link">How It Works</a>
+            <a href="#integrations" className="nav-pill-link">Integrations</a>
+            <a href="#ai-models" className="nav-pill-link">AI Models</a>
+            <a href="#voices" className="nav-pill-link">Voices</a>
+            <a href="#pricing" className="nav-pill-link">Pricing</a>
           </nav>
 
-          {/* Desktop Auth Links */}
-          <div className="desktop-auth" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Link href="/login" style={{ color: '#e4e4e7', textDecoration: 'none', fontSize: '14px', fontWeight: 500, padding: '8px 14px' }}>
+          {/* Desktop Auth Links (Only ONE primary CTA) */}
+          <div className="desktop-auth" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Link href="/login" className="nav-pill-link" style={{ padding: '7px 14px' }}>
               Log In
             </Link>
             <Link href="/signup" className="autora-btn-gleam" style={{
               background: '#ffffff',
               color: '#09090b',
-              padding: '8px 18px',
-              borderRadius: '6px',
-              fontSize: '13px',
+              padding: '9px 20px',
+              borderRadius: '20px',
+              fontSize: '13.5px',
               fontWeight: 700,
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              boxShadow: '0 0 24px rgba(255, 255, 255, 0.2)'
             }}>
               Create Your First Video ➔
             </Link>
           </div>
 
-          {/* Mobile Right Controls: CTA + Hamburger */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Mobile Right Controls: Strictly Hidden on Desktop via .mobile-only-controls */}
+          <div className="mobile-only-controls" style={{ display: 'none', alignItems: 'center', gap: '8px' }}>
             <Link href="/signup" className="autora-btn-gleam" style={{
               background: '#ffffff',
               color: '#09090b',
-              padding: '6px 12px',
-              borderRadius: '6px',
+              padding: '6px 14px',
+              borderRadius: '18px',
               fontSize: '12px',
               fontWeight: 700,
               textDecoration: 'none',
@@ -134,11 +165,11 @@ export function LandingPage() {
               style={{
                 width: '38px',
                 height: '38px',
-                borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.08)',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.06)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: '#ffffff',
-                display: 'none',
+                display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
