@@ -17,7 +17,15 @@ export function getDb(): Database.Database {
 
     const dbPath = path.join(dataDir, 'app.db');
     console.log(`[DB] Initializing database at ${dbPath}`);
-    dbInstance = new Database(dbPath);
+    try {
+      dbInstance = new Database(dbPath);
+    } catch (err: any) {
+      console.error(`[DB] Error opening database at ${dbPath}: ${err.message}. Recreating clean database...`);
+      try {
+        if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
+      } catch {}
+      dbInstance = new Database(dbPath);
+    }
     try {
       dbInstance.pragma('journal_mode = DELETE');
       dbInstance.pragma('synchronous = NORMAL');

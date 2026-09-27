@@ -15,8 +15,8 @@ WORKDIR /app
 # Ensure storage and data directories exist with write permissions
 RUN mkdir -p /app/data /app/storage && chmod -R 777 /app/data /app/storage
 
-# Install dependencies (build native C++ modules from source for Linux glibc)
-COPY package.json package-lock.json* ./
+# Install dependencies (fresh resolution for Linux glibc)
+COPY package.json ./
 RUN npm install
 RUN npm rebuild better-sqlite3 --build-from-source
 
