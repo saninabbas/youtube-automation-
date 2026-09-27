@@ -60,7 +60,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="fameswap-verification" content="RHGxQyVs29q0GKUj2KPw8BseWbVDXKVn" />
         <meta name="fameswap-verification" content="RHGxQyVs29qOGKUj2KPw8BseWbVDXKVn" />
       </head>
       <body>
