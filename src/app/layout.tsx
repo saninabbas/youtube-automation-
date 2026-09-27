@@ -45,10 +45,10 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.ico',
   },
-  other: {
-    'fameswap-verification': 'RHGxQyVs29qOGKUj2KPw8BseWbVDXKVn',
-  },
 };
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import { ToastProvider } from '@/components/Toast';
 
@@ -60,6 +60,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="fameswap-verification" content="RHGxQyVs29q0GKUj2KPw8BseWbVDXKVn" />
         <meta name="fameswap-verification" content="RHGxQyVs29qOGKUj2KPw8BseWbVDXKVn" />
       </head>
       <body>
