@@ -45,6 +45,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.ico',
   },
+  other: {
+    'fameswap-verification': 'RHGxQyVs29qOGKUj2KPw8BseWbVDXKVn',
+  },
 };
 
 export const dynamic = 'force-dynamic';
