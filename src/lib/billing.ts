@@ -78,7 +78,7 @@ export interface Entitlements {
   plan_name: string;
 }
 
-export type PaymentProvider = 'stripe' | 'paddle' | 'none';
+export type PaymentProvider = 'polar' | 'stripe' | 'paddle' | 'none';
 
 // ============================================================
 // CALCULATED PRODUCTION SAAS PACKAGES (2026 EDITION)
@@ -190,7 +190,12 @@ export type BillingConfigStatus =
   | { configured: true; provider: PaymentProvider }
   | { configured: false; reason: string };
 
+import { isPolarConfigured } from './polar';
+
 export function getPaymentProviderStatus(): BillingConfigStatus {
+  if (isPolarConfigured()) {
+    return { configured: true, provider: 'polar' };
+  }
   if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
     return { configured: true, provider: 'stripe' };
   }
@@ -199,7 +204,7 @@ export function getPaymentProviderStatus(): BillingConfigStatus {
   }
   return {
     configured: false,
-    reason: 'Payment provider not configured in environment. Set STRIPE_SECRET_KEY in .env for live checkout.',
+    reason: 'Payment provider not configured in environment. Set POLAR_ACCESS_TOKEN or POLAR_CHECKOUT_URL_* in .env for live checkout.',
   };
 }
 

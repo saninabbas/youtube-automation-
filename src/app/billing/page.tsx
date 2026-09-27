@@ -12,6 +12,14 @@ export default function BillingPage() {
 
   useEffect(() => {
     fetchBilling();
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('status') === 'success') {
+        setActionMsg('🎉 Payment successful! Your plan subscription and AI video credits are now active.');
+      } else if (urlParams.get('status') === 'cancelled') {
+        setActionMsg('Notice: Checkout was cancelled. No charges were made.');
+      }
+    }
   }, []);
 
   const fetchBilling = async () => {
@@ -63,10 +71,14 @@ export default function BillingPage() {
       });
       const json = await res.json();
       if (res.ok) {
+        if (json.url) {
+          window.location.href = json.url;
+          return;
+        }
         setActionMsg(json.message || `Upgraded to ${planId.toUpperCase()} plan.`);
         fetchBilling();
       } else {
-        setActionMsg(json.error || 'Payment gateway setup required in .env for live credit card checkout.');
+        setActionMsg(json.error || 'Payment gateway setup required in .env for live checkout.');
       }
     } catch (err: any) {
       setActionMsg(`Notice: ${err.message}`);

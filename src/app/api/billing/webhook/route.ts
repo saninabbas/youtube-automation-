@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getDb, grantUserCredits } from '@/lib/db';
 
+import { POST as handlePolarWebhook } from '../polar-webhook/route';
+
 export const dynamic = 'force-dynamic';
 
 function getStripeClient(): Stripe | null {
@@ -11,6 +13,10 @@ function getStripeClient(): Stripe | null {
 }
 
 export async function POST(req: Request) {
+  // If request contains Polar Standard Webhooks headers, delegate to Polar handler
+  if (req.headers.get('webhook-signature') || req.headers.get('webhook-id') || req.headers.get('Webhook-Signature')) {
+    return handlePolarWebhook(req);
+  }
   try {
     const signature = req.headers.get('stripe-signature');
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;

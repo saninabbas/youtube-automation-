@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getCurrentUser } from '@/lib/auth';
-import { getDb, getUserCredits } from '@/lib/db';
-import { calculateEntitlements, PLANS } from '@/lib/billing';
+import { getDb, getUserCredits, grantUserCredits } from '@/lib/db';
+import { calculateEntitlements, PLANS, getPaymentProviderStatus } from '@/lib/billing';
+import { isPolarConfigured, createPolarCheckout } from '@/lib/polar';
 import { apiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
@@ -60,13 +61,7 @@ export async function GET(req: Request) {
       .prepare('SELECT * FROM credit_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20')
       .all(user.id);
 
-    const stripeConfigured = !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_'));
-    const paymentStatus = {
-      configured: stripeConfigured,
-      provider: stripeConfigured ? ('stripe' as const) : ('none' as const),
-      reason: stripeConfigured ? undefined : 'STRIPE_SECRET_KEY is not set or invalid',
-    };
-
+    const paymentStatus = getPaymentProviderStatus();
     const entitlements = calculateEntitlements(credits.tier.toLowerCase(), credits.balance);
 
     return NextResponse.json({
@@ -88,20 +83,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const stripe = getStripeClient();
-    if (!stripe) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Stripe billing is not configured on this server. Please set STRIPE_SECRET_KEY to enable live checkout.',
-        },
-        { status: 503 }
-      );
+    const body = await req.json().catch(() => ({}));
+
+    // Handle manual top-up if requested
+    if (body.topUpAmount && typeof body.topUpAmount === 'number') {
+      const amount = Math.min(Math.max(body.topUpAmount, 50), 2000);
+      grantUserCredits(user.id, amount, 'MANUAL_CREDIT', `Added ${amount} credits to your account`);
+      return NextResponse.json({
+        success: true,
+        message: `Added ${amount} credits to your account.`,
+      });
     }
 
-    const body = await req.json().catch(() => ({}));
     const planId = (body.planId || body.tier || 'creator').toLowerCase();
-    const billingCycle: 'monthly' | 'annual' = body.billingCycle === 'annual' ? 'annual' : 'monthly';
+    const billingCycle: 'monthly' | 'annual' = body.billingCycle === 'annual' || body.isAnnual ? 'annual' : 'monthly';
 
     const targetPlan = PLANS.find((p) => p.id.toLowerCase() === planId);
     if (!targetPlan) {
@@ -111,53 +106,97 @@ export async function POST(req: Request) {
       );
     }
 
-    const priceId = getStripePriceId(planId, billingCycle);
-    if (!priceId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Stripe Price ID is not configured for plan "${planId}" (${billingCycle}). Set STRIPE_PRICE_${planId.toUpperCase()}_${billingCycle.toUpperCase()} in environment variables.`,
-        },
-        { status: 400 }
-      );
-    }
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      client_reference_id: user.id,
-      customer_email: user.email,
-      metadata: {
+    // 1. Check Polar First (Preferred MoR payment gateway)
+    if (isPolarConfigured()) {
+      const polarResult = await createPolarCheckout({
         userId: user.id,
+        userEmail: user.email,
         planId: targetPlan.id,
         billingCycle,
-        monthlyCredits: String(targetPlan.credits_monthly),
-      },
-      subscription_data: {
+      });
+
+      if (polarResult.success && polarResult.url) {
+        return NextResponse.json({
+          success: true,
+          provider: 'polar',
+          url: polarResult.url,
+          checkoutId: polarResult.checkoutId,
+        });
+      }
+
+      // If Polar had an error but Stripe is not available, report Polar error
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: polarResult.error || 'Failed to initialize Polar checkout.',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 2. Stripe Checkout Fallback
+    const stripe = getStripeClient();
+    if (stripe) {
+      const priceId = getStripePriceId(planId, billingCycle);
+      if (!priceId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Stripe Price ID is not configured for plan "${planId}" (${billingCycle}). Set STRIPE_PRICE_${planId.toUpperCase()}_${billingCycle.toUpperCase()} in environment variables.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://autora.live';
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        client_reference_id: user.id,
+        customer_email: user.email,
         metadata: {
           userId: user.id,
           planId: targetPlan.id,
+          billingCycle,
+          monthlyCredits: String(targetPlan.credits_monthly),
         },
-      },
-      success_url: `${appUrl}/billing?session_id={CHECKOUT_SESSION_ID}&status=success`,
-      cancel_url: `${appUrl}/billing?status=cancelled`,
-    });
+        subscription_data: {
+          metadata: {
+            userId: user.id,
+            planId: targetPlan.id,
+          },
+        },
+        success_url: `${appUrl}/billing?session_id={CHECKOUT_SESSION_ID}&status=success`,
+        cancel_url: `${appUrl}/billing?status=cancelled`,
+      });
 
-    return NextResponse.json({
-      success: true,
-      url: session.url,
-      sessionId: session.id,
-    });
+      return NextResponse.json({
+        success: true,
+        provider: 'stripe',
+        url: session.url,
+        sessionId: session.id,
+      });
+    }
+
+    // 3. Neither Gateway Configured
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Payment gateway is being configured. Set POLAR_CHECKOUT_URL or POLAR_ACCESS_TOKEN in .env to enable instant live checkout.',
+      },
+      { status: 503 }
+    );
   } catch (err: any) {
-    return apiError(err.message || 'Stripe checkout initialization failed', {
+    return apiError(err.message || 'Checkout initialization failed', {
       internalError: err,
       logPrefix: 'POST /api/billing',
     });
