@@ -501,7 +501,26 @@ class DefaultVideoProvider implements VideoProvider {
       }
     }
 
-    // 2b. If AI image generated, render with Cinematic Camera Motion & Film Grading
+    // 2c. High-Speed Pollinations AI Turbo (Guaranteed AI-generated visual matching prompt)
+    if (!generatedAiImage) {
+      try {
+        console.log(`[VideoProvider] Generating AI visual for Scene ${sceneIndex} using Pollinations AI Turbo...`);
+        const polliUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&nologo=true&model=turbo`;
+        const polliRes = await fetch(polliUrl, { signal: AbortSignal.timeout(15000) });
+        if (polliRes.ok) {
+          const arrayBuf = await polliRes.arrayBuffer();
+          if (arrayBuf.byteLength > 5000) {
+            await fs.promises.writeFile(tempAiImgPath, Buffer.from(arrayBuf));
+            generatedAiImage = true;
+            console.log(`[VideoProvider] Pollinations AI image generated for Scene ${sceneIndex}`);
+          }
+        }
+      } catch (polliErr: any) {
+        console.warn(`[VideoProvider] Pollinations AI error (${polliErr.message}).`);
+      }
+    }
+
+    // 2d. If any AI image was generated (Cloudflare Flux/SDXL or Pollinations), render with Cinematic Camera Motion & Film Grading
     if (generatedAiImage && fs.existsSync(tempAiImgPath)) {
       try {
         const move = (cameraMovement || '').toLowerCase();
@@ -548,6 +567,7 @@ class DefaultVideoProvider implements VideoProvider {
           String(durationSec),
           outputPath,
         ]);
+        console.log(`[VideoProvider] ✅ Rendered cinematic AI motion clip for Scene ${sceneIndex}`);
         return;
       } catch (renderErr) {
         console.warn(`[VideoProvider] Image motion render failed: ${renderErr}`);
@@ -558,8 +578,7 @@ class DefaultVideoProvider implements VideoProvider {
       }
     }
 
-    // 3. Try Searching & Downloading Real HD Stock Video Footage (Pexels / Pixabay in 9:16 portrait)
-    // Only search stock footage if AI image was not generated, and ensure high relevance to prompt
+    // 3. Fallback: Search Stock Video Footage ONLY if AI generation failed
     try {
       const { stockVideoEngine } = await import('./stockVideoProvider');
       const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
@@ -568,7 +587,7 @@ class DefaultVideoProvider implements VideoProvider {
       const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, stockAspectRatio);
 
       if (stockVideoUrl) {
-        console.log(`[VideoProvider] Found real HD Video Footage for Scene ${sceneIndex} Clip ${clipIndex} (${aspectRatio}): ${stockVideoUrl.substring(0, 60)}...`);
+        console.log(`[VideoProvider] Found fallback Stock Video for Scene ${sceneIndex} Clip ${clipIndex}: ${stockVideoUrl.substring(0, 60)}...`);
         await stockVideoEngine.renderStockVideoScene({
           videoUrl: stockVideoUrl,
           durationSec,
@@ -583,59 +602,6 @@ class DefaultVideoProvider implements VideoProvider {
       }
     } catch (stockErr: any) {
       console.warn(`[VideoProvider] Stock video search/render error: ${stockErr.message}`);
-    }
-
-    // 4. Fallback High-Speed Pollinations AI Turbo with target dimensions
-    if (!generatedAiImage) {
-      try {
-        const polliUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&nologo=true&model=turbo`;
-        const polliRes = await fetch(polliUrl);
-        if (polliRes.ok) {
-          const arrayBuf = await polliRes.arrayBuffer();
-          if (arrayBuf.byteLength > 5000) {
-            await fs.promises.writeFile(tempAiImgPath, Buffer.from(arrayBuf));
-            generatedAiImage = true;
-
-            const filterGraph = [
-              `scale=${width}:${height}:force_original_aspect_ratio=increase`,
-              `crop=${width}:${height}`,
-              `setsar=1`,
-              `zoompan=z='min(zoom+0.0007,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=180:s=${width}x${height}:fps=30`,
-              `eq=contrast=1.05:brightness=0.01:saturation=1.06`,
-              `vignette=PI/5`,
-            ].join(',');
-
-            await execFileAsync(ffmpegPath, [
-              '-y',
-              '-loop',
-              '1',
-              '-i',
-              tempAiImgPath,
-              '-an',
-              '-vf',
-              filterGraph,
-              '-r',
-              '30',
-              '-c:v',
-              'libx264',
-              '-pix_fmt',
-              'yuv420p',
-              '-preset',
-              'fast',
-              '-t',
-              String(durationSec),
-              outputPath,
-            ]);
-            return;
-          }
-        }
-      } catch (polliErr: any) {
-        console.warn(`[VideoProvider] Pollinations AI error (${polliErr.message}).`);
-      } finally {
-        if (fs.existsSync(tempAiImgPath)) {
-          await fs.promises.unlink(tempAiImgPath).catch(() => {});
-        }
-      }
     }
 
     // 4. Fallback Clean Ambient Visual (Calibrated 1080x1920 9:16)
