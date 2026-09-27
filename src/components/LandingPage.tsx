@@ -310,6 +310,7 @@ export function LandingPage() {
         <div style={{ maxWidth: '1100px', width: '100%', margin: '0 auto', textAlign: 'left', overflow: 'hidden', borderRadius: '12px' }}>
           <InteractiveWorkflowCanvas
             mode="simulation"
+            containerHeight="560px"
             title="Autonomous Workflow Engine"
             subtitle="Interactive visual node graph — click nodes to inspect payloads, or hit 'Test Workflow' to watch execution live"
           />
