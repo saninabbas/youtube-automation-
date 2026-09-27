@@ -11,6 +11,7 @@ import { thumbnailProvider } from '../providers/thumbnailProvider';
 import { storage } from '../storage';
 import { sceneQualityChecker, QualityReport } from '../video/qualityControl';
 import { resolveGlobalVisualStyle } from '../video/visualStyles';
+import { AspectRatio } from '../providers/video-provider.types';
 
 export type PipelineStage = 'SCRIPT' | 'SCENES' | 'VIDEO' | 'VOICE' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
 
@@ -632,7 +633,7 @@ export class VideoPipelineWorker {
         const subPath = subAsset ? storage.getFilePath(subAsset.storage_key) : undefined;
 
         const totalClipDuration = clipAssets.reduce((sum, c) => sum + (c.duration_sec || 0), 0);
-        const effectiveDurationSec = (audioAsset && audioAsset.duration_sec > 0)
+        const effectiveDurationSec: number = (audioAsset && typeof audioAsset.duration_sec === 'number' && audioAsset.duration_sec > 0)
           ? audioAsset.duration_sec
           : (totalClipDuration > 0 ? totalClipDuration : project.target_length_minutes * 60);
 
@@ -650,7 +651,7 @@ export class VideoPipelineWorker {
           audioFilePath: audioPath,
           subtitleFilePath: subPath,
           totalDurationSec: effectiveDurationSec,
-          aspectRatio: finalAspectRatio,
+          aspectRatio: finalAspectRatio === '16:9' ? '16:9' : '9:16',
         });
 
         // Store video output record

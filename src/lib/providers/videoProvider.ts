@@ -6,6 +6,9 @@ import { storage, getTempDir } from '../storage';
 import { getApiKey } from '../db';
 import { AspectRatio } from './video-provider.types';
 import { openaiVideoProvider } from './openaiVideoProvider';
+import { falVideoProvider } from './falVideoProvider';
+import { cloudflareVideoProvider } from './cloudflareVideoProvider';
+import { veoVideoProvider } from './veoVideoProvider';
 
 const execFileAsync = util.promisify(execFile);
 
@@ -136,6 +139,16 @@ class DefaultVideoProvider implements VideoProvider {
   }
 
   getProviderName(): string {
+    // Check AI Video Generation providers (highest priority)
+    if (falVideoProvider.isConfigured()) {
+      return 'FAL.ai AI Video Engine (Wan 2.1 / LTX-Video — Real AI Video Generation)';
+    }
+    if (cloudflareVideoProvider.isConfigured()) {
+      return 'Cloudflare AI Video Engine (MiniMax Hailuo 2.3 — Real AI Video Generation)';
+    }
+    if (veoVideoProvider.isConfigured()) {
+      return 'Google Veo 3.1 AI Video Engine (Real AI Video Generation)';
+    }
     if (openaiVideoProvider.isConfigured()) {
       return 'OpenAI Video Engine (Sora / OpenAI Video Generation)';
     }
@@ -319,9 +332,80 @@ class DefaultVideoProvider implements VideoProvider {
           return;
         }
       } catch (openAiErr: any) {
-        console.warn(`[VideoProvider] OpenAI Video generation error (${openAiErr.message}). Falling back to stock/motion engine...`);
+        console.warn(`[VideoProvider] OpenAI Video generation error (${openAiErr.message}). Falling back...`);
       }
     }
+
+    // ============================================================
+    // AI VIDEO GENERATION CASCADE (Real Text-to-Video)
+    // These providers generate actual AI video, not stock footage
+    // ============================================================
+
+    const aiClipParams = {
+      prompt: params.prompt,
+      sceneIndex,
+      durationSec,
+      aspectRatio,
+      visualStyle,
+      niche,
+      outputPath,
+      environment: niche,
+      cameraMovement,
+      lighting,
+      colorStyle,
+      continuityNotes,
+      projectId,
+      sceneId,
+    };
+
+    // Tier 0: FAL.ai AI Video (Wan 2.1 / LTX-Video) — Best quality-to-cost ratio
+    if (falVideoProvider.isConfigured()) {
+      try {
+        console.log(`[VideoProvider] 🎬 Tier 0: FAL.ai AI Video for Scene ${sceneIndex} Clip ${clipIndex}...`);
+        await falVideoProvider.generateClip(aiClipParams);
+
+        if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
+          console.log(`[VideoProvider] ✅ FAL.ai AI video generated for Scene ${sceneIndex}`);
+          return;
+        }
+      } catch (falErr: any) {
+        console.warn(`[VideoProvider] FAL.ai error: ${falErr.message}. Trying next tier...`);
+      }
+    }
+
+    // Tier 1: Cloudflare MiniMax Hailuo 2.3 — Free daily quota
+    if (cloudflareVideoProvider.isConfigured()) {
+      try {
+        console.log(`[VideoProvider] 🎬 Tier 1: Cloudflare MiniMax Hailuo for Scene ${sceneIndex} Clip ${clipIndex}...`);
+        await cloudflareVideoProvider.generateClip(aiClipParams);
+
+        if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
+          console.log(`[VideoProvider] ✅ Cloudflare MiniMax AI video generated for Scene ${sceneIndex}`);
+          return;
+        }
+      } catch (cfVideoErr: any) {
+        console.warn(`[VideoProvider] Cloudflare MiniMax error: ${cfVideoErr.message}. Trying next tier...`);
+      }
+    }
+
+    // Tier 2: Google Veo 3.1 — Uses existing Gemini API key
+    if (veoVideoProvider.isConfigured()) {
+      try {
+        console.log(`[VideoProvider] 🎬 Tier 2: Google Veo 3.1 for Scene ${sceneIndex} Clip ${clipIndex}...`);
+        await veoVideoProvider.generateClip(aiClipParams);
+
+        if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
+          console.log(`[VideoProvider] ✅ Google Veo AI video generated for Scene ${sceneIndex}`);
+          return;
+        }
+      } catch (veoErr: any) {
+        console.warn(`[VideoProvider] Veo error: ${veoErr.message}. Falling back to image/stock engine...`);
+      }
+    }
+
+    // ============================================================
+    // LEGACY FALLBACKS (Image + Motion / Stock Footage / Procedural)
+    // ============================================================
 
     // Themed palettes based on niche & visualStyle
     let bg1 = '#090a0f';

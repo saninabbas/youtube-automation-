@@ -1,5 +1,6 @@
 import { storage } from '../storage';
 import { videoRenderer } from './renderer';
+import { videoProvider } from './videoProvider';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { getDb } from '../db';
 
@@ -17,9 +18,18 @@ export interface ProviderHealthReport {
 }
 
 export async function checkProvidersHealth(): Promise<ProviderHealthReport> {
+  const activeVideoEngine = videoProvider.getProviderName();
+  const isAiVideo = activeVideoEngine.includes('AI Video') || activeVideoEngine.includes('Real AI Video');
+
   const report: ProviderHealthReport = {
     gemini: { status: 'NOT_CONFIGURED', details: 'No GEMINI_API_KEY provided; using built-in intelligent multi-niche script engine.' },
-    video: { status: 'CONFIGURED', provider: 'Native Motion Video Synthesizer (FFmpeg H.264)', details: '1080p 30fps dynamic video clip generator operational.' },
+    video: {
+      status: 'CONFIGURED',
+      provider: activeVideoEngine,
+      details: isAiVideo
+        ? 'State-of-the-art AI text-to-video generation pipeline active (Veo/Wan/MiniMax).'
+        : '1080p 30fps dynamic video clip generator operational.',
+    },
     tts: { status: 'NOT_CONFIGURED', provider: 'EdgeTTS / Synthetic Neural Voice', details: 'Checking...' },
     r2: { status: 'NOT_CONFIGURED', details: 'No R2 credentials found; local storage provider active.' },
     renderer: { status: 'NOT_CONFIGURED', environment: 'Local Node.js FFmpeg Subprocess', details: 'Checking...' },
