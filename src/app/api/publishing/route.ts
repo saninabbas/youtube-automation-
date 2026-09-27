@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { publishingProvider, SupportedPlatform } from '@/lib/providers/publishingProvider';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized: authentication required to publish videos' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { platform = 'YouTube', projectId, videoFilePath, title, description, tags } = body;
 

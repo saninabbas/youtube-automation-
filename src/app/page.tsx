@@ -464,7 +464,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#71717a', fontSize: '14px', gap: '10px' }}>
-        <div className="autoshort-spinner" style={{ width: '20px', height: '20px' }} />
+        <div className="autora-spinner" style={{ width: '20px', height: '20px' }} />
         <span>Loading dashboard...</span>
       </div>
     );
@@ -568,7 +568,7 @@ export default function HomePage() {
       ───────────────────────────────────────────────────────────── */}
       <div className="dashboard-stats-row">
         {/* Card 1: Total Views */}
-        <div className="autoshort-stat-card">
+        <div className="autora-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -605,7 +605,7 @@ export default function HomePage() {
         </div>
 
         {/* Card 2: Subscribers */}
-        <div className="autoshort-stat-card">
+        <div className="autora-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -644,7 +644,7 @@ export default function HomePage() {
         </div>
 
         {/* Card 3: Saved Time */}
-        <div className="autoshort-stat-card">
+        <div className="autora-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -671,7 +671,7 @@ export default function HomePage() {
         </div>
 
         {/* Card 4: Credits Left */}
-        <div className="autoshort-stat-card">
+        <div className="autora-stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{
               width: '36px',
@@ -707,7 +707,7 @@ export default function HomePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
           {/* New Automation Panel (Exact match for reference design) */}
-          <div className="autoshort-panel">
+          <div className="autora-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                 New Automation
@@ -743,7 +743,7 @@ export default function HomePage() {
                     value={quickTopic}
                     onChange={(e) => setQuickTopic(e.target.value)}
                     placeholder="Enter a video topic or headline (e.g. Top 5 mysterious places in the world...)"
-                    className="autoshort-input autoshort-hero-input"
+                    className="autora-input autora-hero-input"
                     style={{
                       width: '100%',
                       background: '#13141a',
@@ -782,14 +782,14 @@ export default function HomePage() {
               </div>
 
               {/* Row with Voice & Style Dropdowns */}
-              <div className="autoshort-form-row">
+              <div className="autora-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
                     AI Voice Model
                   </label>
                   <select
                     id="voice-select"
-                    className="autoshort-select"
+                    className="autora-select"
                     value={voiceModel}
                     onChange={(e) => setVoiceModel(e.target.value)}
                     aria-label="AI Voice Model"
@@ -808,7 +808,7 @@ export default function HomePage() {
                   </label>
                   <select
                     id="style-select"
-                    className="autoshort-select"
+                    className="autora-select"
                     value={backgroundFootage}
                     onChange={(e) => setBackgroundFootage(e.target.value)}
                     aria-label="Background Footage"
@@ -1012,7 +1012,7 @@ export default function HomePage() {
               </div>
 
               {/* Toggles Row */}
-              <div className="autoshort-toggles-row">
+              <div className="autora-toggles-row">
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1026,7 +1026,7 @@ export default function HomePage() {
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff' }}>Auto Captions</div>
                     <div style={{ fontSize: '10px', color: '#71717a' }}>Karaoke style animation</div>
                   </div>
-                  <label className="autoshort-switch">
+                  <label className="autora-switch">
                     <input
                       id="captions-toggle"
                       type="checkbox"
@@ -1034,7 +1034,7 @@ export default function HomePage() {
                       onChange={(e) => setAutoCaptions(e.target.checked)}
                       aria-label="Toggle Auto Captions"
                     />
-                    <span className="autoshort-switch-slider"></span>
+                    <span className="autora-switch-slider"></span>
                   </label>
                 </div>
 
@@ -1051,7 +1051,7 @@ export default function HomePage() {
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff' }}>Auto Upload</div>
                     <div style={{ fontSize: '10px', color: '#71717a' }}>Post to linked channel</div>
                   </div>
-                  <label className="autoshort-switch">
+                  <label className="autora-switch">
                     <input
                       id="upload-toggle"
                       type="checkbox"
@@ -1059,7 +1059,7 @@ export default function HomePage() {
                       onChange={(e) => setAutoUpload(e.target.checked)}
                       aria-label="Toggle Auto Upload"
                     />
-                    <span className="autoshort-switch-slider"></span>
+                    <span className="autora-switch-slider"></span>
                   </label>
                 </div>
               </div>
@@ -1090,7 +1090,7 @@ export default function HomePage() {
               >
                 {creating ? (
                   <>
-                    <div className="autoshort-spinner" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#000', width: '16px', height: '16px' }} />
+                    <div className="autora-spinner" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#000', width: '16px', height: '16px' }} />
                     <span>Dispatching Job...</span>
                   </>
                 ) : (
@@ -1131,7 +1131,7 @@ export default function HomePage() {
               ].map((h, i) => (
                 <div
                   key={i}
-                  className="autoshort-tag-card"
+                  className="autora-tag-card"
                   onClick={() => {
                     setQuickTopic(h.topic);
                     toast.info(`Selected ${h.tag}: "${h.topic}"`);
@@ -1160,7 +1160,7 @@ export default function HomePage() {
           {/* ─────────────────────────────────────────────────────────────
               6. AI IDEA ASSISTANT
           ───────────────────────────────────────────────────────────── */}
-          <div className="autoshort-panel">
+          <div className="autora-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div>
                 <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1176,7 +1176,7 @@ export default function HomePage() {
                 type="button"
                 onClick={handleRefreshIdeas}
                 disabled={isGeneratingIdea}
-                className="autoshort-action-btn"
+                className="autora-action-btn"
                 style={{ fontSize: '11px', padding: '4px 10px' }}
                 title="Generate fresh suggestions"
               >
@@ -1199,7 +1199,7 @@ export default function HomePage() {
                     gap: '12px'
                   }}
                 >
-                  <span className="autoshort-idea-text" style={{ fontSize: '13px', color: '#e4e4e7', fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className="autora-idea-text" style={{ fontSize: '13px', color: '#e4e4e7', fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {idea}
                   </span>
                   <button
@@ -1209,7 +1209,7 @@ export default function HomePage() {
                       toast.info('Topic loaded into creator! Click Generate Video to build.');
                       topicInputRef.current?.focus();
                     }}
-                    className="autoshort-action-btn autoshort-use-idea-btn"
+                    className="autora-action-btn autora-use-idea-btn"
                     style={{ flexShrink: 0, fontSize: '11px', padding: '4px 10px', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.25)' }}
                   >
                     Use Idea
@@ -1222,7 +1222,7 @@ export default function HomePage() {
           {/* ─────────────────────────────────────────────────────────────
               7. TRENDING NOW SECTION
           ───────────────────────────────────────────────────────────── */}
-          <div className="autoshort-panel">
+          <div className="autora-panel">
             <div style={{ marginBottom: '14px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                 Trending Now
@@ -1240,7 +1240,7 @@ export default function HomePage() {
               {TRENDING_NOW_SUGGESTIONS.map((t, idx) => (
                 <div
                   key={idx}
-                  className="autoshort-trending-card autoshort-tag-card"
+                  className="autora-trending-card autora-tag-card"
                   onClick={() => {
                     setQuickTopic(t.topic);
                     toast.info(`Loaded trending topic: ${t.topic}`);
@@ -1272,13 +1272,13 @@ export default function HomePage() {
           {/* ─────────────────────────────────────────────────────────────
               10 & 11. LIVE GENERATION CARD / ACTIVE QUEUE
           ───────────────────────────────────────────────────────────── */}
-          <div className="autoshort-panel">
+          <div className="autora-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                 Active Queue
               </h3>
               {activeJobs.length > 0 && (
-                <span className="autoshort-badge-green" style={{ fontSize: '10px' }}>
+                <span className="autora-badge-green" style={{ fontSize: '10px' }}>
                   {activeJobs.length} active
                 </span>
               )}
@@ -1301,7 +1301,7 @@ export default function HomePage() {
                       {getStageLabel(activeRendering.current_stage)}
                     </div>
                   </div>
-                  <div className="autoshort-spinner" />
+                  <div className="autora-spinner" />
                 </div>
 
                 {/* Real Progress Bar */}
@@ -1312,7 +1312,7 @@ export default function HomePage() {
                   </div>
                   <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
                     <div
-                      className="autoshort-progress-glow"
+                      className="autora-progress-glow"
                       style={{ width: `${getStageProgress(activeRendering.current_stage)}%` }}
                     />
                   </div>
@@ -1362,7 +1362,7 @@ export default function HomePage() {
           {/* ─────────────────────────────────────────────────────────────
               13. RECENT VIDEOS (REAL DATABASE DATA ONLY)
           ───────────────────────────────────────────────────────────── */}
-          <div className="autoshort-panel">
+          <div className="autora-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                 Recent Videos
@@ -1412,7 +1412,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => setPreviewProject(proj)}
-                        className="autoshort-action-btn autoshort-preview-btn"
+                        className="autora-action-btn autora-preview-btn"
                         style={{ padding: '4px 8px', fontSize: '11px' }}
                         title="Preview video"
                       >
@@ -1422,7 +1422,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => handleRemix(proj)}
-                        className="autoshort-action-btn autoshort-remix-btn"
+                        className="autora-action-btn autora-remix-btn"
                         style={{ padding: '4px 8px', fontSize: '11px', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.25)' }}
                         title="Create a fresh remix of this video"
                       >
@@ -1431,7 +1431,7 @@ export default function HomePage() {
 
                       <Link
                         href={`/content/${proj.id}`}
-                        className="autoshort-action-btn"
+                        className="autora-action-btn"
                         style={{ padding: '4px 8px', fontSize: '11px' }}
                         title="Open in Studio editor"
                       >
@@ -1441,7 +1441,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteProject(proj.id)}
-                        className="autoshort-action-btn autoshort-action-btn-danger autoshort-delete-btn"
+                        className="autora-action-btn autora-action-btn-danger autora-delete-btn"
                         style={{ padding: '4px 8px', fontSize: '11px' }}
                         title="Delete video"
                         aria-label="Delete video"
@@ -1473,7 +1473,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => topicInputRef.current?.focus()}
-                  className="autoshort-action-btn"
+                  className="autora-action-btn"
                   style={{ background: '#fff', color: '#09090b', fontWeight: 700 }}
                 >
                   Create First Video
@@ -1485,7 +1485,7 @@ export default function HomePage() {
           {/* ─────────────────────────────────────────────────────────────
               15. CHANNEL GROWTH CARD (REAL YOUTUBE DATA OR PROMPT)
           ───────────────────────────────────────────────────────────── */}
-          <div className="autoshort-panel">
+          <div className="autora-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                 Channel Growth
@@ -1558,7 +1558,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/settings/publishing"
-                  className="autoshort-action-btn"
+                  className="autora-action-btn"
                   style={{ background: '#ffffff', color: '#09090b', fontWeight: 700 }}
                 >
                   Connect YouTube Channel
@@ -1571,7 +1571,7 @@ export default function HomePage() {
               16. CREATOR STREAK (ONLY FROM ACTUAL ACTIVITY)
           ───────────────────────────────────────────────────────────── */}
           {showStreakCard && (
-            <div className="autoshort-panel">
+            <div className="autora-panel">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   🔥 Creator Streak
@@ -1598,7 +1598,7 @@ export default function HomePage() {
               17. SETUP PROGRESS (FOR NEW USERS - DYNAMICALLY CALCULATED)
           ───────────────────────────────────────────────────────────── */}
           {showSetupCard && (
-            <div className="autoshort-panel">
+            <div className="autora-panel">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                   Get Started
@@ -1624,7 +1624,7 @@ export default function HomePage() {
 
               <Link
                 href="/onboarding"
-                className="autoshort-action-btn"
+                className="autora-action-btn"
                 style={{ width: '100%', justifyContent: 'center', marginTop: '14px' }}
               >
                 Complete Setup →
@@ -1635,7 +1635,7 @@ export default function HomePage() {
           {/* ─────────────────────────────────────────────────────────────
               18. UPCOMING PUBLISHING
           ───────────────────────────────────────────────────────────── */}
-          <div className="autoshort-panel">
+          <div className="autora-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                 Upcoming Publishing
@@ -1670,7 +1670,7 @@ export default function HomePage() {
                     </div>
                     <Link
                       href="/calendar"
-                      className="autoshort-action-btn"
+                      className="autora-action-btn"
                       style={{ fontSize: '10px', padding: '3px 8px' }}
                     >
                       Edit
@@ -1691,7 +1691,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/calendar"
-                  className="autoshort-action-btn"
+                  className="autora-action-btn"
                   style={{ fontSize: '11px', padding: '4px 10px' }}
                 >
                   Schedule a Video
@@ -1708,8 +1708,8 @@ export default function HomePage() {
           12. COMPLETED VIDEO PREVIEW MODAL
       ───────────────────────────────────────────────────────────── */}
       {previewProject && (
-        <div id="preview-video-modal" className="autoshort-modal-backdrop" onClick={() => setPreviewProject(null)} role="dialog" aria-modal="true" aria-label="Video Preview Modal">
-          <div className="autoshort-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div id="preview-video-modal" className="autora-modal-backdrop" onClick={() => setPreviewProject(null)} role="dialog" aria-modal="true" aria-label="Video Preview Modal">
+          <div className="autora-modal-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -1762,7 +1762,7 @@ export default function HomePage() {
                   <a
                     href={previewProject.output_url || `/api/assets/${encodeURIComponent(previewProject.output_storage_key)}`}
                     download={`${previewProject.topic.replace(/[^a-zA-Z0-9]/g, '_')}.mp4`}
-                    className="autoshort-action-btn"
+                    className="autora-action-btn"
                   >
                     ⬇ Download MP4
                   </a>
@@ -1770,7 +1770,7 @@ export default function HomePage() {
 
                 <Link
                   href={`/content/${previewProject.id}`}
-                  className="autoshort-action-btn"
+                  className="autora-action-btn"
                 >
                   ✏️ Edit in Studio
                 </Link>
@@ -1779,7 +1779,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => handlePublishYouTube(previewProject)}
-                className="autoshort-action-btn"
+                className="autora-action-btn"
                 style={{
                   background: '#ef4444',
                   borderColor: '#ef4444',
@@ -1800,13 +1800,13 @@ export default function HomePage() {
       {remixProject && (
         <div
           id="remix-video-modal"
-          className="autoshort-modal-backdrop"
+          className="autora-modal-backdrop"
           onClick={() => setRemixProject(null)}
           role="dialog"
           aria-modal="true"
           aria-label="Video Remix Modal"
         >
-          <div className="autoshort-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="autora-modal-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -1843,7 +1843,7 @@ export default function HomePage() {
                   type="text"
                   value={remixVariation}
                   onChange={(e) => setRemixVariation(e.target.value)}
-                  className="autoshort-hero-input"
+                  className="autora-hero-input"
                   style={{ fontSize: '13px', padding: '10px 14px' }}
                   placeholder="e.g. Make it more dramatic, focus on psychological impact"
                 />
@@ -1857,7 +1857,7 @@ export default function HomePage() {
                   <select
                     value={remixAspectRatio}
                     onChange={(e) => setRemixAspectRatio(e.target.value)}
-                    className="autoshort-select"
+                    className="autora-select"
                   >
                     <option value="9:16">9:16 (YouTube Shorts / TikTok)</option>
                     <option value="16:9">16:9 (Landscape YouTube)</option>
@@ -1871,7 +1871,7 @@ export default function HomePage() {
                   <select
                     value={remixVoice}
                     onChange={(e) => setRemixVoice(e.target.value)}
-                    className="autoshort-select"
+                    className="autora-select"
                   >
                     <option value="Adam (Deep, Narrator)">Adam (Deep, Narrator)</option>
                     <option value="Rachel (Energetic, Viral)">Rachel (Energetic, Viral)</option>

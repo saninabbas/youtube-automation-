@@ -847,7 +847,7 @@ You must return valid JSON strictly conforming to this schema:
   ): Promise<{ script: ScriptStructure; fullNarration: string }> {
     const prompt = this.buildMasterPrompt(params);
 
-    let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+    let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       signal: AbortSignal.timeout(120000),
       headers: {
@@ -868,8 +868,8 @@ You must return valid JSON strictly conforming to this schema:
     });
 
     if (!res.ok) {
-      // Fallback to gemini-3.5-flash
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
+      // Fallback with standard settings
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         signal: AbortSignal.timeout(120000),
         headers: {
