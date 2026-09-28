@@ -42,6 +42,9 @@ export const metadata: Metadata = {
     description:
       'Turn your ideas into ready-to-publish videos with AI-powered scripting, voiceovers, visuals, captions, and rendering.',
   },
+  other: {
+    'fameswap-verification': 'RHGxQyVs29q0GKUj2KPw8BseWbVDXKVn',
+  },
   icons: {
     icon: '/favicon.ico',
   },
