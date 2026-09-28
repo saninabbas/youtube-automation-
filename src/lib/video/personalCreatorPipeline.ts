@@ -90,7 +90,11 @@ export class PersonalCreatorPipeline {
             projectId,
           });
 
-          await fs.promises.writeFile(audioPath, voiceRes.audioBuffer);
+          if (!voiceRes.audioBuffer || voiceRes.audioBuffer.length < 500) {
+            await this.generateSilentAudio(audioPath, scene.duration || 5);
+          } else {
+            await fs.promises.writeFile(audioPath, voiceRes.audioBuffer);
+          }
           audioClips.push(audioPath);
 
           // Update scene duration with actual audio duration if available
@@ -325,34 +329,83 @@ export class PersonalCreatorPipeline {
       .join('\n');
     await fs.promises.writeFile(concatListPath, concatContent, 'utf8');
 
-    // 2. Concat audio clips
-    const audioConcatPath = path.join(tempDir, 'audio_concat.txt');
-    const audioConcatContent = audioClips
-      .filter((p) => fs.existsSync(p))
-      .map((p) => `file '${p.replace(/\\/g, '/')}'`)
-      .join('\n');
-    await fs.promises.writeFile(audioConcatPath, audioConcatContent, 'utf8');
+    // 2. Concat audio clips with strict file size and stream validation
+    const validAudioClips: string[] = [];
+    for (const p of audioClips) {
+      if (fs.existsSync(p)) {
+        const stat = await fs.promises.stat(p);
+        if (stat.size >= 500) {
+          validAudioClips.push(p);
+        }
+      }
+    }
 
     const concatAudioOut = path.join(tempDir, 'merged_audio.mp3');
-    try {
-      await execFileAsync(ffmpegPath, [
-        '-y',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', audioConcatPath,
-        '-c:a', 'libmp3lame',
-        '-q:a', '2',
-        concatAudioOut,
-      ]);
-    } catch {
-      // Fallback to first audio clip
-      if (audioClips.length > 0 && fs.existsSync(audioClips[0])) {
-        await fs.promises.copyFile(audioClips[0], concatAudioOut);
+    let hasMergedAudio = false;
+
+    if (validAudioClips.length > 0) {
+      const audioConcatPath = path.join(tempDir, 'audio_concat.txt');
+      const audioConcatContent = validAudioClips
+        .map((p) => `file '${p.replace(/\\/g, '/')}'`)
+        .join('\n');
+      await fs.promises.writeFile(audioConcatPath, audioConcatContent, 'utf8');
+
+      try {
+        await execFileAsync(ffmpegPath, [
+          '-y',
+          '-f', 'concat',
+          '-safe', '0',
+          '-i', audioConcatPath,
+          '-c:a', 'libmp3lame',
+          '-b:a', '192k',
+          '-ar', '44100',
+          concatAudioOut,
+        ]);
+        if (fs.existsSync(concatAudioOut) && (await fs.promises.stat(concatAudioOut)).size >= 1000) {
+          hasMergedAudio = true;
+        }
+      } catch (concatErr: any) {
+        console.warn('[PersonalCreatorPipeline] Concat demuxer failed, trying filter_complex:', concatErr.message);
+      }
+
+      // Fallback 1: complex filter concat if demuxer had header differences
+      if (!hasMergedAudio) {
+        try {
+          const filterInputs = validAudioClips.map((_, idx) => `[${idx}:a]`).join('');
+          const filterArgs: string[] = ['-y'];
+          validAudioClips.forEach((clip) => filterArgs.push('-i', clip));
+          filterArgs.push(
+            '-filter_complex', `${filterInputs}concat=n=${validAudioClips.length}:v=0:a=1[aout]`,
+            '-map', '[aout]',
+            '-c:a', 'libmp3lame',
+            '-b:a', '192k',
+            '-ar', '44100',
+            concatAudioOut
+          );
+          await execFileAsync(ffmpegPath, filterArgs);
+          if (fs.existsSync(concatAudioOut) && (await fs.promises.stat(concatAudioOut)).size >= 1000) {
+            hasMergedAudio = true;
+          }
+        } catch (filterErr: any) {
+          console.warn('[PersonalCreatorPipeline] Filter concat failed, generating silent track...', filterErr.message);
+        }
+      }
+    }
+
+    // Fallback 2: Generate valid silent audio track matching video duration
+    if (!hasMergedAudio) {
+      try {
+        const estDuration = Math.max(5, finalSceneClips.length * 5);
+        await this.generateSilentAudio(concatAudioOut, estDuration);
+        if (fs.existsSync(concatAudioOut) && (await fs.promises.stat(concatAudioOut)).size >= 1000) {
+          hasMergedAudio = true;
+        }
+      } catch (silenceErr: any) {
+        console.warn('[PersonalCreatorPipeline] Silent audio generation failed:', silenceErr.message);
       }
     }
 
     // 3. Render final output
-    const hasMergedAudio = fs.existsSync(concatAudioOut);
     const videoFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},format=yuv420p`;
 
     const args = [
@@ -381,7 +434,26 @@ export class PersonalCreatorPipeline {
 
     args.push(finalOutputPath);
 
-    await execFileAsync(ffmpegPath, args);
+    try {
+      await execFileAsync(ffmpegPath, args);
+    } catch (renderErr: any) {
+      console.warn('[PersonalCreatorPipeline] Primary render with audio failed, falling back to video-only render:', renderErr.message);
+      // Video-only fallback render ensures video composition never fatally crashes
+      const videoOnlyArgs = [
+        '-y',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concatListPath,
+        '-vf', videoFilter,
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '21',
+        '-pix_fmt', 'yuv420p',
+        '-r', '30',
+        finalOutputPath,
+      ];
+      await execFileAsync(ffmpegPath, videoOnlyArgs);
+    }
   }
 
   /**

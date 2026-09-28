@@ -115,6 +115,20 @@ export default function VideoStudioPage({ params }: { params?: any }) {
   // Per-scene independent regeneration & aspect ratio state
   const [isRegeneratingScene, setIsRegeneratingScene] = useState(false);
   const [aspectRatioMode, setAspectRatioMode] = useState<'9:16' | '16:9'>('9:16');
+  const [videoFitMode, setVideoFitMode] = useState<'cover' | 'contain'>('cover');
+
+  // Interactive Voice Recording state
+  const [isVoiceRecordModalOpen, setIsVoiceRecordModalOpen] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [micErrorMessage, setMicErrorMessage] = useState<string | null>(null);
+  const [customAudioOverride, setCustomAudioOverride] = useState<string | null>(null);
+  const [isSavingVoice, setIsSavingVoice] = useState(false);
+  const voiceMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceAudioChunksRef = useRef<Blob[]>([]);
+  const voiceRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Copilot state
   const [copilotLoading, setCopilotLoading] = useState(false);
@@ -376,12 +390,13 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     ? `/api/assets/clips/${project.id}/scene_${nextSceneNum}_clip_1.mp4?topic=${encodeURIComponent(project.topic)}&scene=${nextSceneNum}&prompt=${encodeURIComponent(nextScene.visual_prompt || '')}`
     : null;
 
-  const audioAsset = data?.assets?.find((a) => a.asset_type === 'audio');
-  const audioUrl = project?.id
+   const audioAsset = data?.assets?.find((a) => a.asset_type === 'audio');
+  const baseAudioUrl = project?.id
     ? (audioAsset && audioAsset.storage_key
         ? `/api/assets/${audioAsset.storage_key}?topic=${encodeURIComponent(project.topic || '')}&lang=${encodeURIComponent(project.language || 'en')}`
         : `/api/assets/voice/${project.id}/narration.mp3?topic=${encodeURIComponent(project.topic || '')}&lang=${encodeURIComponent(project.language || 'en')}`)
     : null;
+  const audioUrl = customAudioOverride || baseAudioUrl;
   const srtAsset = data?.assets?.find((a) => a.asset_type === 'subtitles');
   const vttUrl = srtAsset && project?.id ? `/api/assets/subtitles/${project.id}/captions.vtt` : null;
 
@@ -494,6 +509,126 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     }, 250);
     return () => clearInterval(tick);
   }, [isPlaying, totalCompositionDuration]);
+
+  // ─────────────────────────────────────────────────────────────
+  // STUDIO VOICE RECORDING LOGIC
+  // ─────────────────────────────────────────────────────────────
+  const startVoiceRecording = async () => {
+    try {
+      setMicErrorMessage(null);
+      if (recordedAudioUrl) {
+        URL.revokeObjectURL(recordedAudioUrl);
+        setRecordedAudioUrl(null);
+        setRecordedAudioBlob(null);
+      }
+
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Microphone recording is not supported in this browser. Please use Chrome, Edge, or Firefox.');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      let mimeType = 'audio/webm';
+      if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      voiceMediaRecorderRef.current = recorder;
+      voiceAudioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          voiceAudioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(voiceAudioChunksRef.current, { type: mimeType || 'audio/webm' });
+        setRecordedAudioBlob(audioBlob);
+        const url = URL.createObjectURL(audioBlob);
+        setRecordedAudioUrl(url);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.start(250);
+      setIsRecordingVoice(true);
+      setRecordingDuration(0);
+
+      if (voiceRecordingTimerRef.current) clearInterval(voiceRecordingTimerRef.current);
+      voiceRecordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => {
+          if (prev >= 120) {
+            stopVoiceRecording();
+            return 120;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (err: any) {
+      console.error('Microphone access error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setMicErrorMessage(
+          'Microphone permission was denied. Please click the lock or settings icon in your browser address bar (next to autora.live), set Microphone to "Allow", and reload this page.'
+        );
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setMicErrorMessage('No microphone detected on your device. Please plug in a microphone or headset.');
+      } else {
+        setMicErrorMessage(err.message || 'Unable to access microphone. Please check browser settings.');
+      }
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (voiceRecordingTimerRef.current) {
+      clearInterval(voiceRecordingTimerRef.current);
+      voiceRecordingTimerRef.current = null;
+    }
+    if (voiceMediaRecorderRef.current && voiceMediaRecorderRef.current.state === 'recording') {
+      voiceMediaRecorderRef.current.stop();
+    }
+    setIsRecordingVoice(false);
+  };
+
+  const handleApplyVoice = async () => {
+    if (!recordedAudioUrl || !recordedAudioBlob) {
+      toast.error('Please record your voice first before applying.');
+      return;
+    }
+
+    setCustomAudioOverride(recordedAudioUrl);
+    if (audioRef.current) {
+      audioRef.current.src = recordedAudioUrl;
+      audioRef.current.currentTime = 0;
+    }
+    toast.success('🎙️ Your voice is now active on the video player!');
+    setIsVoiceRecordModalOpen(false);
+
+    try {
+      setIsSavingVoice(true);
+      const formData = new FormData();
+      const fileName = `voice_${project?.id || 'studio'}_${Date.now()}.webm`;
+      const file = new File([recordedAudioBlob], fileName, { type: recordedAudioBlob.type });
+      formData.append('file', file);
+      formData.append('type', 'voice_sample');
+      formData.append('consent', 'true');
+
+      const res = await fetch('/api/personal-ai/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        toast.success('☁️ Saved to your cloud audio library.');
+      }
+    } catch (e) {
+      console.warn('Voice background upload notice:', e);
+    } finally {
+      setIsSavingVoice(false);
+    }
+  };
 
   const handleTimeUpdate = () => {
     if (videoRef.current && playbackMode === 'SOLO_SCENE') {
@@ -1015,6 +1150,20 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                 {aspectRatioMode === '9:16' ? '📱 9:16 Shorts' : '🖥️ 16:9 Widescreen'}
               </button>
               <button
+                onClick={() => setVideoFitMode(videoFitMode === 'cover' ? 'contain' : 'cover')}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  fontSize: '11px',
+                  padding: '3px 8px',
+                  height: '26px',
+                  color: videoFitMode === 'cover' ? '#10b981' : '#f59e0b',
+                  borderColor: videoFitMode === 'cover' ? 'rgba(16,185,129,0.3)' : undefined,
+                }}
+                title="Toggle between edge-to-edge full screen fill and letterbox fit"
+              >
+                {videoFitMode === 'cover' ? '📐 Fill Frame (No Bars)' : '🔲 Fit (Letterbox)'}
+              </button>
+              <button
                 onClick={handleRerollActiveScene}
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '3px 8px', height: '26px', color: '#818cf8' }}
@@ -1030,16 +1179,29 @@ export default function VideoStudioPage({ params }: { params?: any }) {
             style={{
               position: 'relative',
               overflow: 'hidden',
+              margin: '0 auto',
+              background: '#050507',
               ...(aspectRatioMode === '9:16'
                 ? {
-                    maxWidth: '380px',
-                    margin: '0 auto',
+                    height: 'min(500px, 58vh)',
+                    maxHeight: 'min(500px, 58vh)',
                     aspectRatio: '9/16',
-                    borderRadius: '18px',
-                    border: '2px solid rgba(255, 255, 255, 0.15)',
-                    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.85)',
+                    width: 'auto',
+                    maxWidth: '300px',
+                    borderRadius: '20px',
+                    border: '2px solid rgba(255, 255, 255, 0.16)',
+                    boxShadow: '0 16px 44px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.05)',
                   }
-                : {}),
+                : {
+                    height: 'min(440px, 52vh)',
+                    maxHeight: 'min(440px, 52vh)',
+                    aspectRatio: '16/9',
+                    width: '100%',
+                    maxWidth: '780px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
+                    boxShadow: '0 12px 36px rgba(0, 0, 0, 0.85)',
+                  }),
             }}
           >
             {/* Background continuous narration audio */}
@@ -1097,6 +1259,12 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   loop={playbackMode === 'SOLO_SCENE'}
                   playsInline
                   muted={true}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: videoFitMode,
+                    borderRadius: 'inherit',
+                  }}
                 />
 
                 {/* Preload Next Scene's Footage in Background to Eliminate Transition Buffering */}
@@ -1286,10 +1454,10 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                     audioRef.current.currentTime = currentTime;
                     audioRef.current.play().catch(() => {});
                   }
-                  if (displayedScene?.narration) {
+                  if (!audioUrl && displayedScene?.narration) {
                     speakNarration(displayedScene.narration, project?.language || 'en');
                   }
-                  toast.success('🎙️ Spoken voiceover activated');
+                  toast.success(customAudioOverride ? '🎙️ Playing your recorded voiceover' : '🎙️ Spoken voiceover activated');
                 }}
                 className="btn btn-secondary btn-sm"
                 style={{ padding: '4px 8px', fontSize: '11px', gap: '4px' }}
@@ -1297,6 +1465,24 @@ export default function VideoStudioPage({ params }: { params?: any }) {
               >
                 <span>🔊</span>
                 <span>Voiceover</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsVoiceRecordModalOpen(true)}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  gap: '5px',
+                  background: customAudioOverride ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.12)',
+                  borderColor: customAudioOverride ? '#10b981' : 'rgba(239, 68, 68, 0.35)',
+                  color: customAudioOverride ? '#34d399' : '#f87171',
+                }}
+                title="Record your personal voice for this scene/video using your microphone"
+              >
+                <span>🎙️</span>
+                <span>{customAudioOverride ? 'Voice Recorded ✓' : 'Record My Voice'}</span>
               </button>
 
               <button
@@ -1632,6 +1818,34 @@ export default function VideoStudioPage({ params }: { params?: any }) {
                   );
                 })()}
 
+                {/* Voice Narration Section in Inspector */}
+                <div style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#e4e4e7', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>🎙️</span>
+                      <span>Scene Voiceover</span>
+                    </span>
+                    {customAudioOverride ? (
+                      <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700, background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                        Custom Voice Active ✓
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '10px', color: '#a1a1aa', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
+                        AI Voice Active
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsVoiceRecordModalOpen(true)}
+                    className="btn btn-secondary btn-xs"
+                    style={{ width: '100%', fontSize: '11px', gap: '5px', justifyContent: 'center' }}
+                  >
+                    <span>🎙️</span>
+                    <span>{customAudioOverride ? 'Re-record / Replace Voice' : 'Record My Voice for this Scene'}</span>
+                  </button>
+                </div>
+
                 <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button
                     onClick={() => handleRegenerateScene(activeScene)}
@@ -1848,6 +2062,264 @@ export default function VideoStudioPage({ params }: { params?: any }) {
           </div>
         </div>
       </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          STUDIO VOICE RECORDER MODAL
+      ───────────────────────────────────────────────────────────── */}
+      {isVoiceRecordModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isRecordingVoice) {
+              setIsVoiceRecordModalOpen(false);
+            }
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              background: '#12141a',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '16px',
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.9)',
+              padding: '24px',
+              position: 'relative',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '16px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                paddingBottom: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '20px' }}>🎙️</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                    Record Your Voice (Scene {displayedSceneNum})
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#a1a1aa' }}>
+                    Record your microphone audio to narrate this scene or video
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isRecordingVoice) stopVoiceRecording();
+                  setIsVoiceRecordModalOpen(false);
+                }}
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '16px', padding: '4px 8px', minHeight: 'auto' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Teleprompter: Display current scene narration */}
+            {displayedScene?.narration && (
+              <div style={{ marginBottom: '16px' }}>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: '#818cf8',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Teleprompter — Read this script aloud:
+                </div>
+                <div
+                  style={{
+                    background: '#090b10',
+                    border: '1px solid rgba(129, 140, 248, 0.25)',
+                    borderRadius: '10px',
+                    padding: '14px',
+                    color: '#f4f4f5',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    maxHeight: '130px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  &ldquo;{displayedScene.narration}&rdquo;
+                </div>
+              </div>
+            )}
+
+            {/* Error Message if Mic Blocked */}
+            {micErrorMessage && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  marginBottom: '16px',
+                  color: '#fca5a5',
+                  fontSize: '12px',
+                  lineHeight: '1.5',
+                }}
+              >
+                ⚠️ <strong>Microphone Access Notice:</strong>
+                <p style={{ margin: '4px 0 0 0' }}>{micErrorMessage}</p>
+              </div>
+            )}
+
+            {/* Recording Controls Area */}
+            <div
+              style={{
+                background: '#0a0c12',
+                border: '1px dashed rgba(255, 255, 255, 0.12)',
+                borderRadius: '12px',
+                padding: '24px 16px',
+                textAlign: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              {isRecordingVoice ? (
+                <div>
+                  <div
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: '#ef4444',
+                      margin: '0 auto 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 0 28px rgba(239, 68, 68, 0.7)',
+                    }}
+                  >
+                    <span style={{ fontSize: '26px' }}>🔴</span>
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#ef4444', fontFamily: 'monospace' }}>
+                    00:{recordingDuration.toString().padStart(2, '0')} / 02:00
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '6px' }}>
+                    Recording your microphone... speak clearly!
+                  </div>
+                  <button
+                    type="button"
+                    onClick={stopVoiceRecording}
+                    className="btn"
+                    style={{
+                      marginTop: '16px',
+                      padding: '10px 24px',
+                      background: '#ffffff',
+                      color: '#09090b',
+                      fontWeight: 700,
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                    }}
+                  >
+                    ⏹️ Stop Recording
+                  </button>
+                </div>
+              ) : recordedAudioUrl ? (
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981', marginBottom: '10px' }}>
+                    ✓ Audio recorded successfully ({recordingDuration}s)
+                  </div>
+                  <audio controls src={recordedAudioUrl} style={{ width: '100%', marginBottom: '14px' }} />
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={startVoiceRecording}
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '12px' }}
+                    >
+                      ↺ Re-record
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyVoice}
+                      disabled={isSavingVoice}
+                      className="btn btn-primary btn-sm"
+                      style={{ fontSize: '12px', padding: '6px 16px', background: '#10b981', borderColor: '#059669' }}
+                    >
+                      {isSavingVoice ? 'Saving...' : '✓ Use This Voice for Video'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    type="button"
+                    onClick={startVoiceRecording}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '12px 28px',
+                      background: '#ef4444',
+                      borderColor: '#dc2626',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      boxShadow: '0 4px 18px rgba(239, 68, 68, 0.4)',
+                    }}
+                  >
+                    🔴 Start Recording Voice
+                  </button>
+                  <p style={{ margin: '10px 0 0 0', fontSize: '11px', color: '#71717a' }}>
+                    Click to start recording your microphone
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {customAudioOverride ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomAudioOverride(null);
+                    if (audioRef.current && baseAudioUrl) {
+                      audioRef.current.src = baseAudioUrl;
+                    }
+                    toast.info('Restored default AI voiceover');
+                  }}
+                  className="btn btn-ghost btn-xs"
+                  style={{ color: '#ef4444', fontSize: '11px' }}
+                >
+                  Reset to AI Voiceover
+                </button>
+              ) : <span />}
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (isRecordingVoice) stopVoiceRecording();
+                  setIsVoiceRecordModalOpen(false);
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '12px' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -212,6 +212,33 @@ $synth.Dispose()
     }
   }
 
+  private async generateSilentAudioBuffer(durationSec: number): Promise<Buffer> {
+    const ffmpegPath = getFfmpegPath();
+    const tempDir = getTempDir();
+    const tempOut = path.join(tempDir, `silent_buf_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.mp3`);
+    try {
+      await execFileAsync(ffmpegPath, [
+        '-y',
+        '-f', 'lavfi',
+        '-i', 'anullsrc=r=44100:cl=stereo',
+        '-t', String(Math.max(1, durationSec)),
+        '-c:a', 'libmp3lame',
+        '-b:a', '128k',
+        tempOut,
+      ]);
+      if (fs.existsSync(tempOut)) {
+        return await fs.promises.readFile(tempOut);
+      }
+    } catch (err: any) {
+      console.warn('[VoiceProvider] FFmpeg silent fallback audio error:', err.message);
+    } finally {
+      if (fs.existsSync(tempOut)) {
+        await fs.promises.unlink(tempOut).catch(() => {});
+      }
+    }
+    return Buffer.alloc(2048, 0);
+  }
+
   async generateVoiceover(params: {
     text: string;
     voiceName?: string;
@@ -262,13 +289,9 @@ $synth.Dispose()
       } catch {}
     }
 
-    // 3. Fallback dummy audio buffer if external networks are blocked
-    if (!finalBuffer || finalBuffer.length < 100) {
-      // Create minimal valid MP3 frame header (silent audio)
-      finalBuffer = Buffer.from([
-        0xFF, 0xFB, 0x90, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-      ]);
+    // 3. Fallback to valid silent MP3 audio generated with FFmpeg if external networks fail
+    if (!finalBuffer || finalBuffer.length < 500) {
+      finalBuffer = await this.generateSilentAudioBuffer(estimatedDuration);
     }
 
     // Probe real duration with FFmpeg

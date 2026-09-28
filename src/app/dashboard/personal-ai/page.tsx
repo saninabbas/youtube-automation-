@@ -261,7 +261,11 @@ function PersonalAiCreatorContent() {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
     } catch (err: any) {
-      toast.error('Microphone access denied or unavailable: ' + err.message);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        toast.error('Microphone permission denied. Please click the lock or settings icon in your browser address bar to allow microphone access, then refresh.');
+      } else {
+        toast.error('Microphone access denied or unavailable: ' + err.message);
+      }
     }
   };
 

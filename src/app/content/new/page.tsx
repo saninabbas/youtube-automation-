@@ -222,7 +222,7 @@ function CreateVideoWizardContent() {
       console.error('Microphone access error:', err);
       stopMediaTracks();
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setModalError('Microphone permission was denied. Please allow microphone access in your browser or upload an audio file.');
+        setModalError('Microphone permission was denied. Please click the lock or settings icon in your browser address bar (next to autora.live) to allow microphone access, then refresh.');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         setModalError('No microphone was detected on your device. Please plug in a microphone or upload an audio file.');
       } else {
