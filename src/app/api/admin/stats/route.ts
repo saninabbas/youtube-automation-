@@ -42,12 +42,60 @@ export async function GET() {
       LIMIT 20
     `).all();
 
+    // 3. User & Subscription stats
+    let totalUsers = 0;
+    let activeSubscriptions = 0;
+    let totalCredits = 0;
+    let tierBreakdown: Record<string, number> = {
+      STARTER: 0,
+      CREATOR: 0,
+      SCALE: 0,
+      AGENCY: 0,
+    };
+    let recentUsers: any[] = [];
 
-    // 3. YouTube Connections
+    try {
+      totalUsers = (db.prepare('SELECT COUNT(*) as count FROM users').get() as any)?.count || 0;
+      activeSubscriptions = (db.prepare("SELECT COUNT(*) as count FROM user_credits WHERE subscription_status = 'ACTIVE'").get() as any)?.count || 0;
+      totalCredits = (db.prepare("SELECT SUM(balance) as total FROM user_credits").get() as any)?.total || 0;
+      
+      const tiers = db.prepare(`
+        SELECT COALESCE(tier, 'CREATOR') as tier, COUNT(*) as count 
+        FROM user_credits 
+        GROUP BY tier
+      `).all() as Array<{ tier: string; count: number }>;
+
+      for (const t of tiers) {
+        tierBreakdown[t.tier.toUpperCase()] = t.count;
+      }
+
+      recentUsers = db.prepare(`
+        SELECT u.id, u.email, u.name, u.role, u.status, u.created_at,
+               COALESCE(uc.tier, 'CREATOR') as tier,
+               COALESCE(uc.balance, 500) as credits_balance,
+               COALESCE(uc.subscription_status, 'ACTIVE') as subscription_status
+        FROM users u
+        LEFT JOIN user_credits uc ON u.id = uc.user_id
+        ORDER BY u.created_at DESC
+        LIMIT 5
+      `).all();
+    } catch (uErr) {
+      console.warn('[Admin Stats] Error fetching users metrics:', uErr);
+    }
+
+    // 4. Video Jobs & Assets counts for legacy display
+    let totalVideoJobs = 0;
+    let totalAssets = 0;
+    try {
+      totalVideoJobs = (db.prepare('SELECT COUNT(*) as count FROM video_jobs').get() as any)?.count || 0;
+      totalAssets = (db.prepare('SELECT COUNT(*) as count FROM generated_assets').get() as any)?.count || 0;
+    } catch {}
+
+    // 5. YouTube Connections
     const totalConnections = (db.prepare('SELECT COUNT(*) as count FROM oauth_connections').get() as any)?.count || 0;
     const connectionsList = db.prepare('SELECT id, platform, account_email, channel_id, channel_title, token_expiry, created_at FROM oauth_connections').all();
 
-    // 4. Storage Calculation
+    // 6. Storage Calculation
     let totalStorageBytes = 0;
     const storageDir = path.join(process.cwd(), 'storage');
     if (fs.existsSync(storageDir)) {
@@ -102,6 +150,10 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       stats: {
+        totalUsers,
+        activeSubscriptions,
+        totalCredits,
+        tierBreakdown,
         totalChannels,
         totalProjects,
         totalConnections,
@@ -109,8 +161,19 @@ export async function GET() {
         statusMap,
         pubStatusMap,
       },
+      counts: {
+        users: totalUsers,
+        subscriptions: activeSubscriptions,
+        projects: totalProjects,
+        channels: totalChannels,
+        videoJobs: totalVideoJobs,
+        assets: totalAssets,
+        connections: totalConnections,
+        storageMb,
+      },
       channels: channelsList,
       recentProjects: projectsList,
+      recentUsers,
       connections: connectionsList,
       serverTime: new Date().toISOString(),
     });

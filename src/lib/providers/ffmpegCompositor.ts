@@ -125,7 +125,7 @@ export class FfmpegCompositor {
           finalFilePath,
         ];
       } else {
-        // Standard narration audio overlay with scaling & subtitle filter
+        // Standard narration audio overlay with explicit stream mapping (Input 0 = Video, Input 1 = Narration Audio)
         args = [
           '-y',
           '-stream_loop', '-1',
@@ -134,6 +134,8 @@ export class FfmpegCompositor {
           '-i', concatListPath,
           '-i', audioFilePath,
           '-vf', videoFilter,
+          '-map', '0:v:0',
+          '-map', '1:a:0',
           '-r', '30',
           '-c:v', 'libx264',
           '-c:a', 'aac',
@@ -159,19 +161,39 @@ export class FfmpegCompositor {
 
     if (!composed) {
       try {
-        const fallbackArgs: string[] = [
-          '-y',
-          '-f', 'concat',
-          '-safe', '0',
-          '-i', concatListPath,
-          '-vf', videoFilter,
-          '-c:v', 'libx264',
-          '-pix_fmt', 'yuv420p',
-          '-preset', 'ultrafast',
-          '-movflags', '+faststart',
-          '-t', String(totalDurationSec || 60),
-          finalFilePath,
-        ];
+        const hasAudio = fs.existsSync(audioFilePath);
+        const fallbackArgs: string[] = hasAudio
+          ? [
+              '-y',
+              '-f', 'concat',
+              '-safe', '0',
+              '-i', concatListPath,
+              '-i', audioFilePath,
+              '-vf', videoFilter,
+              '-map', '0:v:0',
+              '-map', '1:a:0',
+              '-c:v', 'libx264',
+              '-c:a', 'aac',
+              '-b:a', '192k',
+              '-pix_fmt', 'yuv420p',
+              '-preset', 'fast',
+              '-movflags', '+faststart',
+              '-shortest',
+              finalFilePath,
+            ]
+          : [
+              '-y',
+              '-f', 'concat',
+              '-safe', '0',
+              '-i', concatListPath,
+              '-vf', videoFilter,
+              '-c:v', 'libx264',
+              '-pix_fmt', 'yuv420p',
+              '-preset', 'fast',
+              '-movflags', '+faststart',
+              '-t', String(totalDurationSec || 60),
+              finalFilePath,
+            ];
         await execFileAsync(ffmpegPath, fallbackArgs, { timeout: encodingTimeout });
         composed = true;
       } catch (fbErr: any) {
