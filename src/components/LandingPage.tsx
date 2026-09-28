@@ -162,13 +162,15 @@ export function LandingPage() {
             <Link href="/signup" className="autora-btn-gleam" style={{
               background: '#ffffff',
               color: '#09090b',
-              padding: '6px 14px',
-              borderRadius: '18px',
-              fontSize: '12px',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '13px',
               fontWeight: 700,
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '40px',
               gap: '4px',
               whiteSpace: 'nowrap'
             }}>
@@ -180,11 +182,13 @@ export function LandingPage() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="mobile-menu-btn"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '42px',
+                height: '42px',
+                minWidth: '42px',
+                minHeight: '42px',
                 borderRadius: '10px',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: '#ffffff',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -314,7 +318,7 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           2. HERO SECTION
       ───────────────────────────────────────────────────────────── */}
-      <section style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(30px, 6vw, 60px)', maxWidth: '1100px', margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+      <section style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(30px, 6vw, 60px)', maxWidth: '1100px', margin: '0 auto', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div className="autora-hero-aura" />
 
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
@@ -602,9 +606,9 @@ export function LandingPage() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
           {/* The Hard Way */}
-          <div className="autora-card-interactive" style={{ background: 'rgba(244, 63, 94, 0.04)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: '12px', padding: '28px' }}>
+          <div className="autora-card-interactive" style={{ background: 'rgba(244, 63, 94, 0.04)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: '12px', padding: 'clamp(18px, 4vw, 28px)' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#f43f5e', marginBottom: '16px' }}>❌ The Manual Way (Hours of Work)</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', color: '#a1a1aa', fontSize: '14px' }}>
               <li>❌ Research and write 1,000+ words manually</li>
@@ -616,7 +620,7 @@ export function LandingPage() {
           </div>
 
           {/* The AUTORA Way */}
-          <div className="autora-card-interactive" style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '12px', padding: '28px' }}>
+          <div className="autora-card-interactive" style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '12px', padding: 'clamp(18px, 4vw, 28px)' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '16px' }}>✓ The AutoVideo Way (30 Seconds)</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', color: '#e4e4e7', fontSize: '14px' }}>
               <li>✓ Type your video topic or headline</li>
@@ -630,9 +634,9 @@ export function LandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          8. COMPLETE 2-TIER TRANSPARENT PRICING ($49 & $99)
+          8. COMPLETE 4-TIER TRANSPARENT PRICING ($19, $49, $99, $199)
       ───────────────────────────────────────────────────────────── */}
-      <section id="pricing" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+      <section id="pricing" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1280px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
         <span style={{ fontSize: '12px', fontWeight: 700, color: '#00F0FF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           Transparent SaaS Pricing Tiers
         </span>
@@ -683,62 +687,109 @@ export function LandingPage() {
           </button>
         </div>
 
-        {/* 2 Plans Responsive Grid */}
+        {/* 4 Plans Responsive Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '28px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '20px',
           alignItems: 'stretch',
           textAlign: 'left'
         }}>
           {[
             {
-              id: 'creator',
-              name: 'Creator Plan',
-              badge: '⭐ MOST POPULAR • 1 DAILY VIDEO',
-              description: 'Full daily video automation for growing YouTube channels.',
-              priceMonthly: 49,
-              priceAnnual: 39,
-              credits: '750 AI Credits / mo',
-              output: '30 Full 1080p Videos (1 Daily Video)',
-              channels: '1 Connected YouTube Channel',
-              isPopular: true,
-              ctaText: 'Get Creator Plan ($49/mo) ➔',
-              ctaLink: '/signup?plan=creator',
+              id: 'starter',
+              name: 'Starter Creator',
+              badge: '🌱 ENTRY LEVEL',
+              description: 'Perfect for beginners starting their first automated YouTube channel.',
+              priceMonthly: 19,
+              priceAnnual: 15,
+              credits: '200 AI Credits / mo',
+              output: '~8 Full Videos (or 20 Shorts)',
+              channels: '1 YouTube Channel',
+              isPopular: false,
+              ctaText: 'Get Starter ($19/mo) ➔',
+              ctaLink: '/signup?plan=starter',
               features: [
-                '30 Full Videos / Month (1 Daily Video)',
-                '750 AI Video Credits Every Month',
+                '200 AI Credits Every Month',
+                '~8 Full 1080p Videos or 20 Shorts',
+                '1 YouTube Channel Workspace',
                 'Full 1080p MP4 Immediate Downloads',
-                'Microsoft Edge & ElevenLabs Studio Voices',
-                'Multi-Model Script Engine (Gemini + DeepSeek)',
-                'Automated Captions & Subtitle Burn-In',
+                'Neural Voiceover Synthesis',
+                'Automatic SRT Subtitle Generator',
+                'Stock Footage & B-Roll Matcher',
                 'Zero-Waste Policy (Failed jobs never count)',
-                'Direct YouTube Auto-Publish & Scheduling',
               ],
             },
             {
-              id: 'pro',
-              name: 'Pro Automation Plan',
-              badge: '⚡ MAX POWER • 3 DAILY VIDEOS',
-              description: 'High-speed multi-channel automation engine for power creators & agencies.',
+              id: 'creator',
+              name: 'Pro Creator',
+              badge: '⭐ MOST POPULAR • DAILY CONTENT',
+              description: 'Full daily video automation for serious and growing YouTube channels.',
+              priceMonthly: 49,
+              priceAnnual: 39,
+              credits: '600 AI Credits / mo',
+              output: '~24 Full Videos (or 60 Shorts)',
+              channels: '3 YouTube Channels',
+              isPopular: true,
+              ctaText: 'Get Pro Creator ($49/mo) ➔',
+              ctaLink: '/signup?plan=creator',
+              features: [
+                '600 AI Credits Every Month',
+                '24 Full Videos / Mo (Daily Content)',
+                '3 Connected YouTube Channels',
+                '1080p Full HD 60fps FastStart MP4',
+                'Multi-Model Script Engine (DeepSeek + GPT-4o)',
+                'Studio Voices + Custom Voice ID',
+                'Direct YouTube Auto-Publish & Scheduling',
+                'Zero-Waste Policy (Guaranteed)',
+              ],
+            },
+            {
+              id: 'scale',
+              name: 'Growth & Scale',
+              badge: '⚡ HIGH VOLUME & POWER',
+              description: 'Scale multiple niche channels with accelerated rendering and 4K exports.',
               priceMonthly: 99,
               priceAnnual: 79,
-              credits: '2,250 AI Credits / mo',
-              output: '90 Full Videos (3 Daily Videos)',
-              channels: 'Unlimited Connected YouTube Channels',
+              credits: '1,500 AI Credits / mo',
+              output: '~60 Full Videos (or 150 Shorts)',
+              channels: '10 YouTube Channels',
               isPopular: false,
-              ctaText: 'Get Pro Plan ($99/mo) ➔',
-              ctaLink: '/signup?plan=pro',
+              ctaText: 'Get Growth & Scale ($99/mo) ➔',
+              ctaLink: '/signup?plan=scale',
               features: [
-                '90 Full Videos / Month (3 Daily Videos)',
-                '2,250 AI Video Credits Every Month',
-                'Unlimited Connected YouTube Channels',
-                'Priority Render Queue & Ultra-Fast Processing',
-                'Google Veo 3.1 & FAL.ai Wan 2.1 Engine Access',
-                'Custom Cloned Voice IDs + ElevenLabs Studio',
-                'Advanced Content Copilot & Workflow Automation',
-                '4K Ultra HD & High-Bitrate Video Exports',
-                'VIP 24/7 Dedicated Support',
+                '1,500 AI Credits Every Month',
+                '60 Full Videos / Mo (2 Daily Videos)',
+                '10 YouTube Channel Workspaces',
+                '4K Ultra-HD Video Exporting',
+                'Priority GPU Video Rendering Queue',
+                'Dedicated HD B-Roll Sourcing',
+                'Multi-User Team Access & Workspaces',
+                'VIP 24/7 Dedicated Priority Support',
+              ],
+            },
+            {
+              id: 'agency',
+              name: 'Agency Network',
+              badge: '👑 ENTERPRISE & AGENCY',
+              description: 'High-volume production powerhouse for media agencies and video networks.',
+              priceMonthly: 199,
+              priceAnnual: 159,
+              credits: '4,000 AI Credits / mo',
+              output: '~160 Full Videos (or 400 Shorts)',
+              channels: '50 YouTube Channels',
+              isPopular: false,
+              ctaText: 'Get Agency Network ($199/mo) ➔',
+              ctaLink: '/signup?plan=agency',
+              features: [
+                '4,000 AI Credits Every Month',
+                '160 Full Videos / Mo (Mass Production)',
+                '50 YouTube Channels & Brand Hubs',
+                '4K Master Quality Video Rendering',
+                'Custom Voice Cloning Integration',
+                'White-Label Client Delivery Reports',
+                'Dedicated Account Manager & SLA',
+                'Unlimited Workflow Automation Engine',
               ],
             },
           ].map((plan) => {

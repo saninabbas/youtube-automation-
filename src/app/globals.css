@@ -1214,16 +1214,16 @@ a {
     padding: 6px 10px !important;
   }
 
-  /* Workflow topics bar: horizontal scroll on mobile */
+  /* Workflow topics bar: cleanly wrap buttons on mobile/tablet without viewport overflow */
   .workflow-sample-topics-bar {
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    flex-wrap: nowrap !important;
-    padding: 8px 12px !important;
+    overflow: hidden !important;
+    flex-wrap: wrap !important;
+    padding: 10px 14px !important;
+    gap: 8px !important;
   }
   .workflow-sample-topics-bar > div {
-    flex-wrap: nowrap !important;
-    flex-shrink: 0;
+    flex-wrap: wrap !important;
+    flex-shrink: 1 !important;
   }
 }
 
@@ -2027,13 +2027,14 @@ a {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 720px;
-  max-width: 95vw;
+  width: min(720px, 100vw);
+  max-width: 100%;
   height: 420px;
   background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.16) 0%, rgba(56, 189, 248, 0.10) 45%, transparent 70%);
   filter: blur(55px);
   pointer-events: none;
   z-index: 0;
+  overflow: hidden;
   animation: autoraAuraGlow 7s ease-in-out infinite;
 }
 

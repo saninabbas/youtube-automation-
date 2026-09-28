@@ -162,39 +162,40 @@ export default function HomePage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [meRes, projRes, chanRes, ytRes] = await Promise.all([
-        fetch('/api/auth/me'),
-        fetch('/api/projects'),
-        fetch('/api/channels'),
-        fetch('/api/auth/youtube/status').catch(() => null),
-      ]);
-
+      const meRes = await fetch('/api/auth/me');
       if (meRes.ok) {
         const meData = await meRes.json();
-        if (meData.authenticated) {
+        if (meData.authenticated && meData.user) {
           setCurrentUser(meData.user);
           setCredits(meData.credits);
-        }
-      }
 
-      if (projRes.ok) {
-        const pData = await projRes.json();
-        setProjects(pData.projects || []);
-        if (pData.monthlyUsage) {
-          setMonthlyUsage(pData.monthlyUsage);
-        }
-      }
+          // User is authenticated, now fetch dashboard resources in parallel
+          const [projRes, chanRes, ytRes] = await Promise.all([
+            fetch('/api/projects').catch(() => null),
+            fetch('/api/channels').catch(() => null),
+            fetch('/api/auth/youtube/status').catch(() => null),
+          ]);
 
-      if (chanRes.ok) {
-        const cData = await chanRes.json();
-        setChannels(cData.channels || []);
-      }
+          if (projRes && projRes.ok) {
+            const pData = await projRes.json();
+            setProjects(pData.projects || []);
+            if (pData.monthlyUsage) {
+              setMonthlyUsage(pData.monthlyUsage);
+            }
+          }
 
-      if (ytRes && ytRes.ok) {
-        const ytData = await ytRes.json();
-        setYoutubeStatus(ytData.status || 'NOT_CONNECTED');
-        if (ytData.channel) {
-          setYoutubeChannel(ytData.channel);
+          if (chanRes && chanRes.ok) {
+            const cData = await chanRes.json();
+            setChannels(cData.channels || []);
+          }
+
+          if (ytRes && ytRes.ok) {
+            const ytData = await ytRes.json();
+            setYoutubeStatus(ytData.status || 'NOT_CONNECTED');
+            if (ytData.channel) {
+              setYoutubeChannel(ytData.channel);
+            }
+          }
         }
       }
     } catch (e) {
