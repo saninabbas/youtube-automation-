@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     const planId = (body.planId || body.tier || 'creator').toLowerCase();
     const billingCycle: 'monthly' | 'annual' = body.billingCycle === 'annual' || body.isAnnual ? 'annual' : 'monthly';
 
-    const targetPlan = PLANS.find((p) => p.id.toLowerCase() === planId);
+    const targetPlan = PLANS.find((p) => p.id.toLowerCase() === planId || (planId === 'pro' && p.id === 'creator'));
     if (!targetPlan) {
       return NextResponse.json(
         { success: false, error: `Invalid plan specified: "${planId}". Valid plans: starter, creator, scale, agency` },

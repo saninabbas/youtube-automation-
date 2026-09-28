@@ -217,7 +217,7 @@ export async function verifyPolarWebhookSignature(
     );
 
     const sigBuffer = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(toSign));
-    const computedSig = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
+    const computedSig = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sigBuffer))));
 
     const signatures = webhookSignature.split(' ');
     for (const item of signatures) {

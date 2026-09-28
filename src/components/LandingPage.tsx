@@ -73,6 +73,25 @@ export function LandingPage() {
             display: none !important;
           }
         }
+        @media (max-width: 640px) {
+          .hero-cta-btn {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .hero-canvas-container {
+            display: none !important;
+          }
+          .footer-container {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+          }
+          .footer-links {
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            gap: 16px !important;
+          }
+        }
       `}</style>
       {/* ─────────────────────────────────────────────────────────────
           1. MINIMAL HEADER / NAVBAR
@@ -86,18 +105,16 @@ export function LandingPage() {
         borderBottom: '1px solid rgba(255, 255, 255, 0.07)'
       }}>
         <div className="landing-header-inner" style={{ maxWidth: '1240px', margin: '0 auto', padding: '0 24px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
-            <div className="autora-logo-pulse" style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #10b981 0%, #38bdf8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(16, 185, 129, 0.35)' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
-                <polygon points="5 3 19 12 5 21 5 3" fill="#fff" />
+          <Link href="/" className="brand-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
+            <div className="logo-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
               </svg>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.04em', color: '#ffffff' }}>AUTORA</span>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '1px 6px', borderRadius: '10px', letterSpacing: '0.04em' }}>
-                AI
-              </span>
-            </div>
+            <span className="logo-text">
+              Auto<span className="highlight">RA</span>
+            </span>
           </Link>
 
           {/* Desktop Nav Links (Sleek Floating Pill) */}
@@ -194,19 +211,26 @@ export function LandingPage() {
 
         {/* Mobile Navigation Drawer / Dropdown */}
         {mobileMenuOpen && (
-          <div
-            className="mobile-nav-drawer"
-            style={{
-              background: '#111215',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-              padding: '16px 20px 24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.8)'
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <>
+            <div 
+              style={{ position: 'fixed', inset: 0, top: '68px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 40 }} 
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div
+              className="mobile-nav-drawer"
+              style={{
+                position: 'relative',
+                zIndex: 50,
+                background: '#111215',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '16px 20px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                boxShadow: '0 12px 32px rgba(0,0,0,0.8)'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <a
                 href="#how-it-works"
                 onClick={() => setMobileMenuOpen(false)}
@@ -283,13 +307,14 @@ export function LandingPage() {
               </Link>
             </div>
           </div>
-        )}
-      </header>
+        </>
+      )}
+    </header>
 
       {/* ─────────────────────────────────────────────────────────────
           2. HERO SECTION
       ───────────────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px 60px', maxWidth: '1100px', margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+      <section style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(30px, 6vw, 60px)', maxWidth: '1100px', margin: '0 auto', textAlign: 'center', position: 'relative' }}>
         <div className="autora-hero-aura" />
 
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '24px', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
@@ -308,7 +333,7 @@ export function LandingPage() {
         </p>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '48px', position: 'relative', zIndex: 1 }}>
-          <Link href="/signup" className="autora-btn-gleam" style={{
+          <Link href="/signup" className="autora-btn-gleam hero-cta-btn" style={{
             background: '#ffffff',
             color: '#09090b',
             padding: '14px 28px',
@@ -323,7 +348,7 @@ export function LandingPage() {
           }}>
             Create Your First Video ➔
           </Link>
-          <a href="#how-it-works" style={{
+          <a href="#how-it-works" className="hero-cta-btn" style={{
             background: 'rgba(255, 255, 255, 0.06)',
             color: '#e4e4e7',
             border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -338,10 +363,10 @@ export function LandingPage() {
         </div>
 
         {/* Interactive Autonomous Workflow Canvas (n8n-Style Live Preview) */}
-        <div style={{ maxWidth: '1240px', width: '100%', margin: '0 auto', textAlign: 'left', overflow: 'hidden', borderRadius: '14px' }}>
+        <div className="hero-canvas-container" style={{ maxWidth: '1240px', width: '100%', margin: '0 auto', textAlign: 'left', overflow: 'hidden', borderRadius: '14px' }}>
           <InteractiveWorkflowCanvas
             mode="simulation"
-            containerHeight="600px"
+            containerHeight="clamp(350px, 60vh, 600px)"
             title="Autonomous Workflow Engine"
             subtitle="Interactive visual node graph — click nodes to inspect payloads, or hit 'Test Workflow' to watch execution live"
           />
@@ -351,12 +376,12 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           3. HOW IT WORKS (4 SIMPLE STEPS)
       ───────────────────────────────────────────────────────────── */}
-      <section id="how-it-works" style={{ padding: '80px 24px', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <section id="how-it-works" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '56px' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Simple 4-Step Process
           </span>
-          <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
             How It Works
           </h2>
           <p style={{ color: '#a1a1aa', fontSize: '16px', maxWidth: '540px', margin: '0 auto' }}>
@@ -402,12 +427,12 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           4. POWERFUL INTEGRATIONS SECTION
       ───────────────────────────────────────────────────────────── */}
-      <section id="integrations" style={{ padding: '80px 24px', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <section id="integrations" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '56px' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Production Infrastructure
           </span>
-          <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
             Powerful Integrations Behind Your Videos
           </h2>
           <p style={{ color: '#a1a1aa', fontSize: '16px', maxWidth: '620px', margin: '0 auto' }}>
@@ -415,7 +440,7 @@ export function LandingPage() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ fontSize: '22px' }}>🌐</span>
@@ -487,12 +512,12 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           5. AI MODELS POWERING YOUR CONTENT
       ───────────────────────────────────────────────────────────── */}
-      <section id="ai-models" style={{ padding: '80px 24px', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <section id="ai-models" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '56px' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Transparent AI Architecture
           </span>
-          <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
             AI Models Powering Your Content
           </h2>
           <p style={{ color: '#a1a1aa', fontSize: '16px', maxWidth: '620px', margin: '0 auto' }}>
@@ -500,7 +525,7 @@ export function LandingPage() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
           <div className="autora-card-interactive" style={{ background: '#121215', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#10b981', fontFamily: 'monospace', marginBottom: '8px' }}>PRIMARY MODEL</div>
             <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>DeepSeek-Chat</h3>
@@ -530,12 +555,12 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           6. NATURAL AI VOICES
       ───────────────────────────────────────────────────────────── */}
-      <section id="voices" style={{ padding: '80px 24px', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <section id="voices" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '56px' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Studio Sound Quality
           </span>
-          <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
             Natural AI Voices & Custom Cloning
           </h2>
           <p style={{ color: '#a1a1aa', fontSize: '16px', maxWidth: '620px', margin: '0 auto' }}>
@@ -543,7 +568,7 @@ export function LandingPage() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
           {[
             { name: 'Rachel', tone: 'Calm & Professional', gender: 'Female' },
             { name: 'Adam', tone: 'Deep & Cinematic', gender: 'Male' },
@@ -567,17 +592,17 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           7. YOU DON'T NEED TO BE A VIDEO EDITOR
       ───────────────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px', maxWidth: '960px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <section style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '960px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 12px' }}>
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 12px' }}>
             You Don't Need to Be a Video Editor
           </h2>
           <p style={{ color: '#a1a1aa', fontSize: '15px' }}>
-            Compare creating videos the manual way versus automated with AUTORA.
+            Compare creating videos the manual way versus automated with AutoVideo.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {/* The Hard Way */}
           <div className="autora-card-interactive" style={{ background: 'rgba(244, 63, 94, 0.04)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: '12px', padding: '28px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#f43f5e', marginBottom: '16px' }}>❌ The Manual Way (Hours of Work)</h3>
@@ -592,7 +617,7 @@ export function LandingPage() {
 
           {/* The AUTORA Way */}
           <div className="autora-card-interactive" style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '12px', padding: '28px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '16px' }}>✓ The AUTORA Way (30 Seconds)</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '16px' }}>✓ The AutoVideo Way (30 Seconds)</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', color: '#e4e4e7', fontSize: '14px' }}>
               <li>✓ Type your video topic or headline</li>
               <li>✓ Pick your favorite studio or custom voice</li>
@@ -605,122 +630,248 @@ export function LandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          8. SIMPLE PRICING (30 VIDEOS / MONTH)
+          8. COMPLETE 2-TIER TRANSPARENT PRICING ($49 & $99)
       ───────────────────────────────────────────────────────────── */}
-      <section id="pricing" style={{ padding: '80px 24px', maxWidth: '800px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
-        <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Simple Transparent Pricing
+      <section id="pricing" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#00F0FF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Transparent SaaS Pricing Tiers
         </span>
-        <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
-          30 Videos Every Month
+        <h2 style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '10px 0 16px' }}>
+          Automate Your YouTube Channel at Any Scale
         </h2>
-        <p style={{ color: '#a1a1aa', fontSize: '16px', maxWidth: '520px', margin: '0 auto 28px' }}>
-          Everything you need to automate a daily YouTube channel without hidden fees.
+        <p style={{ color: '#a1a1aa', fontSize: '16px', maxWidth: '620px', margin: '0 auto 28px' }}>
+          Choose the monthly video plan that fits your channel goals. All plans include automated voiceover, scripting, subtitling, and zero-waste policy.
         </p>
 
         {/* Monthly / Annual Toggle */}
-        <div style={{ display: 'inline-flex', padding: '4px', background: '#121215', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', marginBottom: '36px' }}>
+        <div style={{ display: 'inline-flex', padding: '4px', background: '#121215', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', marginBottom: '44px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
           <button
             onClick={() => setBillingCycle('monthly')}
             style={{
-              padding: '6px 16px',
-              borderRadius: '6px',
+              padding: '8px 20px',
+              borderRadius: '7px',
               border: 'none',
               background: billingCycle === 'monthly' ? '#ffffff' : 'transparent',
               color: billingCycle === 'monthly' ? '#09090b' : '#a1a1aa',
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: '13px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            Monthly
+            Monthly Billing
           </button>
           <button
             onClick={() => setBillingCycle('annual')}
             style={{
-              padding: '6px 16px',
-              borderRadius: '6px',
+              padding: '8px 20px',
+              borderRadius: '7px',
               border: 'none',
               background: billingCycle === 'annual' ? '#ffffff' : 'transparent',
               color: billingCycle === 'annual' ? '#09090b' : '#a1a1aa',
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: '13px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease'
             }}
           >
-            Annual (Save 20%)
+            <span>Annual</span>
+            <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', fontWeight: 800 }}>Save 20%</span>
           </button>
         </div>
 
-        {/* Pricing Card */}
-        <div className="autora-card-interactive" style={{
-          background: '#121215',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-          borderRadius: '16px',
-          padding: '40px',
-          textAlign: 'left',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-          position: 'relative'
+        {/* 2 Plans Responsive Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '28px',
+          alignItems: 'stretch',
+          textAlign: 'left'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CREATOR PLAN</div>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff', marginTop: '4px' }}>Automated Channel Plan</div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '42px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
-                {billingCycle === 'monthly' ? '$49' : '$39'}
-                <span style={{ fontSize: '15px', color: '#a1a1aa', fontWeight: 500 }}>/month</span>
+          {[
+            {
+              id: 'creator',
+              name: 'Creator Plan',
+              badge: '⭐ MOST POPULAR • 1 DAILY VIDEO',
+              description: 'Full daily video automation for growing YouTube channels.',
+              priceMonthly: 49,
+              priceAnnual: 39,
+              credits: '750 AI Credits / mo',
+              output: '30 Full 1080p Videos (1 Daily Video)',
+              channels: '1 Connected YouTube Channel',
+              isPopular: true,
+              ctaText: 'Get Creator Plan ($49/mo) ➔',
+              ctaLink: '/signup?plan=creator',
+              features: [
+                '30 Full Videos / Month (1 Daily Video)',
+                '750 AI Video Credits Every Month',
+                'Full 1080p MP4 Immediate Downloads',
+                'Microsoft Edge & ElevenLabs Studio Voices',
+                'Multi-Model Script Engine (Gemini + DeepSeek)',
+                'Automated Captions & Subtitle Burn-In',
+                'Zero-Waste Policy (Failed jobs never count)',
+                'Direct YouTube Auto-Publish & Scheduling',
+              ],
+            },
+            {
+              id: 'pro',
+              name: 'Pro Automation Plan',
+              badge: '⚡ MAX POWER • 3 DAILY VIDEOS',
+              description: 'High-speed multi-channel automation engine for power creators & agencies.',
+              priceMonthly: 99,
+              priceAnnual: 79,
+              credits: '2,250 AI Credits / mo',
+              output: '90 Full Videos (3 Daily Videos)',
+              channels: 'Unlimited Connected YouTube Channels',
+              isPopular: false,
+              ctaText: 'Get Pro Plan ($99/mo) ➔',
+              ctaLink: '/signup?plan=pro',
+              features: [
+                '90 Full Videos / Month (3 Daily Videos)',
+                '2,250 AI Video Credits Every Month',
+                'Unlimited Connected YouTube Channels',
+                'Priority Render Queue & Ultra-Fast Processing',
+                'Google Veo 3.1 & FAL.ai Wan 2.1 Engine Access',
+                'Custom Cloned Voice IDs + ElevenLabs Studio',
+                'Advanced Content Copilot & Workflow Automation',
+                '4K Ultra HD & High-Bitrate Video Exports',
+                'VIP 24/7 Dedicated Support',
+              ],
+            },
+          ].map((plan) => {
+            const price = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+            return (
+              <div
+                key={plan.id}
+                className="autora-card-interactive"
+                style={{
+                  background: plan.isPopular
+                    ? 'linear-gradient(180deg, rgba(6, 182, 212, 0.12) 0%, rgba(18, 18, 22, 0.95) 100%)'
+                    : '#121215',
+                  border: plan.isPopular
+                    ? '2px solid #00F0FF'
+                    : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '16px',
+                  padding: 'clamp(20px, 4vw, 40px)',
+                  boxShadow: plan.isPopular
+                    ? '0 16px 40px rgba(0, 240, 255, 0.2)'
+                    : '0 10px 30px rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  position: 'relative',
+                  transform: plan.isPopular ? 'scale(1.02)' : 'none',
+                  zIndex: plan.isPopular ? 2 : 1,
+                }}
+              >
+                <div>
+                  {/* Top Badge */}
+                  <div style={{ marginBottom: '14px' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        letterSpacing: '0.04em',
+                        background: plan.isPopular
+                          ? 'linear-gradient(135deg, #00F0FF 0%, #3b82f6 100%)'
+                          : 'rgba(255, 255, 255, 0.08)',
+                        color: plan.isPopular ? '#09090b' : '#a1a1aa',
+                      }}
+                    >
+                      {plan.badge}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>
+                    {plan.name}
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#a1a1aa', margin: '0 0 18px', minHeight: '38px', lineHeight: 1.4 }}>
+                    {plan.description}
+                  </p>
+
+                  {/* Price */}
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '38px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+                      ${price}
+                    </span>
+                    <span style={{ fontSize: '14px', color: '#a1a1aa', fontWeight: 500 }}>/month</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: plan.isPopular ? '#00F0FF' : '#10b981', marginBottom: '16px' }}>
+                    {billingCycle === 'annual' ? `Billed annually ($${price * 12}/yr)` : 'Billed monthly • Cancel anytime'}
+                  </div>
+
+                  {/* Credits & Channels Pill */}
+                  <div style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    background: plan.isPopular ? 'rgba(0, 240, 255, 0.1)' : 'rgba(255, 255, 255, 0.04)',
+                    border: plan.isPopular ? '1px solid rgba(0, 240, 255, 0.25)' : '1px solid rgba(255, 255, 255, 0.06)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: plan.isPopular ? '#38bdf8' : '#e4e4e7',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}>
+                    <span>🪙 {plan.credits}</span>
+                    <span style={{ fontSize: '11px', color: '#a1a1aa' }}>📡 {plan.channels} • {plan.output}</span>
+                  </div>
+
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '0 0 18px 0' }} />
+
+                  {/* Features List */}
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {plan.features.map((feat, fi) => (
+                      <li key={fi} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: '#e4e4e7', lineHeight: 1.4 }}>
+                        <span style={{ color: plan.isPopular ? '#00F0FF' : '#10b981', fontWeight: 800, flexShrink: 0 }}>✓</span>
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* CTA Button */}
+                <Link
+                  href={plan.ctaLink}
+                  className="autora-btn-gleam"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'center',
+                    padding: '13px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    background: plan.isPopular
+                      ? 'linear-gradient(135deg, #00F0FF 0%, #3b82f6 100%)'
+                      : '#1e293b',
+                    color: plan.isPopular ? '#09090b' : '#fff',
+                    border: plan.isPopular ? 'none' : '1px solid rgba(255, 255, 255, 0.15)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {plan.ctaText}
+                </Link>
               </div>
-              <div style={{ fontSize: '12px', color: '#10b981', marginTop: '4px' }}>
-                {billingCycle === 'annual' ? 'Billed annually ($468/yr)' : 'Cancel anytime'}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '24px 0' }} />
-
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
-            {[
-              '30 Full Videos / Month (1 Daily Video)',
-              'Zero-Waste Policy (Failed jobs never count)',
-              'Studio Voices + Custom Voice ID',
-              'Multi-Model Script Engine (DeepSeek + GPT-4o)',
-              'Full 1080p MP4 Immediate Downloads',
-              'Direct YouTube Auto-Publish & Scheduling',
-              'Health Content Safe Mode Compliance',
-              'Automated WebVTT Subtitle Generation',
-            ].map((feat, i) => (
-              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#e4e4e7' }}>
-                <span style={{ color: '#10b981', fontWeight: 700 }}>✓</span>
-                <span>{feat}</span>
-              </li>
-            ))}
-          </ul>
-
-          <Link href="/signup" className="autora-btn-gleam" style={{
-            display: 'block',
-            width: '100%',
-            textAlign: 'center',
-            background: '#ffffff',
-            color: '#09090b',
-            padding: '16px',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: 700,
-            textDecoration: 'none'
-          }}>
-            Start Creating Today ➔
-          </Link>
+            );
+          })}
         </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
           9. FREQUENTLY ASKED QUESTIONS
       ───────────────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px', maxWidth: '800px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <section style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '800px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 12px' }}>
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 12px' }}>
             Frequently Asked Questions
           </h2>
           <p style={{ color: '#a1a1aa', fontSize: '15px' }}>
@@ -758,14 +909,14 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           10. FOOTER
       ───────────────────────────────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '40px 24px', background: '#09090b', color: '#71717a', fontSize: '13px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+      <footer style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 24px)', background: '#09090b', color: '#71717a', fontSize: '13px' }}>
+        <div className="footer-container" style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>AUTORA</span>
             <span>— AI Video Automation</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '24px' }}>
+          <div className="footer-links" style={{ display: 'flex', gap: '24px' }}>
             <a href="#how-it-works" style={{ color: '#a1a1aa', textDecoration: 'none' }}>How It Works</a>
             <a href="#integrations" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Integrations</a>
             <a href="#pricing" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Pricing</a>
