@@ -43,7 +43,7 @@ export const metadata: Metadata = {
       'Turn your ideas into ready-to-publish videos with AI-powered scripting, voiceovers, visuals, captions, and rendering.',
   },
   other: {
-    'fameswap-verification': 'RHGxQyVs29q0GKUj2KPw8BseWbVDXKVn',
+    'fameswap-verification': 'RHGxQyVs29q0GKUj2KPw8BseWbVDXKvn',
   },
   icons: {
     icon: '/favicon.ico',
@@ -63,7 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="fameswap-verification" content="RHGxQyVs29q0GKUj2KPw8BseWbVDXKVn" />
+        <meta name="fameswap-verification" content="RHGxQyVs29q0GKUj2KPw8BseWbVDXKvn" />
       </head>
       <body>
         <ToastProvider>
