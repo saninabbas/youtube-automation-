@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     const targetPlan = PLANS.find((p) => p.id.toLowerCase() === planId || (planId === 'pro' && p.id === 'creator'));
     if (!targetPlan) {
       return NextResponse.json(
-        { success: false, error: `Invalid plan specified: "${planId}". Valid plans: starter, creator, scale, agency` },
+        { success: false, error: `Invalid plan specified: "${planId}". Valid plans: creator, pro` },
         { status: 400 }
       );
     }

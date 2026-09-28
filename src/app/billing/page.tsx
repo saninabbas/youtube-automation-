@@ -199,13 +199,13 @@ export default function BillingPage() {
             </div>
           </div>
 
-          {/* 4 PRODUCTION PRICING PACKAGES */}
+          {/* 2 PRODUCTION PRICING PACKAGES ($49 & $99) */}
           <div>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '16px' }}>
               Select Your Video Production Package
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
               {plans.map((p: any) => {
                 const isCurrent = (credits?.tier || 'CREATOR').toLowerCase() === p.id.toLowerCase();
                 const price = isAnnual ? p.price_annual : p.price_monthly;
