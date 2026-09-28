@@ -447,6 +447,45 @@ class DefaultVideoProvider implements VideoProvider {
     const safeSubtext2 = sanitize(subtext2);
     const safeNiche = sanitize(niche.toUpperCase());
 
+    // ============================================================
+    // REAL MOVING VIDEO FOOTAGE ENGINE (Pexels / Pixabay 4K & 1080p)
+    // Generates actual moving video clips matching the scene prompt
+    // ============================================================
+    const pexelsKey = getApiKey('pexels_api_key') || process.env.PEXELS_API_KEY;
+    if (pexelsKey) {
+      try {
+        const { stockVideoEngine } = await import('./stockVideoProvider');
+        const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
+        const clipOffset = (sceneIndex * 3) + clipIndex;
+        const stockAspectRatio: '9:16' | '16:9' = aspectRatio === '16:9' ? '16:9' : '9:16';
+        console.log(`[VideoProvider] 🎥 Searching Pexels Real Moving Video for Scene ${sceneIndex} (Keywords: ${keywords.join(', ')})...`);
+        const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, stockAspectRatio);
+
+        if (stockVideoUrl) {
+          console.log(`[VideoProvider] ✅ Found Real Moving HD Video for Scene ${sceneIndex} Clip ${clipIndex}: ${stockVideoUrl.substring(0, 60)}...`);
+          await stockVideoEngine.renderStockVideoScene({
+            videoUrl: stockVideoUrl,
+            durationSec,
+            outputPath,
+            sceneIndex,
+            headline: safeHeadline,
+            niche: safeNiche,
+            accent,
+            aspectRatio: stockAspectRatio,
+          });
+          if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
+            console.log(`[VideoProvider] ✅ Successfully rendered Real Moving Video for Scene ${sceneIndex}`);
+            return;
+          }
+        }
+      } catch (stockErr: any) {
+        console.warn(`[VideoProvider] Pexels real video search/render error: ${stockErr.message}`);
+      }
+    }
+
+    // ============================================================
+    // AI VISUAL SYNTHESIZER (Fallback: AI Prompt Image + Ken Burns Motion)
+    // ============================================================
     // 2. Try Generating Real AI Visuals via Cloudflare Workers AI (Flux 1 Schnell & SDXL Lightning)
     const cfToken = getApiKey('cloudflare_api_token') || process.env.CLOUDFLARE_API_TOKEN;
     const cfAccountId = getApiKey('cloudflare_account_id') || process.env.CLOUDFLARE_ACCOUNT_ID;
