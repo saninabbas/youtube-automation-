@@ -420,12 +420,12 @@ export class VideoPipelineWorker {
         } catch {}
 
         for (const scene of scenes) {
-          try {
-            let attempt = 1;
-            let currentPrompt = scene.visual_prompt;
-            let bestClips: Array<{ clipIndex: number; storageKey: string; url: string; durationSec: number }> = [];
-            let latestQcReport: QualityReport | null = null;
+          let attempt = 1;
+          let currentPrompt = scene.visual_prompt;
+          let bestClips: Array<{ clipIndex: number; storageKey: string; url: string; durationSec: number }> = [];
+          let latestQcReport: QualityReport | null = null;
 
+          try {
             while (attempt <= MAX_QC_ATTEMPTS) {
               console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio})...`);
 
