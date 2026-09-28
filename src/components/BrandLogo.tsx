@@ -12,7 +12,7 @@ export interface BrandLogoProps {
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   href = '/',
-  variant = 'autovideo',
+  variant = 'autora',
   showText = true,
   size = 'md',
   className = '',

@@ -190,28 +190,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ───────────────────────────────────────────────────────────── */}
       <aside className={`sidebar ${collapsed ? 'collapsed sidebar-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`} style={{ backgroundColor: '#090a0d', borderRight: '1px solid rgba(255, 255, 255, 0.07)' }}>
         <div className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-          <Link href="/" className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              background: '#ffffff',
+          <Link href="/" className="sidebar-brand brand-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+            <div className="logo-icon" style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#09090b',
+              width: '32px',
+              height: '32px',
+              background: 'linear-gradient(135deg, #7928CA, #00F0FF)',
+              color: '#ffffff',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 240, 255, 0.2)',
               flexShrink: 0
             }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
               </svg>
             </div>
             {!collapsed && (
-              <span style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.04em' }}>
-                AUTORA
+              <span className="logo-text" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.5px' }}>
+                Auto<span className="highlight" style={{ color: '#00F0FF' }}>RA</span>
               </span>
             )}
           </Link>
@@ -637,6 +636,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     right: 0,
                     top: 'calc(100% + 8px)',
                     width: '320px',
+                    maxWidth: 'calc(100vw - 32px)',
+                    maxHeight: '80vh',
+                    overflowY: 'auto',
                     padding: '16px',
                     background: '#111215',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -729,6 +731,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     right: 0,
                     top: 'calc(100% + 8px)',
                     width: '220px',
+                    maxWidth: 'calc(100vw - 32px)',
+                    maxHeight: '80vh',
+                    overflowY: 'auto',
                     padding: '12px',
                     background: '#111215',
                     border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -802,7 +807,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className={`content-container ${isStudioPage ? 'studio-main-container' : ''}`}>{children}</main>
+        <main 
+          className={`content-container ${isStudioPage ? 'studio-main-container' : ''}`}
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 20px) + 20px)' }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

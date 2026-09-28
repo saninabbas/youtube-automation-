@@ -76,23 +76,25 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center' }}>
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none', marginBottom: '16px' }}>
-            <div
-              style={{
+            <div className="logo-icon" style={{
                 width: '32px',
                 height: '32px',
-                borderRadius: '6px',
-                background: '#4f46e5',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #7928CA, #00F0FF)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(0, 240, 255, 0.2)',
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff">
-                <polygon points="5 3 19 12 5 21 5 3" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
               </svg>
             </div>
-            <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
-              AUTORA
+            <span className="logo-text" style={{ fontSize: '18px', fontWeight: 700, color: '#fff', letterSpacing: '-0.5px' }}>
+              Auto<span className="highlight" style={{ color: '#00F0FF' }}>RA</span>
             </span>
           </Link>
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', marginBottom: '4px' }}>
