@@ -120,7 +120,10 @@ export class VeoVideoProvider implements VideoGenerationProvider {
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(30000),
     });
@@ -154,6 +157,9 @@ export class VeoVideoProvider implements VideoGenerationProvider {
 
       try {
         const res = await fetch(pollUrl, {
+          headers: {
+            'x-goog-api-key': apiKey,
+          },
           signal: AbortSignal.timeout(15000),
         });
 

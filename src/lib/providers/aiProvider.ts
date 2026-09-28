@@ -443,105 +443,59 @@ class DefaultAiProvider implements AiProvider {
 
     const sectionDuration = Math.max(15, Math.round((targetLengthMinutes * 60 - 40) / numSections));
 
-    // Comprehensive 12-chapter documentary pillar suite that seamlessly covers space, science, technology, history, finance, and philosophy
-    const pillars = [
+    // Dynamic topic-driven pillar generation matching user's requested topic and niche
+    const generateTopicPillars = (topicStr: string, nicheStr: string, domainStr: string) => [
       {
-        title: 'The Kinetic Event & Instantaneous Rupture',
-        sub1: 'The Physics of Immediate Halting',
-        desc1: `At the equator, the surface of our planet rotates eastward at roughly one thousand forty miles per hour. If that rotation were to halt in an instant, every unbound object on Earth—billions of tons of ocean water, atmospheric air columns, and every human structure—would violently maintain its forward momentum. The resulting lateral deceleration would instantly shear skyscrapers off their foundations and level planetary landscapes in seconds.`,
-        sub2: 'Supersonic Surface Disruption',
-        desc2: `Human beings and vehicles would be propelled eastward at supersonic speeds, colliding with terrain and debris fields before gravity could pull them downward. As the solid bedrock below suddenly ceased motion, the immense friction generated between the stationary crust and the screaming surface layer would ignite instantaneous atmospheric firestorms across vast swaths of equatorial land.`,
-        subject: `Dramatic, photorealistic cinematic visualization of the immediate physical disruption caused by ${cleanTopic}`,
+        title: `The Fundamentals & Core Mechanics of ${topicStr}`,
+        sub1: `Understanding the Foundation of ${topicStr}`,
+        desc1: `When analyzing ${topicStr}, we must first examine the core principles that govern its foundation. In the context of ${nicheStr}, understanding these baseline mechanics is essential for grasping the wider implications and long-term trajectory.`,
+        sub2: `Key Drivers & Critical Dynamics`,
+        desc2: `As these foundational elements interact, they generate powerful secondary effects. Industry leaders and experts in ${nicheStr} consistently point to these critical dynamics as the primary forces shaping outcomes today.`,
+        subject: `High-impact cinematic conceptual visualization illustrating the core foundation of ${topicStr}`,
       },
       {
-        title: 'Atmospheric Shockwaves & Supersonic Storms',
-        sub1: 'Global Hypervelocity Jetstreams',
-        desc1: `Because the atmosphere is held to Earth by friction and gravity rather than rigid bonds, the cessation of rotation would launch planetary air masses into supersonic jetstreams exceeding one thousand miles per hour. These winds, carrying pulverized rock and debris, would scour continental surfaces clean down to bare rock, eroding centuries of architectural and natural history in minutes.`,
-        sub2: 'Thermal Shock & Tornado Clusters',
-        desc2: `As these hyper-velocity air currents collide with mountain ranges like the Rockies and the Himalayas, extreme compression would superheat the air, generating localized temperature spikes of hundreds of degrees. Massive supercell vortexes and global firestorms would rip across previously temperate valleys, transforming familiar geography into an unrecognizable landscape of ash and shock waves.`,
-        subject: `Cinematic wide-angle view of massive supersonic atmospheric turbulence sweeping over continents during ${cleanTopic}`,
+        title: `Catalysts & Rapid Transformations in ${topicStr}`,
+        sub1: `The Shift in Traditional Paradigms`,
+        desc1: `Recent breakthroughs and shifting landscapes have accelerated the pace of change surrounding ${topicStr}. What used to take years to develop is now evolving in real time, challenging traditional assumptions across ${nicheStr}.`,
+        sub2: `Emerging Trends & Breakthrough Systems`,
+        desc2: `These rapid transformations create new opportunities while dismantling obsolete methodologies. Adapting to this new reality requires a deep understanding of ${domainStr}.`,
+        subject: `Cinematic wide shot showing dynamic motion and technological evolution in ${topicStr}`,
       },
       {
-        title: 'The Great Oceanic Displacement & Megatsunamis',
-        sub1: 'Continental Shelf Overflow',
-        desc1: `Earth's oceans contain over three hundred million cubic miles of water, all currently distributed in equilibrium with planetary centrifugal bulge. When rotation terminates, that centrifugal force vanishes. Water that was previously held several miles high around the equator begins an unstoppable surge toward the poles, producing tidal waves that dwarf anything in human record.`,
-        sub2: 'The Northern and Southern Megasurge',
-        desc2: `Colossal megatsunamis, thousands of feet in height, would sweep over coastlines and barrel thousands of miles inland. Coastal cities worldwide would be submerged beneath thousands of feet of rushing brine. Within hours, the world's oceans would reconverge into two colossal polar oceans, leaving behind an equatorial supercontinent surrounded by desolate seabed basins.`,
-        subject: `Breathtaking high-contrast cinematic shot of ocean waters surging across continental landmasses in ${cleanTopic}`,
+        title: `Strategic Frameworks & Execution Methodologies`,
+        sub1: `The Blueprint for Implementation`,
+        desc1: `To harness the full potential of ${topicStr}, structured frameworks are required. By breaking down complex variables into actionable phases, professionals in ${nicheStr} can maximize performance and eliminate unnecessary risk.`,
+        sub2: `Optimization & Risk Mitigation`,
+        desc2: `Every major shift brings unique challenges. Identifying potential friction points early enables strategic resilience and long-term sustainability in ${nicheStr}.`,
+        subject: `Clean architectural perspective showing structured strategy and precision engineering for ${topicStr}`,
       },
       {
-        title: 'Geomagnetic Decay & The Vanishing Magnetosphere',
-        sub1: 'The Geodynamo Collapse',
-        desc1: `Earth's magnetic shield is generated by the convective swirling of molten iron in the outer core, fundamentally driven by planetary rotation and Coriolis forces. Without this continuous geodynamo, the protective magnetic field would rapidly warp, weaken, and collapse over a matter of days, leaving the planet defenseless against interplanetary radiation.`,
-        sub2: 'Solar Wind Influx & Cosmic Radiation',
-        desc2: `Lethal solar radiation and cosmic rays would begin penetrating directly to ground level. Modern electronic communications, microchips, and satellite constellations would be fried almost immediately. Surviving surface organisms would face intense ultraviolet bombardment, causing rapid DNA ionization and triggering immediate biosystem shutdown across unprotected surface habitats.`,
-        subject: `Deep space visualization showing the deformation and stripping of Earth's magnetic field during ${cleanTopic}`,
+        title: `Data Insights & Macro Perspectives`,
+        sub1: `Quantitative Evidence & Pattern Recognition`,
+        desc1: `Empirical data surrounding ${topicStr} reveals clear patterns. Analyzing historical data points alongside modern benchmarks provides an undeniable perspective on where ${nicheStr} is heading.`,
+        sub2: `Comparative Analysis & Industry Standards`,
+        desc2: `When compared to historical precedents, the current trajectory of ${topicStr} highlights unprecedented shifts in behavioral and economic models.`,
+        subject: `High-tech analytical terminal display visualizing data curves and insights for ${topicStr}`,
       },
       {
-        title: 'The Perpetual Division: Scorched Day vs Frozen Night',
-        sub1: 'The Six-Month Sunlight Cycle',
-        desc1: `With rotation halted relative to the stars, a single day-night cycle on Earth would now take exactly one full year—six months of perpetual daylight followed by six months of freezing darkness. The sun-facing hemisphere would experience relentless solar irradiance, boiling rivers dry and converting topsoil into barren glass deserts reaching over one hundred thirty degrees Fahrenheit.`,
-        sub2: 'The Cryogenic Night Hemisphere',
-        desc2: `Simultaneously, the opposing dark hemisphere would radiate all stored warmth into the vacuum of space, plunging temperatures down to negative one hundred degrees. Moisture in the air would freeze solid, blanketing the dark half of the globe in thick sheets of nitrogen and carbon-dioxide ice, creating a hostile cryogenic wasteland where no standard ecosystem could survive.`,
-        subject: `Cinematic orbital perspective illustrating the stark demarcation between the sunlit scorch zone and the frozen night hemisphere`,
+        title: `Real-World Case Studies & Field Applications`,
+        sub1: `Practical Execution in Modern Environments`,
+        desc1: `Theory only tells half the story. Examining real-world applications of ${topicStr} demonstrates how top performers navigate obstacles and capitalize on emerging advantages.`,
+        sub2: `Measurable Outcomes & Key Takeaways`,
+        desc2: `The results speak for themselves. Those who proactively integrate these principles achieve compound advantages across every facet of ${nicheStr}.`,
+        subject: `Dynamic medium-angle shot of real-world implementation and high performance in ${topicStr}`,
       },
       {
-        title: 'The Fragile Habitable Meridian (The Twilight Zone)',
-        sub1: 'The Narrow Boundary of Equilibrium',
-        desc1: `Between the scorching desert of the day side and the frozen glaciers of the night side lies a narrow, perpetual twilight zone. Along this planetary terminator, the sun hangs forever on the horizon, creating a steady, temperate equilibrium where temperatures remain between fifty and seventy degrees Fahrenheit—the only place on the planet capable of sustaining complex biological life.`,
-        sub2: 'Atmospheric Convection Along the Terminator',
-        desc2: `This twilight ribbon would become the center of global atmospheric circulation. Hot air rising from the sun side and icy air sinking from the night side would clash along this boundary, generating constant, howling winds and perpetual rain squalls, creating a unique microclimate where future survivors might attempt to rebuild civil structures.`,
-        subject: `Atmospheric cinematic shot of the misty twilight meridian between light and shadow on Earth`,
-      },
-      {
-        title: 'Subterranean Engineering & Deep Biospheres',
-        sub1: 'Retreat Beneath Bedrock',
-        desc1: `With surface conditions utterly hostile due to radiation, extreme weather, and supersonic storms, the only realistic survival strategy for human civilization would be subterranean migration. Massive deep-underground complexes, powered by geothermal energy tapping directly into the Earth's mantle heat, would represent humanity's final technological fortresses.`,
-        sub2: 'Hydroponics & Artificial Atmospheric Control',
-        desc2: `Inside these subterranean chambers, closed-loop hydroponic farms utilizing targeted LED spectrums would replace natural agriculture. Sealed environmental scrubbing units would recycle moisture and oxygen with surgical precision, shielding human communities from the surface chaos while preserving libraries of genetic biodiversity.`,
-        subject: `Cinematic high-tech underground biological sanctuary with glowing hydroponic racks and architectural vaulting`,
-      },
-      {
-        title: 'Tectonic Rebalancing & Mantle Realignment',
-        sub1: 'The Redistribution of Planetary Mass',
-        desc1: `Earth is not a perfect sphere—its rotation causes an equatorial bulge roughly twenty-seven miles wider than its polar diameter. With rotation gone, gravity pulls the planet into a true sphere. This massive readjustment forces the crust to flex inward at the equator and push outward at the poles, triggering global megathrust earthquakes of magnitude nine and ten.`,
-        sub2: 'Volcanic Fissures & Basalt Floods',
-        desc2: `Deep mantle plumes would rupture along continental boundaries, producing vast basalt flood plains reminiscent of ancient prehistoric extinction events. Volcanic ash columns rising tens of miles into the stratosphere would dim the daylight hemisphere, creating a chaotic feedback loop between volcanic winter and unyielding solar heat.`,
-        subject: `Dramatic low-angle cinematic perspective of tectonic plates shifting with volcanic fissures glowing on the horizon`,
-      },
-      {
-        title: 'Ecological Divergence & Extremophile Domination',
-        sub1: 'The Extinction of Surface Megaflora',
-        desc1: `Every plant and animal species adapted to a twenty-four-hour circadian rhythm would face immediate evolutionary pressure. Deciduous forests on the daylight side would desiccate and burn, while fauna on the night side would succumb to hypothermia and starvation as traditional seasonal migration routes became impassable cryogenic barriers.`,
-        sub2: 'The Rise of Radiation-Resistant Life',
-        desc2: `In their place, extremophiles, deep-sea hydrothermal vent organisms, and radiation-resistant bacteria like Deinococcus radiodurans would expand to dominate the new planetary ecology. Life would not end, but it would be radically simplified, contracting into deep cavern systems, geothermal hot springs, and oceanic abysses beneath the polar ice sheets.`,
-        subject: `Mysterious cinematic macro focus on bioluminescent extremophiles flourishing in deep thermal rock fissures`,
-      },
-      {
-        title: 'Civilization Matrix & Technological Reset',
-        sub1: 'The Collapse of Modern Infrastructure',
-        desc1: `Our modern global civilization relies entirely on planetary stability: satellite GPS synchronization, oceanic fiber-optic cables, agricultural weather predictability, and electrical transmission grids. The stoppage of rotation would obliterate all of these interdependent systems in a single stroke, enforcing a sudden and brutal technological reset.`,
-        sub2: 'The Preservation of Knowledge',
-        desc2: `The priority for any surviving human contingent would be the preservation of digital and mechanical knowledge. Vaults carved deep into stable granite formations—similar to the Svalbard seed vault—would hold humanity's mathematical, scientific, and cultural heritage, serving as the blueprint for an eventual re-emergence centuries in the future.`,
-        subject: `Moody cinematic documentary shot of ancient data vaults carved into pristine subterranean granite`,
-      },
-      {
-        title: 'Millennial Stabilization & The New Earth',
-        sub1: 'The Gradual Thermal Steady State',
-        desc1: `Over tens of thousands of years, the chaotic initial cataclysms would gradually subside into a new planetary equilibrium. The two polar super-oceans would stabilize, locked in place by gravity, separated by a vast equator-spanning continent of exposed continental bedrock, ancient ocean trenches, and hardened lava fields.`,
-        sub2: 'A Transformed Celestial Body',
-        desc2: `From deep space, the Earth would no longer look like the vibrant blue marble photographed by Apollo astronauts. It would appear as a striking two-toned sphere: one hemisphere shrouded in white cryogenic ice clouds, the other a stark reddish-ochre desert, bisected by a brilliant thin green ribbon of twilight where life stubbornly endures.`,
-        subject: `Majestic photorealistic 8k space shot of the stabilized transformed Earth viewed from lunar orbit`,
-      },
-      {
-        title: 'The Cosmic Perspective & Final Reflection',
-        sub1: 'The Fragility of Our Clockwork World',
-        desc1: `Examining this extreme scenario teaches us a profound scientific truth: the delicate balance of life on Earth is not merely about water and sunlight. It depends entirely on the hidden, silent machinery of planetary physics—the continuous thousand-mile-per-hour spin that shields our atmosphere, regulates our climate, and governs every breath we take.`,
-        sub2: 'Appreciating the Cosmic Wonder',
-        desc2: `Every sunrise and sunset we witness is not just a daily backdrop, but a dynamic miracle of celestial mechanics keeping catastrophe at bay. Understanding these immense forces reminds us that our civilization is a brief and precious passenger aboard a finely tuned planetary vessel racing through the cosmic dark.`,
-        subject: `Inspiring, transcendent cinematic shot of a stunning sunrise seen from space, warm atmospheric glow highlighting Earth's curve`,
+        title: `The Future Horizon: Long-Term Outlook for ${topicStr}`,
+        sub1: `Next-Generation Evolution & Horizon Scanning`,
+        desc1: `Looking ahead, the evolution of ${topicStr} promises to redefine the boundaries of ${nicheStr}. Early adopters who position themselves along these emerging frontiers will lead the next decade.`,
+        sub2: `Final Synthesis & Actionable Directive`,
+        desc2: `Mastering ${topicStr} is not just an advantage—it is a necessity. By taking decisive action today, you unlock new levels of growth, efficiency, and long-term success.`,
+        subject: `Breathtaking inspiring cinematic sunrise perspective symbolizing the bright future of ${topicStr}`,
       },
     ];
+
+    const pillars = generateTopicPillars(cleanTopic, niche, domainFocus);
 
     const sections = [];
     for (let i = 0; i < numSections; i++) {
@@ -550,7 +504,7 @@ class DefaultAiProvider implements AiProvider {
 
       // In shorts mode, provide concise punchy narration; in long-form, provide full multi-sentence paragraphs
       const narrationA = isShorts
-        ? `Look closely at ${p.title}. When the spin stops, ${p.desc1.slice(0, 110)}.`
+        ? `Look closely at ${p.title}. When analyzing ${cleanTopic}, ${p.desc1.slice(0, 110)}.`
         : `${p.desc1}`;
 
       const narrationB = isShorts
@@ -592,16 +546,16 @@ class DefaultAiProvider implements AiProvider {
     }
 
     const hookText = isShorts
-      ? `What if Earth suddenly stopped spinning right now? In the first five seconds, everything changes forever.`
-      : `What if Earth suddenly came to a complete, dead stop? Within the first three seconds, the laws of physics would unleash a cataclysm unlike anything in planetary history. Here is the astonishing scientific truth.`;
+      ? `What is the real secret behind ${cleanTopic}? In the next 60 seconds, everything you thought you knew changes.`
+      : `What is the true power behind ${cleanTopic}? Across ${niche}, this breakthrough is reshaping how we understand ${domainFocus}. Here is the complete breakdown.`;
 
     const introText = isShorts
-      ? `Welcome to ${channelName}. Most people think we would just float away, but the actual physics of stopping Earth's rotation are far more terrifying.`
-      : `Welcome back to ${channelName}. Today, we are analyzing one of the most extreme thought experiments in astrophysics: what happens when a planetary body spinning at over one thousand miles per hour suddenly halts? What you are about to discover will forever change the way you look at the ground beneath your feet.`;
+      ? `Welcome to ${channelName}. Most people misunderstand ${cleanTopic}, but the actual mechanisms are far more fascinating.`
+      : `Welcome back to ${channelName}. Today, we are conducting an in-depth analysis of ${cleanTopic}. What you are about to discover will give you a strategic advantage in ${niche}.`;
 
     const conclusionText = isShorts
-      ? `Our entire existence relies on this silent planetary spin. Take away that motion, and civilization vanishes in seconds.`
-      : `The stoppage of Earth's rotation proves how deeply our survival is linked to the cosmic clockwork of the solar system. Our atmosphere, oceans, and biosphere only exist because our planet maintains its silent, steady spin through the cosmic void.`;
+      ? `Understanding ${cleanTopic} is the key to mastering ${niche}. Apply these principles today.`
+      : `The analysis of ${cleanTopic} proves how rapidly ${niche} is evolving. By understanding these core mechanisms, you stay ahead of the curve and position yourself for long-term success.`;
 
     return {
       title: cleanTopic,

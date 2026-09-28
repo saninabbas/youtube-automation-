@@ -116,72 +116,31 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     return Buffer.concat(audioBuffers);
   }
 
-  // Engine 1: Google TTS Streaming Engine (Neural Natural Spoken Voice via HTTP)
-  private async synthesizeWithGoogleTTS(text: string, lang = 'en'): Promise<Buffer> {
-    const rawParagraphs = text.split(/\n+/).map((p) => p.trim()).filter(Boolean);
-    const sentences: string[] = [];
-
-    for (const p of rawParagraphs) {
-      const parts = p.match(/[^.!?]+[.!?]+/g) || [p];
-      for (const s of parts) {
-        const clean = s.trim();
-        if (clean.length > 150) {
-          const words = clean.split(' ');
-          let cur = '';
-          for (const w of words) {
-            if ((cur + ' ' + w).length > 150 && cur.trim()) {
-              sentences.push(cur.trim());
-              cur = w;
-            } else {
-              cur += (cur ? ' ' : '') + w;
-            }
-          }
-          if (cur.trim()) sentences.push(cur.trim());
-        } else if (clean) {
-          sentences.push(clean);
-        }
-      }
+  // Engine 1: Microsoft Edge Neural TTS Engine (Free High-Quality Neural Voices)
+  private async synthesizeWithMsEdgeTTS(text: string, voiceName: string = 'en-US-ChristopherNeural'): Promise<Buffer> {
+    const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts');
+    const tts = new MsEdgeTTS();
+    const targetVoice = (voiceName && !voiceName.startsWith('elevenlabs:')) 
+      ? voiceName 
+      : 'en-US-ChristopherNeural';
+    
+    await tts.setMetadata(targetVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+    const tempDir = getTempDir();
+    const result = await tts.toFile(tempDir, text);
+    
+    if (!result.audioFilePath || !fs.existsSync(result.audioFilePath)) {
+      throw new Error('msedge-tts did not produce an audio output file');
     }
-
-    // Process all sentences with batching to ensure full narration without truncation
-    const audioBuffers: Buffer[] = [];
-    const BATCH_SIZE = 5;
-
-    for (let i = 0; i < sentences.length; i += BATCH_SIZE) {
-      const batch = sentences.slice(i, i + BATCH_SIZE);
-      const batchPromises = batch.map(async (sentence) => {
-        if (!sentence.trim()) return null;
-        try {
-          const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(sentence)}`;
-          const res = await fetch(url, {
-            signal: AbortSignal.timeout(4000),
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            },
-          });
-
-          if (res.ok) {
-            const arrayBuf = await res.arrayBuffer();
-            return Buffer.from(arrayBuf);
-          }
-        } catch {}
-        return null;
-      });
-
-      const results = await Promise.all(batchPromises);
-      for (const b of results) {
-        if (b) audioBuffers.push(b);
-      }
-      if (i + BATCH_SIZE < sentences.length) {
-        await this.sleep(80);
-      }
+    
+    const buf = await fs.promises.readFile(result.audioFilePath);
+    await fs.promises.unlink(result.audioFilePath).catch(() => {});
+    tts.close();
+    
+    if (buf.length < 500) {
+      throw new Error('msedge-tts audio output is too small or invalid');
     }
-
-    if (audioBuffers.length === 0) {
-      throw new Error('Google TTS produced no audio streams');
-    }
-
-    return Buffer.concat(audioBuffers);
+    
+    return buf;
   }
 
   // Engine 2: Windows Native Speech Synthesizer (100% Guaranteed Spoken Words Offline)
@@ -284,15 +243,15 @@ $synth.Dispose()
       }
     }
 
-    // 1. Try Google Neural TTS
+    // 1. Try Microsoft Edge Neural TTS
     if (!finalBuffer) {
       try {
-        finalBuffer = await this.synthesizeWithGoogleTTS(cleanText, params.language || 'en');
+        finalBuffer = await this.synthesizeWithMsEdgeTTS(cleanText, params.voiceName || 'en-US-ChristopherNeural');
         if (finalBuffer && finalBuffer.length > 500) {
-          console.log(`[VoiceProvider] Synthesized voiceover via Neural Voice Streamer (${finalBuffer.length} bytes)`);
+          console.log(`[VoiceProvider] Synthesized voiceover via Microsoft Edge Neural TTS (${finalBuffer.length} bytes, voice: ${params.voiceName || 'en-US-ChristopherNeural'})`);
         }
       } catch (err: any) {
-        console.warn(`[VoiceProvider] Google TTS unavailable (${err.message}). Trying fallbacks...`);
+        console.warn(`[VoiceProvider] Microsoft Edge TTS unavailable (${err.message}). Trying fallbacks...`);
       }
     }
 

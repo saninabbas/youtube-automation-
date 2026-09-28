@@ -84,7 +84,13 @@ export class FfmpegCompositor {
       }
     }
 
-    const videoFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`;
+    const { subtitleFilePath } = params;
+    let videoFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`;
+
+    if (subtitleFilePath && fs.existsSync(subtitleFilePath)) {
+      const safeSubPath = subtitleFilePath.replace(/\\/g, '/').replace(/:/g, '\\:');
+      videoFilter += `,subtitles='${safeSubPath}':force_style='FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,Outline=2,Shadow=0,MarginV=40'`;
+    }
 
     const encodingTimeout = Math.max(300000, Math.round(totalDurationSec * 2000));
 
@@ -113,13 +119,13 @@ export class FfmpegCompositor {
           '-c:a', 'aac',
           '-b:a', '192k',
           '-pix_fmt', 'yuv420p',
-          '-preset', 'ultrafast',
+          '-preset', 'fast',
           '-movflags', '+faststart',
           '-shortest',
           finalFilePath,
         ];
       } else {
-        // Standard narration audio overlay with scaling filter
+        // Standard narration audio overlay with scaling & subtitle filter
         args = [
           '-y',
           '-stream_loop', '-1',
@@ -133,7 +139,7 @@ export class FfmpegCompositor {
           '-c:a', 'aac',
           '-b:a', '192k',
           '-pix_fmt', 'yuv420p',
-          '-preset', 'ultrafast',
+          '-preset', 'fast',
           '-movflags', '+faststart',
           '-shortest',
           finalFilePath,

@@ -54,6 +54,66 @@ const DEFAULT_PRESET_TOPICS = [
   'Secrets of Ancient Rome History Forgot',
 ];
 
+export const getCategoryTheme = (category: string) => {
+  switch (category) {
+    case 'trigger':
+      return {
+        accent: '#f59e0b',
+        border: 'rgba(245, 158, 11, 0.4)',
+        glow: 'rgba(245, 158, 11, 0.25)',
+        iconBg: 'rgba(245, 158, 11, 0.15)',
+        badgeBg: 'rgba(245, 158, 11, 0.15)',
+        badgeText: '#fbbf24',
+      };
+    case 'agent':
+      return {
+        accent: '#38bdf8',
+        border: 'rgba(56, 189, 248, 0.45)',
+        glow: 'rgba(56, 189, 248, 0.3)',
+        iconBg: 'rgba(56, 189, 248, 0.15)',
+        badgeBg: 'rgba(56, 189, 248, 0.15)',
+        badgeText: '#38bdf8',
+      };
+    case 'model':
+      return {
+        accent: '#a855f7',
+        border: 'rgba(168, 85, 247, 0.4)',
+        glow: 'rgba(168, 85, 247, 0.25)',
+        iconBg: 'rgba(168, 85, 247, 0.15)',
+        badgeBg: 'rgba(168, 85, 247, 0.15)',
+        badgeText: '#c084fc',
+      };
+    case 'compositor':
+      return {
+        accent: '#10b981',
+        border: 'rgba(16, 185, 129, 0.4)',
+        glow: 'rgba(16, 185, 129, 0.25)',
+        iconBg: 'rgba(16, 185, 129, 0.15)',
+        badgeBg: 'rgba(16, 185, 129, 0.15)',
+        badgeText: '#34d399',
+      };
+    case 'publisher':
+      return {
+        accent: '#f43f5e',
+        border: 'rgba(244, 63, 94, 0.4)',
+        glow: 'rgba(244, 63, 94, 0.25)',
+        iconBg: 'rgba(244, 63, 94, 0.15)',
+        badgeBg: 'rgba(244, 63, 94, 0.15)',
+        badgeText: '#fb7185',
+      };
+    case 'tool':
+    default:
+      return {
+        accent: '#06b6d4',
+        border: 'rgba(6, 182, 212, 0.4)',
+        glow: 'rgba(6, 182, 212, 0.25)',
+        iconBg: 'rgba(6, 182, 212, 0.15)',
+        badgeBg: 'rgba(6, 182, 212, 0.15)',
+        badgeText: '#22d3ee',
+      };
+  }
+};
+
 export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps> = ({
   mode = 'simulation',
   projectData,
@@ -64,8 +124,8 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   subtitle,
   containerHeight,
 }) => {
-  // Canvas viewport scale & panning
-  const [zoomLevel, setZoomLevel] = useState<number>(0.8);
+  // Canvas viewport scale & panning — defaults to generous 0.95 zoom for crystal-clear readability
+  const [zoomLevel, setZoomLevel] = useState<number>(0.95);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -89,7 +149,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   const [inspectorTab, setInspectorTab] = useState<'details' | 'logs'>('details');
   const logsEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Dynamic Auto-Fit: measures available width & height and scales/centers the 1240px graph
+  // Dynamic Auto-Fit: measures available width & height and scales/centers the spacious 1580px graph
   const handleAutoFit = () => {
     if (!containerRef.current) return;
     const containerWidth = containerRef.current.clientWidth;
@@ -99,34 +159,33 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
 
     // Responsive behavior on mobile screens (<860px)
     if (containerWidth < 860) {
-      // In graph mode on mobile, keep nodes at human readable scale (0.82) with touch drag allowed
-      setZoomLevel(0.82);
+      setZoomLevel(0.80);
       setPanOffset({ x: 16, y: 16 });
       return;
     }
 
-    // Content bounds: 1240px wide, 385px high
-    const contentWidth = 1240;
-    const contentHeight = 385;
+    // Content bounds: 1740px wide, 460px high
+    const contentWidth = 1740;
+    const contentHeight = 460;
 
-    const horizontalMargin = 48;
-    const verticalMargin = 32;
+    const horizontalMargin = 32;
+    const verticalMargin = 24;
 
     const scaleX = (containerWidth - horizontalMargin) / contentWidth;
     const scaleY = containerHeight > 100 ? (containerHeight - verticalMargin) / contentHeight : scaleX;
 
-    // Fit smoothly to container
+    // Fit smoothly with min 0.72 so on any desktop it scales cleanly to fill the viewport
     let fitScale = Math.min(scaleX, scaleY > 0.5 ? scaleY : scaleX);
-    fitScale = Math.max(0.65, Math.min(1.15, fitScale));
+    fitScale = Math.max(0.72, Math.min(1.15, fitScale));
     fitScale = Number(fitScale.toFixed(2));
 
     setZoomLevel(fitScale);
 
     // Center the graph horizontally & vertically if container has room
     const scaledWidth = contentWidth * fitScale;
-    const offsetX = containerWidth > scaledWidth ? Math.round((containerWidth - scaledWidth) / 2) : 16;
+    const offsetX = containerWidth > scaledWidth ? Math.round((containerWidth - scaledWidth) / 2) : 20;
     const scaledHeight = contentHeight * fitScale;
-    const offsetY = containerHeight > scaledHeight ? Math.round((containerHeight - scaledHeight) / 2) : 14;
+    const offsetY = containerHeight > scaledHeight ? Math.round((containerHeight - scaledHeight) / 2) : 16;
 
     setPanOffset({ x: offsetX, y: offsetY });
   };
@@ -163,7 +222,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isInspectorOpen]);
 
-  // Initial node definitions with responsive compact canvas positions (1240px wide)
+  // Initial node definitions with spacious, non-overlapping canvas positions (1740px wide)
   const getInitialNodes = (): WorkflowNodeData[] => [
     {
       id: 'trigger',
@@ -172,9 +231,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       icon: '⚡',
       subtext: 'Channel Trigger • Webhook / Schedule',
       x: 24,
-      y: 135,
-      width: 200,
-      height: 78,
+      y: 165,
+      width: 230,
+      height: 96,
       status: 'COMPLETED',
       itemCount: '1 prompt',
       inputs: [],
@@ -196,10 +255,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'agent',
       icon: '🤖',
       subtext: 'Tools Agent • Autonomous Orchestration',
-      x: 260,
-      y: 125,
-      width: 215,
-      height: 88,
+      x: 350,
+      y: 150,
+      width: 250,
+      height: 112,
       status: 'COMPLETED',
       itemCount: '5 scenes',
       inputs: [{ label: 'Input Prompt', type: 'payload' }],
@@ -223,10 +282,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'model',
       icon: '🧠',
       subtext: 'Chat Model • 671B MoE Parameters',
-      x: 215,
-      y: 255,
-      width: 170,
-      height: 68,
+      x: 260,
+      y: 335,
+      width: 190,
+      height: 80,
       status: 'COMPLETED',
       itemCount: '82 t/s',
       inputs: [],
@@ -247,10 +306,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'model',
       icon: '🗄️',
       subtext: 'Persistent Style Rules & Tone',
-      x: 405,
-      y: 255,
-      width: 170,
-      height: 68,
+      x: 470,
+      y: 335,
+      width: 190,
+      height: 80,
       status: 'COMPLETED',
       itemCount: 'Active',
       inputs: [],
@@ -270,10 +329,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '🎙️',
       subtext: 'ElevenLabs / EdgeTTS Studio Audio',
-      x: 515,
-      y: 20,
-      width: 200,
-      height: 72,
+      x: 730,
+      y: 15,
+      width: 230,
+      height: 84,
       status: 'COMPLETED',
       itemCount: '1 master audio',
       inputs: [{ label: 'Narration Script', type: 'text' }],
@@ -295,10 +354,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '🎬',
       subtext: 'Cloudflare Flux 1 + Pexels 8K Clips',
-      x: 515,
-      y: 110,
-      width: 200,
-      height: 72,
+      x: 730,
+      y: 120,
+      width: 230,
+      height: 84,
       status: 'COMPLETED',
       itemCount: '5 clips',
       inputs: [{ label: 'Visual Prompts', type: 'array' }],
@@ -319,10 +378,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '📝',
       subtext: 'Karaoke-Style Timed SRT & VTT',
-      x: 515,
-      y: 200,
-      width: 200,
-      height: 72,
+      x: 730,
+      y: 225,
+      width: 230,
+      height: 84,
       status: 'COMPLETED',
       itemCount: 'SRT / VTT',
       inputs: [{ label: 'Audio Timings', type: 'timecodes' }],
@@ -343,10 +402,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '🖼️',
       subtext: 'High-CTR 1280x720 Graphic Gen',
-      x: 515,
-      y: 290,
-      width: 200,
-      height: 72,
+      x: 730,
+      y: 330,
+      width: 230,
+      height: 84,
       status: 'COMPLETED',
       itemCount: '1 thumbnail',
       inputs: [{ label: 'Metadata & Title', type: 'text' }],
@@ -367,10 +426,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'compositor',
       icon: '🎞️',
       subtext: '1080p H.264 CFR Video Muxer',
-      x: 755,
-      y: 125,
-      width: 210,
-      height: 88,
+      x: 1080,
+      y: 150,
+      width: 250,
+      height: 112,
       status: 'COMPLETED',
       itemCount: '1080p MP4',
       inputs: [
@@ -396,10 +455,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'publisher',
       icon: '🚀',
       subtext: 'Data API v3 • Google OAuth 2.0',
-      x: 1005,
-      y: 125,
-      width: 210,
-      height: 88,
+      x: 1450,
+      y: 150,
+      width: 250,
+      height: 112,
       status: 'COMPLETED',
       itemCount: 'Ready',
       inputs: [
@@ -736,7 +795,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
         display: 'flex',
         flexDirection: 'column',
         height: containerHeight || '100%',
-        minHeight: '480px',
+        minHeight: '540px',
       }}
     >
       {/* ─────────────────────────────────────────────────────────────
@@ -1015,8 +1074,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           minHeight: 0,
           overflow: 'hidden',
           background: '#07090e',
-          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px)',
-          backgroundSize: '20px 20px',
+          backgroundImage:
+            'radial-gradient(ellipse 65% 55% at 50% 48%, rgba(56, 189, 248, 0.05) 0%, transparent 70%), radial-gradient(rgba(255, 255, 255, 0.15) 1.2px, transparent 1.2px)',
+          backgroundSize: '100% 100%, 22px 22px',
           cursor: isDragging ? 'grabbing' : 'grab',
           userSelect: isDragging ? 'none' : 'auto',
           WebkitOverflowScrolling: 'touch',
@@ -1029,15 +1089,15 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                 position: 'absolute',
                 left: 0,
                 top: 0,
-                width: '1240px',
-                height: '390px',
+                width: '1740px',
+                height: '460px',
                 transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
                 transformOrigin: 'top left',
                 transition: isDragging ? 'none' : 'transform 0.12s ease-out',
                 pointerEvents: 'auto',
               }}
             >
-          {/* SVG LAYER: Connecting Bezier Curved Cables */}
+          {/* SVG LAYER: Connecting Animated Bezier Cables & Traveling Data Packets */}
           <svg
             style={{
               position: 'absolute',
@@ -1051,12 +1111,24 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
             <defs>
               <linearGradient id="activeCableGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#10b981" />
+                <stop offset="50%" stopColor="#38bdf8" />
+                <stop offset="100%" stopColor="#818cf8" />
+              </linearGradient>
+              <linearGradient id="streamPulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#34d399" />
                 <stop offset="100%" stopColor="#38bdf8" />
               </linearGradient>
-              <filter id="cableGlow">
-                <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+              <filter id="cableGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
                 <feMerge>
                   <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="particleGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
@@ -1086,15 +1158,15 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
 
               // Cable styling
               let strokeColor = 'rgba(255, 255, 255, 0.12)';
-              let strokeWidth = 2;
+              let strokeWidth = 2.4;
               let isDashed = c.isModelLink;
 
               if (isActive) {
-                strokeColor = '#10b981';
-                strokeWidth = 2.8;
+                strokeColor = '#38bdf8';
+                strokeWidth = 3;
               } else if (isCompleted) {
-                strokeColor = '#059669';
-                strokeWidth = 2;
+                strokeColor = '#10b981';
+                strokeWidth = 2.4;
               }
 
               const midX = (fromPos.x + toPos.x) / 2;
@@ -1102,56 +1174,87 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
 
               return (
                 <g key={`${c.fromNode}-${c.toNode}-${idx}`}>
-                  {/* Outer Glow for Active Cables */}
-                  {isActive && (
+                  {/* Outer Ambient Glow for Active / Completed Cables */}
+                  {(isActive || isCompleted) && (
                     <path
                       d={d}
                       fill="none"
-                      stroke="#10b981"
-                      strokeWidth={6}
-                      opacity={0.35}
+                      stroke={isActive ? '#38bdf8' : '#10b981'}
+                      strokeWidth={7}
+                      opacity={isActive ? 0.45 : 0.22}
                       filter="url(#cableGlow)"
                     />
                   )}
 
-                  {/* Main Bezier Cable */}
+                  {/* Base Track Conduit */}
                   <path
                     d={d}
                     fill="none"
                     stroke={strokeColor}
                     strokeWidth={strokeWidth}
-                    strokeDasharray={isActive ? '6, 6' : isDashed ? '4, 4' : undefined}
-                    style={{
-                      animation: isActive ? 'cablePulse 1.2s linear infinite' : undefined,
-                    }}
+                    strokeDasharray={isDashed ? '5, 5' : undefined}
+                    opacity={isActive ? 0.9 : 0.7}
                   />
 
-                  {/* Wire Label Pill */}
-                  {c.label && !c.isModelLink && (
-                    <g transform={`translate(${midX}, ${midY})`}>
-                      <rect
-                        x="-30"
-                        y="-9"
-                        width="60"
-                        height="18"
-                        rx="9"
-                        fill="#0f172a"
-                        stroke={isActive ? '#10b981' : 'rgba(255, 255, 255, 0.15)'}
-                        strokeWidth="1"
-                      />
-                      <text
-                        x="0"
-                        y="3"
-                        textAnchor="middle"
-                        fill={isActive ? '#34d399' : '#94a3b8'}
-                        fontSize="9"
-                        fontFamily="monospace"
-                        fontWeight="600"
-                      >
-                        {c.label}
-                      </text>
-                    </g>
+                  {/* Dynamic Glowing Stream Pulses (Continuous Data Flow) */}
+                  {(isActive || isCompleted) && (
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke={isActive ? 'url(#activeCableGrad)' : 'url(#streamPulseGrad)'}
+                      strokeWidth={isActive ? 3.2 : 2.4}
+                      strokeDasharray="8 14"
+                      style={{
+                        animation: 'cablePulse 1.4s linear infinite',
+                      }}
+                    />
                   )}
+
+                  {/* Traveling Luminous Data Particles */}
+                  {(isActive || isCompleted) && !c.isModelLink && (
+                    <circle r={isActive ? 4 : 3.2} fill={isActive ? '#38bdf8' : '#34d399'} filter="url(#particleGlow)">
+                      <animateMotion
+                        path={d}
+                        dur={isActive ? '1.8s' : '3.0s'}
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+                  )}
+
+                  {/* Wire Label Pill */}
+                  {c.label && !c.isModelLink && (() => {
+                    const pillWidth = Math.max(56, c.label.length * 7.5 + 16);
+                    const labelX = c.fromNode === 'thumbnail' ? fromPos.x + 95 : midX;
+                    const labelY = c.fromNode === 'thumbnail' ? fromPos.y - 25 : midY;
+
+                    return (
+                      <g transform={`translate(${labelX}, ${labelY})`}>
+                        <rect
+                          x={-pillWidth / 2}
+                          y="-10"
+                          width={pillWidth}
+                          height="20"
+                          rx="10"
+                          fill="rgba(10, 16, 30, 0.94)"
+                          stroke={isActive ? '#38bdf8' : isCompleted ? '#10b981' : 'rgba(255, 255, 255, 0.16)'}
+                          strokeWidth="1.2"
+                          filter="drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6))"
+                        />
+                        <text
+                          x="0"
+                          y="4"
+                          textAnchor="middle"
+                          fill={isActive ? '#38bdf8' : isCompleted ? '#34d399' : '#94a3b8'}
+                          fontSize="10"
+                          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+                          fontWeight="700"
+                          letterSpacing="0.02em"
+                        >
+                          {c.label}
+                        </text>
+                      </g>
+                    );
+                  })()}
                 </g>
               );
             })}
@@ -1160,33 +1263,35 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
           {/* RENDER WORKFLOW NODES */}
           {nodes.map((node) => {
             const isSelected = selectedNodeId === node.id;
-            let statusBadgeBg = 'rgba(255, 255, 255, 0.05)';
-            let statusBadgeBorder = 'rgba(255, 255, 255, 0.1)';
+            const theme = getCategoryTheme(node.category);
+            const isModelOrMemory = node.category === 'model';
+
+            let statusBadgeBg = 'rgba(255, 255, 255, 0.06)';
+            let statusBadgeBorder = 'rgba(255, 255, 255, 0.14)';
             let statusBadgeText = '#94a3b8';
-            let cardGlow = 'none';
+            let dotColor = '#64748b';
 
             if (node.status === 'COMPLETED') {
               statusBadgeBg = 'rgba(16, 185, 129, 0.15)';
-              statusBadgeBorder = 'rgba(16, 185, 129, 0.4)';
+              statusBadgeBorder = 'rgba(16, 185, 129, 0.45)';
               statusBadgeText = '#34d399';
+              dotColor = '#10b981';
             } else if (node.status === 'RUNNING') {
               statusBadgeBg = 'rgba(245, 158, 11, 0.2)';
               statusBadgeBorder = '#f59e0b';
               statusBadgeText = '#fbbf24';
-              cardGlow = '0 0 25px rgba(245, 158, 11, 0.35)';
+              dotColor = '#f59e0b';
             } else if (node.status === 'FAILED') {
               statusBadgeBg = 'rgba(239, 68, 68, 0.2)';
               statusBadgeBorder = '#ef4444';
               statusBadgeText = '#f87171';
-              cardGlow = '0 0 25px rgba(239, 68, 68, 0.4)';
+              dotColor = '#ef4444';
             }
-
-            const isModelOrMemory = node.category === 'model';
 
             return (
               <div
                 key={node.id}
-                className="workflow-interactive-node"
+                className={`workflow-interactive-node ${node.status === 'RUNNING' ? 'node-running-pulse' : node.status === 'COMPLETED' ? 'node-completed-glow' : ''} ${isSelected ? 'node-selected-aura' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedNodeId(node.id);
@@ -1196,29 +1301,25 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                   position: 'absolute',
                   left: `${node.x}px`,
                   top: `${node.y}px`,
-                  width: `${node.width || 220}px`,
-                  minHeight: `${node.height || 80}px`,
-                  background: isModelOrMemory
-                    ? 'rgba(17, 24, 39, 0.95)'
-                    : 'rgba(15, 23, 42, 0.95)',
-                  border: isSelected
-                    ? '1.5px solid #38bdf8'
-                    : node.status === 'RUNNING'
-                    ? '1.5px solid #f59e0b'
-                    : node.status === 'FAILED'
-                    ? '1.5px solid #ef4444'
-                    : '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: isModelOrMemory ? '20px' : '12px',
+                  width: `${node.width || 240}px`,
+                  minHeight: `${node.height || 90}px`,
+                  background: 'linear-gradient(145deg, rgba(16, 23, 38, 0.96) 0%, rgba(9, 14, 25, 0.98) 100%)',
+                  borderTop: `2.5px solid ${theme.accent}`,
+                  borderRight: isSelected ? '1.5px solid #38bdf8' : node.status === 'RUNNING' ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderBottom: isSelected ? '1.5px solid #38bdf8' : node.status === 'RUNNING' ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderLeft: isSelected ? '1.5px solid #38bdf8' : node.status === 'RUNNING' ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: isModelOrMemory ? '18px' : '14px',
                   boxShadow: isSelected
-                    ? '0 0 20px rgba(56, 189, 248, 0.45)'
-                    : cardGlow !== 'none'
-                    ? cardGlow
-                    : '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                    ? '0 0 25px rgba(56, 189, 248, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                    : node.status === 'RUNNING'
+                    ? '0 0 30px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                    : node.status === 'COMPLETED'
+                    ? '0 0 16px rgba(16, 185, 129, 0.22), 0 12px 28px -6px rgba(0, 0, 0, 0.65)'
+                    : '0 12px 28px -6px rgba(0, 0, 0, 0.65)',
                   padding: '12px 14px',
                   cursor: 'pointer',
-                  zIndex: 10,
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  backdropFilter: 'blur(8px)',
+                  zIndex: isSelected ? 20 : 10,
+                  backdropFilter: 'blur(12px)',
                 }}
               >
                 {/* Left Input Port Dot */}
@@ -1226,18 +1327,27 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                   <div
                     style={{
                       position: 'absolute',
-                      left: '-6px',
+                      left: '-8px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      width: '12px',
-                      height: '12px',
+                      width: '15px',
+                      height: '15px',
                       borderRadius: '50%',
                       background: '#090d16',
-                      border: '2px solid #38bdf8',
-                      boxShadow: '0 0 8px rgba(56, 189, 248, 0.5)',
+                      border: '2.5px solid #38bdf8',
+                      boxShadow: '0 0 10px rgba(56, 189, 248, 0.6)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 12,
                     }}
                     title="Input Port"
-                  />
+                  >
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8' }} />
+                    {(node.status === 'RUNNING' || node.status === 'COMPLETED') && (
+                      <div className="port-ping-wave" style={{ borderColor: '#38bdf8' }} />
+                    )}
+                  </div>
                 )}
 
                 {/* Right Output Port Dot */}
@@ -1245,18 +1355,27 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                   <div
                     style={{
                       position: 'absolute',
-                      right: '-6px',
+                      right: '-8px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      width: '12px',
-                      height: '12px',
+                      width: '15px',
+                      height: '15px',
                       borderRadius: '50%',
                       background: '#090d16',
-                      border: '2px solid #10b981',
-                      boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)',
+                      border: '2.5px solid #10b981',
+                      boxShadow: '0 0 10px rgba(16, 185, 129, 0.6)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 12,
                     }}
                     title="Output Port"
-                  />
+                  >
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
+                    {(node.status === 'RUNNING' || node.status === 'COMPLETED') && (
+                      <div className="port-ping-wave" style={{ borderColor: '#10b981' }} />
+                    )}
+                  </div>
                 )}
 
                 {/* Top Input for Models */}
@@ -1264,23 +1383,49 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                   <div
                     style={{
                       position: 'absolute',
-                      top: '-6px',
+                      top: '-8px',
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      width: '12px',
-                      height: '12px',
+                      width: '15px',
+                      height: '15px',
                       borderRadius: '50%',
                       background: '#090d16',
-                      border: '2px solid #c084fc',
+                      border: '2.5px solid #c084fc',
+                      boxShadow: '0 0 10px rgba(192, 132, 252, 0.6)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 12,
                     }}
-                  />
+                  >
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#c084fc' }} />
+                    {(node.status === 'RUNNING' || node.status === 'COMPLETED') && (
+                      <div className="port-ping-wave" style={{ borderColor: '#c084fc' }} />
+                    )}
+                  </div>
                 )}
 
                 {/* Node Card Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>{node.icon}</span>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '9px',
+                        background: theme.iconBg,
+                        border: `1px solid ${theme.border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        flexShrink: 0,
+                        boxShadow: `0 0 10px ${theme.glow}`,
+                      }}
+                    >
+                      {node.icon}
+                    </div>
+                    <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {node.name}
                     </span>
                   </div>
@@ -1288,28 +1433,39 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                   {/* Status Indicator Pill */}
                   <span
                     style={{
-                      fontSize: '9px',
+                      fontSize: '10px',
                       fontWeight: 700,
-                      padding: '2px 6px',
-                      borderRadius: '10px',
+                      padding: '3px 8px',
+                      borderRadius: '12px',
                       background: statusBadgeBg,
                       border: `1px solid ${statusBadgeBorder}`,
                       color: statusBadgeText,
                       fontFamily: 'monospace',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px',
+                      gap: '5px',
+                      flexShrink: 0,
                     }}
                   >
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: dotColor,
+                        display: 'inline-block',
+                        boxShadow: `0 0 6px ${dotColor}`,
+                        animation: node.status === 'RUNNING' ? 'liveDotPulse 1.2s ease-in-out infinite' : undefined,
+                      }}
+                    />
                     {node.status === 'COMPLETED' && '✓'}
-                    {node.status === 'RUNNING' && '⚡'}
                     {node.status === 'FAILED' && '✕'}
                     <span>{node.status}</span>
                   </span>
                 </div>
 
                 {/* Node Subtext */}
-                <div style={{ fontSize: '10px', color: '#94a3b8', lineHeight: 1.3 }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.35, marginTop: '2px' }}>
                   {node.subtext}
                 </div>
 
@@ -1321,14 +1477,27 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                       paddingTop: '6px',
-                      fontSize: '10px',
-                      color: '#cbd5e1',
+                      fontSize: '11px',
                     }}
                   >
-                    <span style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase' }}>Payload:</span>
-                    <span style={{ fontWeight: 600, color: '#38bdf8', fontFamily: 'monospace' }}>{node.itemCount}</span>
+                    <span style={{ color: '#64748b', fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                      Payload:
+                    </span>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: theme.accent,
+                        fontFamily: 'monospace',
+                        background: 'rgba(0, 0, 0, 0.4)',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                      }}
+                    >
+                      {node.itemCount}
+                    </span>
                   </div>
                 )}
 
@@ -2167,15 +2336,85 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
     )}
   </div>
 
-      {/* Embedded CSS for Cable Pulse Animation, Drawer Slide & Media Queries */}
+      {/* Embedded CSS for Cable Pulse Animation, Node Glowing Aura, Port Radar & Media Queries */}
       <style jsx global>{`
         @keyframes cablePulse {
           0% {
-            stroke-dashoffset: 24;
+            stroke-dashoffset: 44;
           }
           100% {
             stroke-dashoffset: 0;
           }
+        }
+        @keyframes liveDotPulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(0.65);
+            opacity: 0.35;
+          }
+        }
+        @keyframes portPing {
+          0% {
+            transform: scale(0.9);
+            opacity: 0.85;
+          }
+          70%, 100% {
+            transform: scale(2.4);
+            opacity: 0;
+          }
+        }
+        @keyframes nodeRunningPulse {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border-color: #f59e0b;
+          }
+          50% {
+            box-shadow: 0 0 35px rgba(245, 158, 11, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border-color: #fbbf24;
+          }
+        }
+        @keyframes nodeCompletedGlow {
+          0%, 100% {
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.2), 0 12px 28px -6px rgba(0, 0, 0, 0.65);
+          }
+          50% {
+            box-shadow: 0 0 26px rgba(16, 185, 129, 0.38), 0 12px 28px -6px rgba(0, 0, 0, 0.65);
+          }
+        }
+        @keyframes nodeSelectedAura {
+          0%, 100% {
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+          }
+          50% {
+            box-shadow: 0 0 38px rgba(56, 189, 248, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+          }
+        }
+        .node-running-pulse {
+          animation: nodeRunningPulse 2s ease-in-out infinite;
+        }
+        .node-completed-glow {
+          animation: nodeCompletedGlow 3.5s ease-in-out infinite;
+        }
+        .node-selected-aura {
+          animation: nodeSelectedAura 2.2s ease-in-out infinite;
+        }
+        .port-ping-wave {
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          border: 1.5px solid currentColor;
+          animation: portPing 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+          pointer-events: none;
+        }
+        .workflow-interactive-node {
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .workflow-interactive-node:hover {
+          transform: translateY(-4px) scale(1.02) !important;
+          z-index: 25 !important;
         }
         @keyframes slideInRight {
           from {

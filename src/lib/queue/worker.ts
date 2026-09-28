@@ -420,64 +420,68 @@ export class VideoPipelineWorker {
         } catch {}
 
         for (const scene of scenes) {
-          let attempt = 1;
-          let currentPrompt = scene.visual_prompt;
-          let bestClips: Array<{ clipIndex: number; storageKey: string; url: string; durationSec: number }> = [];
-          let latestQcReport: QualityReport | null = null;
+          try {
+            let attempt = 1;
+            let currentPrompt = scene.visual_prompt;
+            let bestClips: Array<{ clipIndex: number; storageKey: string; url: string; durationSec: number }> = [];
+            let latestQcReport: QualityReport | null = null;
 
-          while (attempt <= MAX_QC_ATTEMPTS) {
-            console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio})...`);
+            while (attempt <= MAX_QC_ATTEMPTS) {
+              console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio})...`);
 
-            const clips = await videoProvider.generateVideoClipsForScene({
-              projectId: project.id,
-              sceneId: scene.id,
-              sceneIndex: scene.scene_index,
-              visualPrompt: currentPrompt,
-              durationSec: scene.estimated_duration_sec,
-              niche: channel.niche,
-              visualStyle: channel.visual_style,
-              environment: scene.environment || undefined,
-              cameraMovement: scene.camera_movement || undefined,
-              lighting: scene.lighting || undefined,
-              colorStyle: scene.color_style || undefined,
-              continuityNotes: scene.continuity_notes || undefined,
-              aspectRatio: projectAspectRatio,
-            });
+              const clips = await videoProvider.generateVideoClipsForScene({
+                projectId: project.id,
+                sceneId: scene.id,
+                sceneIndex: scene.scene_index,
+                visualPrompt: currentPrompt,
+                durationSec: scene.estimated_duration_sec,
+                niche: channel.niche,
+                visualStyle: channel.visual_style,
+                environment: scene.environment || undefined,
+                cameraMovement: scene.camera_movement || undefined,
+                lighting: scene.lighting || undefined,
+                colorStyle: scene.color_style || undefined,
+                continuityNotes: scene.continuity_notes || undefined,
+                aspectRatio: projectAspectRatio,
+              });
 
-            if (clips && clips.length > 0) {
-              bestClips = clips;
+              if (clips && clips.length > 0) {
+                bestClips = clips;
+              }
+
+              // Quality Control Validation on the primary clip
+              const primaryClip = bestClips[0];
+              const clipPath = primaryClip ? storage.getFilePath(primaryClip.storageKey) : '';
+              latestQcReport = await sceneQualityChecker.validateSceneClip({
+                scene: {
+                  ...scene,
+                  visual_prompt: currentPrompt,
+                },
+                clipPath,
+                globalStyle,
+                previousScene,
+                attempt,
+                niche: channel.niche,
+              });
+
+              if (latestQcReport.passed) {
+                console.log(`[QualityControl] ✅ Scene ${scene.scene_index} PASSED Quality Control (Score: ${latestQcReport.overallScore}%).`);
+                break;
+              }
+
+              console.warn(
+                `[QualityControl] ⚠️ Scene ${scene.scene_index} failed QC (${latestQcReport.failedChecks.join(', ')}). Attempt ${attempt} score: ${latestQcReport.overallScore}%.`
+              );
+
+              if (attempt < MAX_QC_ATTEMPTS && latestQcReport.retryPromptAdjustment) {
+                console.log(`[QualityControl] ⚡ Auto-regenerating Scene ${scene.scene_index} with prompt refinement: ${latestQcReport.retryPromptAdjustment}`);
+                currentPrompt = `${scene.visual_prompt}, ${latestQcReport.retryPromptAdjustment}`;
+              }
+
+              attempt++;
             }
-
-            // Quality Control Validation on the primary clip
-            const primaryClip = bestClips[0];
-            const clipPath = primaryClip ? storage.getFilePath(primaryClip.storageKey) : '';
-            latestQcReport = await sceneQualityChecker.validateSceneClip({
-              scene: {
-                ...scene,
-                visual_prompt: currentPrompt,
-              },
-              clipPath,
-              globalStyle,
-              previousScene,
-              attempt,
-              niche: channel.niche,
-            });
-
-            if (latestQcReport.passed) {
-              console.log(`[QualityControl] ✅ Scene ${scene.scene_index} PASSED Quality Control (Score: ${latestQcReport.overallScore}%).`);
-              break;
-            }
-
-            console.warn(
-              `[QualityControl] ⚠️ Scene ${scene.scene_index} failed QC (${latestQcReport.failedChecks.join(', ')}). Attempt ${attempt} score: ${latestQcReport.overallScore}%.`
-            );
-
-            if (attempt < MAX_QC_ATTEMPTS && latestQcReport.retryPromptAdjustment) {
-              console.log(`[QualityControl] ⚡ Auto-regenerating Scene ${scene.scene_index} with prompt refinement: ${latestQcReport.retryPromptAdjustment}`);
-              currentPrompt = `${scene.visual_prompt}, ${latestQcReport.retryPromptAdjustment}`;
-            }
-
-            attempt++;
+          } catch (sceneErr: any) {
+            console.error(`[VideoPipeline] Scene ${scene.scene_index} generation error (${sceneErr?.message || sceneErr}), continuing pipeline with fallback...`);
           }
 
           // Persist QC report to video_scenes table
