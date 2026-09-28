@@ -2042,3 +2042,52 @@ a {
   filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Brand Logo (AutoVideo / AUTORA)
+───────────────────────────────────────────────────────────── */
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.brand-logo:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #7928CA, #00F0FF);
+  color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 240, 255, 0.2);
+  flex-shrink: 0;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.brand-logo:hover .logo-icon {
+  transform: scale(1.05);
+  box-shadow: 0 6px 18px rgba(0, 240, 255, 0.35);
+}
+
+.logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.logo-text .highlight {
+  color: #00F0FF;
+}
+
+
