@@ -764,11 +764,12 @@ export function getAllApiCredentials(userId: string = DEFAULT_USER_ID): Record<s
     'openai',
     'cloudflare_account_id',
     'cloudflare_api_token',
-    'pexels',
-    'pixabay',
+    'veo',
+    'fal',
     'runway',
-    'replicate',
-    'fal'
+    'sora',
+    'luma',
+    'replicate'
   ];
   const result: Record<string, { configured: boolean; maskedKey: string; source: 'database' | 'env' | 'none' }> = {};
 
@@ -794,11 +795,12 @@ export function getAllApiCredentials(userId: string = DEFAULT_USER_ID): Record<s
     else if (p === 'openai') envKey = process.env.OPENAI_API_KEY;
     else if (p === 'cloudflare_account_id') envKey = process.env.CLOUDFLARE_ACCOUNT_ID;
     else if (p === 'cloudflare_api_token') envKey = process.env.CLOUDFLARE_API_TOKEN;
-    else if (p === 'pexels') envKey = process.env.PEXELS_API_KEY;
-    else if (p === 'pixabay') envKey = process.env.PIXABAY_API_KEY;
-    else if (p === 'runway') envKey = process.env.RUNWAY_API_KEY;
-    else if (p === 'replicate') envKey = process.env.REPLICATE_API_TOKEN;
+    else if (p === 'veo') envKey = process.env.VEO_API_KEY || process.env.GEMINI_API_KEY;
     else if (p === 'fal') envKey = process.env.FAL_KEY || process.env.FAL_AI_KEY;
+    else if (p === 'runway') envKey = process.env.RUNWAY_API_KEY;
+    else if (p === 'sora') envKey = process.env.SORA_API_KEY || process.env.OPENAI_API_KEY;
+    else if (p === 'luma') envKey = process.env.LUMA_API_KEY;
+    else if (p === 'replicate') envKey = process.env.REPLICATE_API_TOKEN;
 
     if (envKey && envKey.trim()) {
       result[p] = {

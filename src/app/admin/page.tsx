@@ -1510,14 +1510,21 @@ export default function SuperAdminPage() {
             </div>
 
             <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>🎬</span> Stock Video & Motion Media
-              </h3>
+              <div style={{ marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🎬</span> Generative AI Video Engines (Real-Time Text-to-Video)
+                </h3>
+                <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
+                  Autonomous Text-to-Video AI engines — 100% real-time AI generated motion video from screenplay prompts (No stock footage).
+                </p>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { id: 'pexels', name: 'Pexels Video API', desc: 'Curated 1080p stock footage library' },
-                  { id: 'pixabay', name: 'Pixabay Video API', desc: 'Secondary HD stock footage catalog provider' },
-                  { id: 'runway', name: 'Runway Gen-3 Alpha', desc: 'Generative AI video motion synthesis engine' },
+                  { id: 'veo', name: 'Google Veo 3.1 Video API', desc: 'Google DeepMind photorealistic 1080p generative video engine (Requires Pay-as-you-go Gemini key)' },
+                  { id: 'fal', name: 'FAL.ai Video Engine (Wan 2.1 / Kling / LTX)', desc: 'Cloud GPU generative video models (Wan 2.1 14B, Kling 2.1, LTX-Video)' },
+                  { id: 'runway', name: 'Runway Gen-3 / Gen-4 Alpha', desc: 'Hollywood-grade generative AI motion video synthesis engine' },
+                  { id: 'sora', name: 'OpenAI Sora / Video Engine', desc: 'OpenAI photorealistic physics text-to-video generative AI' },
+                  { id: 'luma', name: 'Luma Dream Machine (Ray 2)', desc: 'Cinematic camera motion and realistic physics text-to-video' },
                 ].map((p) => {
                   const isConfigured = !!credentials[p.id];
                   return (

@@ -140,14 +140,14 @@ class DefaultVideoProvider implements VideoProvider {
 
   getProviderName(): string {
     // Check AI Video Generation providers (highest priority)
+    if (veoVideoProvider.isConfigured()) {
+      return 'Google Veo 3.1 AI Video Engine (Real AI Video Generation)';
+    }
     if (falVideoProvider.isConfigured()) {
-      return 'FAL.ai AI Video Engine (Wan 2.1 / LTX-Video — Real AI Video Generation)';
+      return 'FAL.ai AI Video Engine (Wan 2.1 / Kling / LTX — Real AI Video Generation)';
     }
     if (cloudflareVideoProvider.isConfigured()) {
       return 'Cloudflare AI Video Engine (MiniMax Hailuo 2.3 — Real AI Video Generation)';
-    }
-    if (veoVideoProvider.isConfigured()) {
-      return 'Google Veo 3.1 AI Video Engine (Real AI Video Generation)';
     }
     if (openaiVideoProvider.isConfigured()) {
       return 'OpenAI Video Engine (Sora / OpenAI Video Generation)';
@@ -158,13 +158,9 @@ class DefaultVideoProvider implements VideoProvider {
 
     if (runway || replicate || fal) {
       const active = runway ? 'Runway Gen-3' : replicate ? 'Replicate SVD' : 'Fal.ai Fast Video';
-      return `AI Video Synthesis Engine (${active} Provider Active)`;
+      return `Generative AI Video Engine (${active} Provider Active)`;
     }
-    const pexels = getApiKey('pexels_api_key') || process.env.PEXELS_API_KEY;
-    if (pexels) {
-      return 'Pexels Cinematic HD Stock Engine (9:16 Vertical Shorts)';
-    }
-    return 'Local FFmpeg Motion Engine (9:16 Vertical HD)';
+    return 'Autonomous Generative AI Video Engine (Real Text-to-Video Synthesis)';
   }
 
 
@@ -448,41 +444,6 @@ class DefaultVideoProvider implements VideoProvider {
     const safeSubtext2 = sanitize(subtext2);
     const safeNiche = sanitize(niche.toUpperCase());
 
-    // ============================================================
-    // REAL MOVING VIDEO FOOTAGE ENGINE (Pexels / Pixabay 4K & 1080p)
-    // Generates actual moving video clips matching the scene prompt
-    // ============================================================
-    const pexelsKey = getApiKey('pexels_api_key') || process.env.PEXELS_API_KEY;
-    if (pexelsKey) {
-      try {
-        const { stockVideoEngine } = await import('./stockVideoProvider');
-        const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
-        const clipOffset = (sceneIndex * 3) + clipIndex;
-        const stockAspectRatio: '9:16' | '16:9' = aspectRatio === '16:9' ? '16:9' : '9:16';
-        console.log(`[VideoProvider] 🎥 Searching Pexels Real Moving Video for Scene ${sceneIndex} (Keywords: ${keywords.join(', ')})...`);
-        const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, stockAspectRatio);
-
-        if (stockVideoUrl) {
-          console.log(`[VideoProvider] ✅ Found Real Moving HD Video for Scene ${sceneIndex} Clip ${clipIndex}: ${stockVideoUrl.substring(0, 60)}...`);
-          await stockVideoEngine.renderStockVideoScene({
-            videoUrl: stockVideoUrl,
-            durationSec,
-            outputPath,
-            sceneIndex,
-            headline: safeHeadline,
-            niche: safeNiche,
-            accent,
-            aspectRatio: stockAspectRatio,
-          });
-          if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
-            console.log(`[VideoProvider] ✅ Successfully rendered Real Moving Video for Scene ${sceneIndex}`);
-            return;
-          }
-        }
-      } catch (stockErr: any) {
-        console.warn(`[VideoProvider] Pexels real video search/render error: ${stockErr.message}`);
-      }
-    }
 
     // ============================================================
     // AI VISUAL SYNTHESIZER (Fallback: AI Prompt Image + Ken Burns Motion)

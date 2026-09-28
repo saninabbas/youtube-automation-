@@ -16,7 +16,7 @@ import { VideoGenerationProvider, ClipGenerationParams, ClipGenerationResult, As
  * Requires GEMINI_API_KEY with billing enabled for video generation.
  */
 
-const VEO_MODEL_LITE = 'veo-3.1-lite-generate-preview';
+const VEO_MODEL_PRIMARY = 'veo-3.1-generate-preview';
 const VEO_MODEL_FAST = 'veo-3.1-fast-generate-preview';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -111,10 +111,8 @@ export class VeoVideoProvider implements VideoGenerationProvider {
       ],
       parameters: {
         aspectRatio: veoAspectRatio,
-        duration: `${targetDuration}s`,
         personGeneration: 'allow_all',
         resolution: '720p',
-        generateAudio: true,
       },
     };
 
@@ -219,7 +217,7 @@ export class VeoVideoProvider implements VideoGenerationProvider {
 
     console.log(`[VeoVideoProvider] Generating AI video for Scene ${params.sceneIndex} (${targetDuration}s, ${params.aspectRatio})...`);
 
-    const modelsToTry = [VEO_MODEL_LITE, VEO_MODEL_FAST];
+    const modelsToTry = [VEO_MODEL_PRIMARY, VEO_MODEL_FAST];
     let lastError = '';
 
     for (const model of modelsToTry) {
