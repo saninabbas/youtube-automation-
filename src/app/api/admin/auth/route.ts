@@ -4,8 +4,8 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AutoVideoAdmin2026!#';
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Pakistan@1997';
+const ADMIN_USER = process.env.ADMIN_USER || 'sanin5';
 const COOKIE_NAME = 'admin_session_token';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'autovideo_super_admin_hmac_secret_key_2026';
 
@@ -61,18 +61,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { password, username } = body;
 
-    const configuredPassword = (process.env.ADMIN_PASSWORD || '').trim();
-    const configuredUser = (process.env.ADMIN_USER || 'admin').trim();
+    const configuredPassword = (process.env.ADMIN_PASSWORD || 'Pakistan@1997').trim();
+    const configuredUser = (process.env.ADMIN_USER || 'sanin5').trim();
 
     const providedPassword = (password || '').trim();
     const providedUser = (username || '').trim();
 
     const isUserMatch = !providedUser || providedUser.toLowerCase() === configuredUser.toLowerCase();
-    const effectiveAdminPassword = configuredPassword || 'AutoVideoAdmin2026!#';
+    const effectiveAdminPassword = configuredPassword || 'Pakistan@1997';
     const isPassMatch = providedPassword === effectiveAdminPassword;
 
     if (isUserMatch && isPassMatch) {
-      const activeUser = configuredUser || 'admin';
+      const activeUser = configuredUser || 'sanin5';
       const signedToken = signAdminToken(activeUser);
       const response = NextResponse.json({
         success: true,
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { success: false, error: 'Invalid admin username or password. Use username: "admin" and your admin password.' },
+      { success: false, error: 'Invalid admin username or password.' },
       { status: 401 }
     );
   } catch (err: any) {

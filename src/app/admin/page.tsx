@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function SuperAdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('sanin5');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loggingIn, setLoggingIn] = useState(false);
