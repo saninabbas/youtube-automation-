@@ -639,9 +639,9 @@ export function LandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          8. COMPLETE 4-TIER TRANSPARENT PRICING ($19, $49, $99, $199)
+          8. COMPLETE 2-TIER TRANSPARENT PRICING ($49 & $99)
       ───────────────────────────────────────────────────────────── */}
-      <section id="pricing" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1280px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+      <section id="pricing" style={{ padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
         <span style={{ fontSize: '12px', fontWeight: 700, color: '#00F0FF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           Transparent SaaS Pricing Tiers
         </span>
@@ -692,109 +692,62 @@ export function LandingPage() {
           </button>
         </div>
 
-        {/* 4 Plans Responsive Grid */}
+        {/* 2 Plans Responsive Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '20px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '28px',
           alignItems: 'stretch',
           textAlign: 'left'
         }}>
           {[
             {
-              id: 'starter',
-              name: 'Starter Creator',
-              badge: '🌱 ENTRY LEVEL',
-              description: 'Perfect for beginners starting their first automated YouTube channel.',
-              priceMonthly: 19,
-              priceAnnual: 15,
-              credits: '200 AI Credits / mo',
-              output: '~8 Full Videos (or 20 Shorts)',
-              channels: '1 YouTube Channel',
-              isPopular: false,
-              ctaText: 'Get Starter ($19/mo) ➔',
-              ctaLink: '/signup?plan=starter',
-              features: [
-                '200 AI Credits Every Month',
-                '~8 Full 1080p Videos or 20 Shorts',
-                '1 YouTube Channel Workspace',
-                'Full 1080p MP4 Immediate Downloads',
-                'Neural Voiceover Synthesis',
-                'Automatic SRT Subtitle Generator',
-                'Stock Footage & B-Roll Matcher',
-                'Zero-Waste Policy (Failed jobs never count)',
-              ],
-            },
-            {
               id: 'creator',
-              name: 'Pro Creator',
-              badge: '⭐ MOST POPULAR • DAILY CONTENT',
-              description: 'Full daily video automation for serious and growing YouTube channels.',
+              name: 'Creator Plan',
+              badge: '⭐ MOST POPULAR • 1 DAILY VIDEO',
+              description: 'Full daily video automation for growing YouTube channels.',
               priceMonthly: 49,
               priceAnnual: 39,
-              credits: '600 AI Credits / mo',
-              output: '~24 Full Videos (or 60 Shorts)',
-              channels: '3 YouTube Channels',
+              credits: '750 AI Credits / mo',
+              output: '30 Full 1080p Videos (1 Daily Video)',
+              channels: '1 Connected YouTube Channel',
               isPopular: true,
-              ctaText: 'Get Pro Creator ($49/mo) ➔',
+              ctaText: 'Get Creator Plan ($49/mo) ➔',
               ctaLink: '/signup?plan=creator',
               features: [
-                '600 AI Credits Every Month',
-                '24 Full Videos / Mo (Daily Content)',
-                '3 Connected YouTube Channels',
-                '1080p Full HD 60fps FastStart MP4',
-                'Multi-Model Script Engine (DeepSeek + GPT-4o)',
-                'Studio Voices + Custom Voice ID',
+                '30 Full Videos / Month (1 Daily Video)',
+                '750 AI Video Credits Every Month',
+                'Full 1080p MP4 Immediate Downloads',
+                'Microsoft Edge & ElevenLabs Studio Voices',
+                'Multi-Model Script Engine (Gemini + DeepSeek)',
+                'Automated Captions & Subtitle Burn-In',
+                'Zero-Waste Policy (Failed jobs never count)',
                 'Direct YouTube Auto-Publish & Scheduling',
-                'Zero-Waste Policy (Guaranteed)',
               ],
             },
             {
-              id: 'scale',
-              name: 'Growth & Scale',
-              badge: '⚡ HIGH VOLUME & POWER',
-              description: 'Scale multiple niche channels with accelerated rendering and 4K exports.',
+              id: 'pro',
+              name: 'Pro Automation Plan',
+              badge: '⚡ MAX POWER • 3 DAILY VIDEOS',
+              description: 'High-speed multi-channel automation engine for power creators & agencies.',
               priceMonthly: 99,
               priceAnnual: 79,
-              credits: '1,500 AI Credits / mo',
-              output: '~60 Full Videos (or 150 Shorts)',
-              channels: '10 YouTube Channels',
+              credits: '2,250 AI Credits / mo',
+              output: '90 Full Videos (3 Daily Videos)',
+              channels: 'Unlimited Connected YouTube Channels',
               isPopular: false,
-              ctaText: 'Get Growth & Scale ($99/mo) ➔',
-              ctaLink: '/signup?plan=scale',
+              ctaText: 'Get Pro Plan ($99/mo) ➔',
+              ctaLink: '/signup?plan=pro',
               features: [
-                '1,500 AI Credits Every Month',
-                '60 Full Videos / Mo (2 Daily Videos)',
-                '10 YouTube Channel Workspaces',
-                '4K Ultra-HD Video Exporting',
-                'Priority GPU Video Rendering Queue',
-                'Dedicated HD B-Roll Sourcing',
-                'Multi-User Team Access & Workspaces',
-                'VIP 24/7 Dedicated Priority Support',
-              ],
-            },
-            {
-              id: 'agency',
-              name: 'Agency Network',
-              badge: '👑 ENTERPRISE & AGENCY',
-              description: 'High-volume production powerhouse for media agencies and video networks.',
-              priceMonthly: 199,
-              priceAnnual: 159,
-              credits: '4,000 AI Credits / mo',
-              output: '~160 Full Videos (or 400 Shorts)',
-              channels: '50 YouTube Channels',
-              isPopular: false,
-              ctaText: 'Get Agency Network ($199/mo) ➔',
-              ctaLink: '/signup?plan=agency',
-              features: [
-                '4,000 AI Credits Every Month',
-                '160 Full Videos / Mo (Mass Production)',
-                '50 YouTube Channels & Brand Hubs',
-                '4K Master Quality Video Rendering',
-                'Custom Voice Cloning Integration',
-                'White-Label Client Delivery Reports',
-                'Dedicated Account Manager & SLA',
-                'Unlimited Workflow Automation Engine',
+                '90 Full Videos / Month (3 Daily Videos)',
+                '2,250 AI Video Credits Every Month',
+                'Unlimited Connected YouTube Channels',
+                'Priority Render Queue & Ultra-Fast Processing',
+                'Google Veo 3.1 & FAL.ai Wan 2.1 Engine Access',
+                'Custom Cloned Voice IDs + ElevenLabs Studio',
+                'Advanced Content Copilot & Workflow Automation',
+                '4K Ultra HD & High-Bitrate Video Exports',
+                'VIP 24/7 Dedicated Support',
               ],
             },
           ].map((plan) => {
