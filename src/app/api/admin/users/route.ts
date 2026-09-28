@@ -13,6 +13,42 @@ function checkAdminAuth(): boolean {
 }
 
 function ensureSchema(db: any) {
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        name TEXT NOT NULL,
+        avatar TEXT,
+        email_verified INTEGER NOT NULL DEFAULT 0,
+        verification_token TEXT,
+        verification_token_expires TEXT,
+        reset_token TEXT,
+        reset_token_expires TEXT,
+        role TEXT NOT NULL DEFAULT 'CUSTOMER',
+        status TEXT NOT NULL DEFAULT 'ACTIVE',
+        onboarding_completed INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+      CREATE TABLE IF NOT EXISTS user_credits (
+        user_id TEXT PRIMARY KEY,
+        balance INTEGER NOT NULL DEFAULT 500,
+        tier TEXT NOT NULL DEFAULT 'CREATOR',
+        subscription_status TEXT NOT NULL DEFAULT 'ACTIVE',
+        monthly_allowance INTEGER NOT NULL DEFAULT 500,
+        renews_at TEXT,
+        stripe_customer_id TEXT,
+        stripe_subscription_id TEXT,
+        created_at TEXT,
+        updated_at TEXT NOT NULL
+      );
+    `);
+  } catch {}
   try { db.prepare('ALTER TABLE user_credits ADD COLUMN stripe_customer_id TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE user_credits ADD COLUMN stripe_subscription_id TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE user_credits ADD COLUMN created_at TEXT').run(); } catch {}

@@ -247,10 +247,6 @@ export function getDb(): Database.Database {
         created_at TEXT,
         updated_at TEXT NOT NULL
       );
-      safeAddColumn('user_credits', 'stripe_customer_id', 'TEXT');
-      safeAddColumn('user_credits', 'stripe_subscription_id', 'TEXT');
-      safeAddColumn('user_credits', 'created_at', 'TEXT');
-      safeAddColumn('user_credits', 'renews_at', 'TEXT');
 
       CREATE TABLE IF NOT EXISTS credit_transactions (
         id TEXT PRIMARY KEY,
@@ -398,6 +394,11 @@ export function getDb(): Database.Database {
       );
       CREATE INDEX IF NOT EXISTS idx_personal_assets_user ON personal_creator_assets(user_id, type);
     `);
+
+    safeAddColumn('user_credits', 'stripe_customer_id', 'TEXT');
+    safeAddColumn('user_credits', 'stripe_subscription_id', 'TEXT');
+    safeAddColumn('user_credits', 'created_at', 'TEXT');
+    safeAddColumn('user_credits', 'renews_at', 'TEXT');
 
     // Ensure default demo user exists for smooth local development & onboarding
     try {
