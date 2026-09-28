@@ -92,6 +92,11 @@ export function LandingPage() {
             gap: 16px !important;
           }
         }
+        @media (min-width: 1025px) {
+          .pricing-card-popular {
+            transform: scale(1.02);
+          }
+        }
       `}</style>
       {/* ─────────────────────────────────────────────────────────────
           1. MINIMAL HEADER / NAVBAR
@@ -797,7 +802,7 @@ export function LandingPage() {
             return (
               <div
                 key={plan.id}
-                className="autora-card-interactive"
+                className={`autora-card-interactive ${plan.isPopular ? 'pricing-card-popular' : ''}`}
                 style={{
                   background: plan.isPopular
                     ? 'linear-gradient(180deg, rgba(6, 182, 212, 0.12) 0%, rgba(18, 18, 22, 0.95) 100%)'
@@ -814,7 +819,6 @@ export function LandingPage() {
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   position: 'relative',
-                  transform: plan.isPopular ? 'scale(1.02)' : 'none',
                   zIndex: plan.isPopular ? 2 : 1,
                 }}
               >

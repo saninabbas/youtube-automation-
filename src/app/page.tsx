@@ -102,7 +102,7 @@ export default function HomePage() {
   const [credits, setCredits] = useState<any>(null);
   const [youtubeStatus, setYoutubeStatus] = useState<'CONNECTED' | 'NOT_CONNECTED' | 'AUTH_REQUIRED'>('NOT_CONNECTED');
   const [youtubeChannel, setYoutubeChannel] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Video Creator State
   const [quickTopic, setQuickTopic] = useState('');
@@ -161,7 +161,9 @@ export default function HomePage() {
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      if (typeof document !== 'undefined' && (document.cookie.includes('auth_session_token') || document.cookie.includes('session'))) {
+        setLoading(true);
+      }
       const meRes = await fetch('/api/auth/me');
       if (meRes.ok) {
         const meData = await meRes.json();
