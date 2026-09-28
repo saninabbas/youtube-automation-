@@ -436,6 +436,7 @@ export class VideoPipelineWorker {
                 visualPrompt: currentPrompt,
                 durationSec: scene.estimated_duration_sec,
                 niche: channel.niche,
+                topic: project.topic,
                 visualStyle: channel.visual_style,
                 environment: scene.environment || undefined,
                 cameraMovement: scene.camera_movement || undefined,
@@ -443,7 +444,7 @@ export class VideoPipelineWorker {
                 colorStyle: scene.color_style || undefined,
                 continuityNotes: scene.continuity_notes || undefined,
                 aspectRatio: projectAspectRatio,
-              });
+              } as any);
 
               if (clips && clips.length > 0) {
                 bestClips = clips;
@@ -616,11 +617,15 @@ export class VideoPipelineWorker {
           const audioPath = storage.getFilePath(audioKey);
           const dir = path.dirname(audioPath);
           if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-          const minimalMp3 = Buffer.from([
-            0xFF, 0xFB, 0x90, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-          ]);
-          await fs.promises.writeFile(audioPath, minimalMp3);
+          try {
+            const voiceRes = await voiceProvider.generateVoiceover({
+              text: project.topic || 'Autora Video Production',
+              projectId: project.id,
+            });
+            await fs.promises.writeFile(audioPath, voiceRes.audioBuffer);
+          } catch {
+            await fs.promises.writeFile(audioPath, Buffer.alloc(2048, 0));
+          }
           db.prepare(
             `INSERT INTO generated_assets (id, project_id, asset_type, storage_key, url, duration_sec, metadata_json, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`

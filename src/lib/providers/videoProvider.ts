@@ -436,7 +436,8 @@ class DefaultVideoProvider implements VideoProvider {
     const sanitize = (str: string) =>
       str.replace(/[:\\'%]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    const cleanPrompt = params.prompt.trim();
+    const topicContext = (params as any).topic ? `${params.topic}, ` : '';
+    const cleanPrompt = `${topicContext}${niche} - ${params.prompt.trim()}`;
     const words = cleanPrompt.split(/\s+/);
     const headline = words.slice(0, 7).join(' ');
     const subtext1 = words.length > 7 ? words.slice(7, 16).join(' ') : '';

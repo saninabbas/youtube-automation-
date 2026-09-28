@@ -455,8 +455,8 @@ export default function VideoStudioPage({ params }: { params?: any }) {
       if (videoRef.current) {
         videoRef.current.play().catch(() => {});
       }
-      // Speak the current scene narration immediately upon play
-      if (displayedScene?.narration) {
+      // Speak browser speech synthesis ONLY if no synthesized MP3 audio track exists
+      if (!audioUrl && displayedScene?.narration) {
         speakNarration(displayedScene.narration, project?.language || 'en');
       }
       if (audioRef.current) {
@@ -467,12 +467,12 @@ export default function VideoStudioPage({ params }: { params?: any }) {
     }
   };
 
-  // Speak active scene narration whenever scene cuts transition during playback
+  // Speak active scene narration on transition ONLY if no audio file asset exists
   useEffect(() => {
-    if (isPlaying && displayedScene?.narration) {
+    if (isPlaying && !audioUrl && displayedScene?.narration) {
       speakNarration(displayedScene.narration, project?.language || 'en');
     }
-  }, [displayedSceneNum, isPlaying]);
+  }, [displayedSceneNum, isPlaying, audioUrl]);
 
   // Synchronized playback ticker across all scene cuts
   useEffect(() => {
