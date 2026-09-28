@@ -12,6 +12,13 @@ function checkAdminAuth(): boolean {
   return !!token && verifyAdminToken(token);
 }
 
+function ensureSchema(db: any) {
+  try { db.prepare('ALTER TABLE user_credits ADD COLUMN stripe_customer_id TEXT').run(); } catch {}
+  try { db.prepare('ALTER TABLE user_credits ADD COLUMN stripe_subscription_id TEXT').run(); } catch {}
+  try { db.prepare('ALTER TABLE user_credits ADD COLUMN created_at TEXT').run(); } catch {}
+  try { db.prepare('ALTER TABLE user_credits ADD COLUMN renews_at TEXT').run(); } catch {}
+}
+
 // GET: List all users or get detailed user inspection
 export async function GET(req: Request) {
   try {
@@ -26,6 +33,7 @@ export async function GET(req: Request) {
     const status = searchParams.get('status')?.trim().toUpperCase() || 'ALL';
 
     const db = getDb();
+    ensureSchema(db);
 
     // 1. Single User Detail View
     if (userId) {
@@ -190,6 +198,7 @@ export async function POST(req: Request) {
     }
 
     const db = getDb();
+    ensureSchema(db);
     const now = new Date().toISOString();
 
     // Verify user exists

@@ -242,8 +242,15 @@ export function getDb(): Database.Database {
         subscription_status TEXT NOT NULL DEFAULT 'ACTIVE',
         monthly_allowance INTEGER NOT NULL DEFAULT 500,
         renews_at TEXT,
+        stripe_customer_id TEXT,
+        stripe_subscription_id TEXT,
+        created_at TEXT,
         updated_at TEXT NOT NULL
       );
+      safeAddColumn('user_credits', 'stripe_customer_id', 'TEXT');
+      safeAddColumn('user_credits', 'stripe_subscription_id', 'TEXT');
+      safeAddColumn('user_credits', 'created_at', 'TEXT');
+      safeAddColumn('user_credits', 'renews_at', 'TEXT');
 
       CREATE TABLE IF NOT EXISTS credit_transactions (
         id TEXT PRIMARY KEY,
