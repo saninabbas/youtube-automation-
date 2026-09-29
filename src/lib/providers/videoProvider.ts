@@ -139,28 +139,29 @@ class DefaultVideoProvider implements VideoProvider {
   }
 
   getProviderName(): string {
-    // Check AI Video Generation providers (highest priority)
+    const cfToken = getApiKey('cloudflare_api_token') || getApiKey('cloudflare') || process.env.CLOUDFLARE_API_TOKEN;
+    const cfAccountId = getApiKey('cloudflare_account_id') || getApiKey('cloudflare_account') || process.env.CLOUDFLARE_ACCOUNT_ID;
+    const hasCloudflare = !!(cfToken && cfAccountId);
+
     if (veoVideoProvider.isConfigured()) {
-      return 'Google Veo 3.1 AI Video Engine (Real AI Video Generation)';
+      return 'Google Veo 3.1 & Gemini Engine (Real AI Generation)';
     }
     if (falVideoProvider.isConfigured()) {
-      return 'FAL.ai AI Video Engine (Wan 2.1 / Kling / LTX — Real AI Video Generation)';
+      return 'FAL.ai AI Video Engine (Wan 2.1 / Kling / LTX)';
     }
-    if (cloudflareVideoProvider.isConfigured()) {
-      return 'Cloudflare AI Video Engine (MiniMax Hailuo 2.3 — Real AI Video Generation)';
+    if (hasCloudflare) {
+      return 'Cloudflare Generative AI Engine (Flux 1 Schnell & Leonardo Phoenix — Real-Time AI Synthesis)';
     }
     if (openaiVideoProvider.isConfigured()) {
       return 'OpenAI Video Engine (Sora / OpenAI Video Generation)';
     }
     const runway = getApiKey('runway');
     const replicate = getApiKey('replicate');
-    const fal = getApiKey('fal');
-
-    if (runway || replicate || fal) {
-      const active = runway ? 'Runway Gen-3' : replicate ? 'Replicate SVD' : 'Fal.ai Fast Video';
+    if (runway || replicate) {
+      const active = runway ? 'Runway Gen-3' : 'Replicate SVD';
       return `Generative AI Video Engine (${active} Provider Active)`;
     }
-    return 'Autonomous Generative AI Video Engine (Real Text-to-Video Synthesis)';
+    return 'Autonomous Generative AI Video Engine (Real-Time AI Synthesis)';
   }
 
 
@@ -479,8 +480,31 @@ class DefaultVideoProvider implements VideoProvider {
             generatedAiImage = true;
             console.log(`[VideoProvider] Flux 1 Schnell image generated successfully for Scene ${sceneIndex}`);
           }
-        } else {
-          // Fallback to SDXL-Lightning
+        }
+
+        if (!generatedAiImage) {
+          // 2b. Fallback to Cloudflare Leonardo Phoenix 1.0
+          console.log(`[VideoProvider] Trying Cloudflare Leonardo Phoenix for Scene ${sceneIndex}...`);
+          const leoRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/leonardo/phoenix-1.0`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${cfToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: enhancedPrompt }),
+          });
+          if (leoRes.ok) {
+            const ab = await leoRes.arrayBuffer();
+            if (ab.byteLength > 5000) {
+              await fs.promises.writeFile(tempAiImgPath, Buffer.from(ab));
+              generatedAiImage = true;
+              console.log(`[VideoProvider] Leonardo Phoenix visual generated for Scene ${sceneIndex}`);
+            }
+          }
+        }
+
+        if (!generatedAiImage) {
+          // 2c. Fallback to SDXL-Lightning
           const sdxlRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning`, {
             method: 'POST',
             headers: {
