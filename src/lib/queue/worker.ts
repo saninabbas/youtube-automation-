@@ -27,6 +27,8 @@ export const PIPELINE_STAGES: PipelineStage[] = [
 
 export class VideoPipelineWorker {
   private activeJobs = new Set<string>();
+  private waitingQueue: Array<{ projectId: string; fromStage?: PipelineStage }> = [];
+  private maxConcurrency = 2;
 
   public startProjectPipeline(projectId: string, fromStage?: PipelineStage): void {
     if (this.activeJobs.has(projectId)) {
@@ -34,16 +36,42 @@ export class VideoPipelineWorker {
       return;
     }
 
+    if (this.waitingQueue.some((item) => item.projectId === projectId)) {
+      console.log(`Project ${projectId} is already in the waiting queue.`);
+      return;
+    }
+
+    if (this.activeJobs.size >= this.maxConcurrency) {
+      console.log(`[VideoPipeline] Concurrency limit reached (${this.activeJobs.size}/${this.maxConcurrency}). Queuing project ${projectId}...`);
+      this.waitingQueue.push({ projectId, fromStage });
+      return;
+    }
+
+    this.executePipelineJob(projectId, fromStage);
+  }
+
+  private executePipelineJob(projectId: string, fromStage?: PipelineStage): void {
     this.activeJobs.add(projectId);
     setTimeout(async () => {
       try {
+        console.log(`[VideoPipeline] Starting execution for project ${projectId} (Active: ${this.activeJobs.size}/${this.maxConcurrency})`);
         await this.processPipeline(projectId, fromStage);
       } catch (err) {
         console.error(`Pipeline fatal error for project ${projectId}:`, err);
       } finally {
         this.activeJobs.delete(projectId);
+        this.processNextInQueue();
       }
     }, 50);
+  }
+
+  private processNextInQueue(): void {
+    if (this.activeJobs.size < this.maxConcurrency && this.waitingQueue.length > 0) {
+      const next = this.waitingQueue.shift();
+      if (next) {
+        this.executePipelineJob(next.projectId, next.fromStage);
+      }
+    }
   }
 
   public async processPipeline(projectId: string, fromStage?: PipelineStage, singleStageOnly: boolean = false): Promise<void> {

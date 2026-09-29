@@ -9,6 +9,7 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ['better-sqlite3', '@ffmpeg-installer/ffmpeg'],
+    instrumentationHook: true,
   },
   webpack: (config) => {
     config.resolve.alias['@'] = path.join(__dirname, 'src');

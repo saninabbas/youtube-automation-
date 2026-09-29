@@ -128,20 +128,65 @@ class BackgroundPublishingScheduler {
         const videoFilePath = storage.getFilePath(output.storage_key);
         const thumbnailFilePath = thumbnail ? storage.getFilePath(thumbnail.storage_key) : undefined;
 
-        let parsedMeta = { youtubeTitle: proj.topic, description: proj.topic, tags: [] as string[] };
+        let rawMeta: any = {};
         if (proj.metadata_json) {
           try {
-            parsedMeta = JSON.parse(proj.metadata_json);
+            rawMeta = JSON.parse(proj.metadata_json);
           } catch {}
         }
+
+        const isShort = proj.target_length_minutes <= 1 || (rawMeta.aspectRatio === '9:16');
+        const cleanTopicWord = proj.topic.split(' ').slice(0, 3).join('').replace(/[^a-zA-Z0-9]/g, '');
+
+        let finalTitle = rawMeta.youtubeTitle || proj.topic;
+        if (isShort && !finalTitle.toLowerCase().includes('#shorts')) {
+          finalTitle = `${finalTitle.slice(0, 90)} #Shorts`;
+        }
+        finalTitle = finalTitle.slice(0, 100);
+
+        const defaultHashtags = [
+          `#${cleanTopicWord || 'Content'}`,
+          isShort ? '#Shorts' : '#Masterclass',
+          '#Trending',
+          '#Viral',
+          '#YouTube',
+        ];
+        const hashtags = Array.isArray(rawMeta.hashtags) && rawMeta.hashtags.length > 0 ? rawMeta.hashtags : defaultHashtags;
+        const hashtagString = hashtags.join(' ');
+
+        let finalDescription = rawMeta.description;
+        if (!finalDescription || finalDescription === proj.topic || finalDescription.length < 50) {
+          finalDescription = [
+            `In this video from ${proj.channel_name || 'Creator Studio'}, we break down: ${proj.topic}.`,
+            '',
+            `📌 Watch till the end for practical insights, visual breakdowns, and key takeaways on ${proj.topic}.`,
+            '',
+            `🔔 Subscribe to ${proj.channel_name || 'our channel'} for automated daily video releases!`,
+            '',
+            hashtagString,
+          ].join('\n');
+        } else if (!finalDescription.includes('#')) {
+          finalDescription = `${finalDescription}\n\n${hashtagString}`;
+        }
+
+        const defaultTags = [
+          proj.channel_name,
+          proj.topic,
+          ...proj.topic.split(' ').filter((w: string) => w.length > 3),
+          isShort ? 'shorts' : 'video',
+          'youtube video',
+          'viral',
+          'how to',
+        ].filter(Boolean);
+        const finalTags = Array.isArray(rawMeta.tags) && rawMeta.tags.length > 0 ? rawMeta.tags : defaultTags;
 
         const pubResult = await publishingProvider.publishVideo({
           projectId: proj.id,
           platform: (proj.platform as SupportedPlatform) || 'YouTube',
           videoFilePath,
-          title: parsedMeta.youtubeTitle || proj.topic,
-          description: parsedMeta.description || proj.topic,
-          tags: parsedMeta.tags || [],
+          title: finalTitle,
+          description: finalDescription,
+          tags: finalTags,
           thumbnailFilePath,
           visibility: proj.visibility || (proj.default_visibility as any) || 'PRIVATE',
           userId: proj.user_id,
