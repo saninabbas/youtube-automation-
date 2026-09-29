@@ -1,0 +1,18 @@
+# AUTORA - AI Video Automation Robots Policy
+User-agent: *
+Allow: /
+Allow: /landing
+Allow: /templates
+Allow: /billing
+Allow: /login
+Allow: /signup
+
+# Disallow protected and admin areas
+Disallow: /admin
+Disallow: /api/
+Disallow: /settings/security
+Disallow: /reset-password
+Disallow: /verify-email
+
+# Sitemap specification
+Sitemap: https://autora.live/sitemap.xml
