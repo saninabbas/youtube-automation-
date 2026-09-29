@@ -45,6 +45,9 @@ export const metadata: Metadata = {
   other: {
     'fameswap-verification': 'RHGxQyVs29q0GKUj2KPw8BseWbVDXKvn',
   },
+  verification: {
+    google: 'google036228914f703f9d',
+  },
   icons: {
     icon: '/favicon.ico',
   },
