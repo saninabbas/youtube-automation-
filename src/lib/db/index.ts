@@ -707,8 +707,14 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
   if (p === 'cloudflare' || p === 'cloudflare_api_token') {
     return process.env.CLOUDFLARE_API_TOKEN || null;
   }
-  if (p === 'cloudflare_account_id') {
+  if (p === 'cloudflare_account_id' || p === 'cloudflare_account') {
     return process.env.CLOUDFLARE_ACCOUNT_ID || null;
+  }
+  if (p === 'pexels' || p === 'pexels_api_key') {
+    return process.env.PEXELS_API_KEY || null;
+  }
+  if (p === 'pixabay' || p === 'pixabay_api_key') {
+    return process.env.PIXABAY_API_KEY || null;
   }
   if (p === 'runway') {
     return process.env.RUNWAY_API_KEY || null;

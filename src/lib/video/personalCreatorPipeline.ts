@@ -483,8 +483,8 @@ export class PersonalCreatorPipeline {
 
     // 1. Try Cloudflare Workers AI Flux
     let stillGenerated = false;
-    const cfAccountId = getApiKey('cloudflare_account') || process.env.CLOUDFLARE_ACCOUNT_ID;
-    const cfToken = getApiKey('cloudflare') || process.env.CLOUDFLARE_API_TOKEN;
+    const cfAccountId = getApiKey('cloudflare_account_id') || getApiKey('cloudflare_account') || process.env.CLOUDFLARE_ACCOUNT_ID;
+    const cfToken = getApiKey('cloudflare_api_token') || getApiKey('cloudflare') || process.env.CLOUDFLARE_API_TOKEN;
 
     if (cfAccountId && cfToken) {
       try {
@@ -498,7 +498,6 @@ export class PersonalCreatorPipeline {
             },
             body: JSON.stringify({
               prompt: `${prompt}, cinematic 4k B-roll for YouTube video, dramatic lighting, high depth of field`,
-              num_steps: 4,
             }),
           }
         );
