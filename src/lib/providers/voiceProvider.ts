@@ -35,6 +35,37 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     'sam': 'yoZ06aMxZJJ28mfd3POQ',      // Sam (Natural, Conversational)
   };
 
+  // Mapped Microsoft Edge Neural Voices
+  private static readonly EDGE_VOICE_MAP: Record<string, string> = {
+    'rachel': 'en-US-JennyNeural',
+    'adam': 'en-US-GuyNeural',
+    'antoni': 'en-US-ChristopherNeural',
+    'bella': 'en-US-AriaNeural',
+    'josh': 'en-US-EricNeural',
+    'arnold': 'en-US-DavisNeural',
+    'domi': 'en-US-MichelleNeural',
+    'sam': 'en-US-BrianNeural',
+    'christopher': 'en-US-ChristopherNeural',
+    'jenny': 'en-US-JennyNeural',
+    'guy': 'en-US-GuyNeural',
+    'aria': 'en-US-AriaNeural',
+    'studio voice 1': 'en-US-JennyNeural',
+    'studio voice 2': 'en-US-GuyNeural',
+    'studio voice 3': 'en-US-ChristopherNeural',
+    'studio voice 4': 'en-US-AriaNeural',
+    'studio voice 5': 'en-US-ChristopherNeural',
+    // Language-specific defaults
+    'en': 'en-US-ChristopherNeural',
+    'es': 'es-ES-AlvaroNeural',
+    'fr': 'fr-FR-HenriNeural',
+    'de': 'de-DE-ConradNeural',
+    'hi': 'hi-IN-MadhurNeural',
+    'ur': 'ur-PK-AsadNeural',
+    'ar': 'ar-SA-HamedNeural',
+    'pt': 'pt-BR-AntonioNeural',
+    'it': 'it-IT-DiegoNeural',
+  };
+
   private resolveElevenLabsVoiceId(voiceName?: string): string {
     if (!voiceName) return '21m00Tcm4TlvDq8ikWAM';
     const clean = voiceName.trim();
@@ -51,6 +82,32 @@ class MultiEngineVoiceProvider implements VoiceProvider {
       return clean;
     }
     return '21m00Tcm4TlvDq8ikWAM'; // Default Rachel
+  }
+
+  private resolveEdgeVoice(voiceName?: string, language?: string): string {
+    if (voiceName) {
+      const clean = voiceName.trim();
+      // If voice name already matches Edge neural format (e.g., en-US-ChristopherNeural)
+      if (/^[a-z]{2,3}-[A-Z]{2,3}-.+Neural$/i.test(clean)) {
+        return clean;
+      }
+      let key = clean.toLowerCase();
+      if (key.startsWith('elevenlabs:')) {
+        key = key.replace('elevenlabs:', '').trim();
+      }
+      if (MultiEngineVoiceProvider.EDGE_VOICE_MAP[key]) {
+        return MultiEngineVoiceProvider.EDGE_VOICE_MAP[key];
+      }
+    }
+
+    if (language) {
+      const langKey = language.trim().toLowerCase().substring(0, 2);
+      if (MultiEngineVoiceProvider.EDGE_VOICE_MAP[langKey]) {
+        return MultiEngineVoiceProvider.EDGE_VOICE_MAP[langKey];
+      }
+    }
+
+    return 'en-US-ChristopherNeural';
   }
 
   // Engine 0: ElevenLabs AI Voice Synthesis (When key configured or voice requested)
@@ -117,33 +174,151 @@ class MultiEngineVoiceProvider implements VoiceProvider {
   }
 
   // Engine 1: Microsoft Edge Neural TTS Engine (Free High-Quality Neural Voices)
-  private async synthesizeWithMsEdgeTTS(text: string, voiceName: string = 'en-US-ChristopherNeural'): Promise<Buffer> {
+  private async synthesizeWithMsEdgeTTS(text: string, voiceName?: string, language?: string): Promise<Buffer> {
     const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts');
-    const tts = new MsEdgeTTS();
-    const targetVoice = (voiceName && !voiceName.startsWith('elevenlabs:')) 
-      ? voiceName 
-      : 'en-US-ChristopherNeural';
-    
-    await tts.setMetadata(targetVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-    const tempDir = getTempDir();
-    const result = await tts.toFile(tempDir, text);
-    
-    if (!result.audioFilePath || !fs.existsSync(result.audioFilePath)) {
-      throw new Error('msedge-tts did not produce an audio output file');
+    const targetVoice = this.resolveEdgeVoice(voiceName, language);
+
+    // Split text into paragraphs/sentences under 550 characters to prevent WebSocket timeouts
+    const paragraphs = text.split(/\n\n+/).filter(Boolean);
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const p of paragraphs) {
+      if (p.length <= 550) {
+        if ((currentChunk + ' ' + p).length > 550 && currentChunk.trim()) {
+          chunks.push(currentChunk.trim());
+          currentChunk = p;
+        } else {
+          currentChunk += (currentChunk ? ' ' : '') + p;
+        }
+      } else {
+        // Break large single paragraph into sentences
+        const sentences = p.match(/[^.!?]+[.!?]+|\S+/g) || [p];
+        for (const s of sentences) {
+          if ((currentChunk + ' ' + s).length > 550 && currentChunk.trim()) {
+            chunks.push(currentChunk.trim());
+            currentChunk = s;
+          } else {
+            currentChunk += (currentChunk ? ' ' : '') + s;
+          }
+        }
+      }
     }
-    
-    const buf = await fs.promises.readFile(result.audioFilePath);
-    await fs.promises.unlink(result.audioFilePath).catch(() => {});
-    tts.close();
-    
-    if (buf.length < 500) {
-      throw new Error('msedge-tts audio output is too small or invalid');
+    if (currentChunk.trim()) chunks.push(currentChunk.trim());
+
+    if (chunks.length === 0) {
+      throw new Error('No valid text chunks to synthesize with Edge TTS');
     }
-    
-    return buf;
+
+    const chunkBuffers: Buffer[] = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkText = chunks[i];
+      let tts = new MsEdgeTTS();
+      try {
+        try {
+          await tts.setMetadata(targetVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3, {});
+        } catch {
+          // If custom voice metadata fails, fall back to bulletproof default
+          await tts.setMetadata('en-US-ChristopherNeural', OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3, {});
+        }
+
+        const buf = await new Promise<Buffer>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            try { tts.close(); } catch {}
+            reject(new Error(`Edge TTS chunk ${i} timed out`));
+          }, 25000);
+
+          try {
+            const { audioStream } = tts.toStream(chunkText);
+            const parts: Buffer[] = [];
+            audioStream.on('data', (d: Buffer) => parts.push(d));
+            audioStream.on('end', () => {
+              clearTimeout(timeout);
+              try { tts.close(); } catch {}
+              resolve(Buffer.concat(parts));
+            });
+            audioStream.on('error', (err) => {
+              clearTimeout(timeout);
+              try { tts.close(); } catch {}
+              reject(err);
+            });
+          } catch (streamErr) {
+            clearTimeout(timeout);
+            try { tts.close(); } catch {}
+            reject(streamErr);
+          }
+        });
+
+        if (buf && buf.length > 200) {
+          chunkBuffers.push(buf);
+        }
+      } catch (err: any) {
+        console.warn(`[VoiceProvider] Edge TTS chunk ${i} failed: ${err.message}. Retrying with universal fallback...`);
+        // Retry single chunk via Google TTS
+        try {
+          const gBuf = await this.synthesizeWithGoogleTTS(chunkText, language || 'en');
+          if (gBuf && gBuf.length > 200) {
+            chunkBuffers.push(gBuf);
+          }
+        } catch {}
+      }
+    }
+
+    if (chunkBuffers.length === 0) {
+      throw new Error('Edge TTS did not produce any valid audio buffers');
+    }
+
+    return Buffer.concat(chunkBuffers);
   }
 
-  // Engine 2: Windows Native Speech Synthesizer (100% Guaranteed Spoken Words Offline)
+  // Engine 2: Google Speech Neural Stream (Universal Fallback, 0 API Key, 100% Reliable Globally)
+  private async synthesizeWithGoogleTTS(text: string, language: string = 'en'): Promise<Buffer> {
+    const langCode = (language || 'en').substring(0, 2).toLowerCase();
+    const words = text.split(/\s+/).filter(Boolean);
+    const chunks: string[] = [];
+    let cur = '';
+
+    for (const w of words) {
+      if ((cur + ' ' + w).length > 180 && cur) {
+        chunks.push(cur.trim());
+        cur = w;
+      } else {
+        cur += (cur ? ' ' : '') + w;
+      }
+    }
+    if (cur.trim()) chunks.push(cur.trim());
+
+    const bufs: Buffer[] = [];
+    for (const c of chunks) {
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(langCode)}&q=${encodeURIComponent(c)}`;
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://translate.google.com/',
+        },
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Google TTS HTTP error ${res.status}`);
+      }
+
+      const arr = await res.arrayBuffer();
+      const b = Buffer.from(arr);
+      if (b.length > 100) {
+        bufs.push(b);
+      }
+    }
+
+    if (bufs.length === 0) {
+      throw new Error('Google TTS produced no audio');
+    }
+
+    return Buffer.concat(bufs);
+  }
+
+  // Engine 3: Windows Native Speech Synthesizer (Offline fallback on Windows)
   private async synthesizeWithWindowsSAPI(text: string, voiceSpeed?: string): Promise<Buffer> {
     if (process.platform !== 'win32') {
       throw new Error('Windows SAPI only supported on Windows OS');
@@ -156,10 +331,8 @@ class MultiEngineVoiceProvider implements VoiceProvider {
     const tempMp3 = path.join(tempDir, `sapi_${Date.now()}_${rand}.mp3`);
     const ffmpegPath = getFfmpegPath();
 
-    // Write text to plain data file — completely isolated from executable code
     await fs.promises.writeFile(tempTextFile, text, 'utf8');
 
-    // Parse speed
     let rateNum = 0;
     if (voiceSpeed) {
       const match = voiceSpeed.match(/([\d.]+)/);
@@ -170,7 +343,6 @@ class MultiEngineVoiceProvider implements VoiceProvider {
       }
     }
 
-    // Completely static PowerShell script that accepts file paths as parameters
     const psContent = `
 param([string]$textFile, [string]$wavFile, [int]$rate)
 Add-Type -AssemblyName System.Speech
@@ -194,13 +366,12 @@ $synth.Dispose()
         tempTextFile,
         tempWav,
         String(rateNum),
-      ], { timeout: 300000 }); // 5 minutes timeout for multi-thousand-word scripts
+      ], { timeout: 300000 });
 
       if (!fs.existsSync(tempWav)) {
         throw new Error('Windows SAPI synthesis did not produce output WAV.');
       }
 
-      // Convert WAV to MP3
       await execFileAsync(ffmpegPath, ['-y', '-i', tempWav, '-c:a', 'libmp3lame', '-b:a', '192k', tempMp3], { timeout: 120000 });
       const mp3Buf = await fs.promises.readFile(tempMp3);
       return mp3Buf;
@@ -257,40 +428,60 @@ $synth.Dispose()
     const tempDir = getTempDir(tempId);
 
     let finalBuffer: Buffer | null = null;
+    let selectedEngine = 'none';
 
     // 0. Try ElevenLabs if configured
     try {
       finalBuffer = await this.synthesizeWithElevenLabs(cleanText, params.voiceName);
       if (finalBuffer && finalBuffer.length > 500) {
+        selectedEngine = 'ElevenLabs';
         console.log(`[VoiceProvider] Synthesized voiceover via ElevenLabs (${finalBuffer.length} bytes, voice: ${params.voiceName || 'default'})`);
       }
     } catch (err: any) {
       if (getApiKey('elevenlabs') || process.env.ELEVENLABS_API_KEY) {
-        console.warn(`[VoiceProvider] ElevenLabs synthesis failed (${err.message}). Falling back to Neural Streamer...`);
+        console.warn(`[VoiceProvider] ElevenLabs synthesis failed (${err.message}). Falling back to Edge Neural TTS...`);
       }
     }
 
-    // 1. Try Microsoft Edge Neural TTS
-    if (!finalBuffer) {
+    // 1. Try Microsoft Edge Neural TTS (Free, Ultra High-Quality Neural Voices)
+    if (!finalBuffer || finalBuffer.length < 500) {
       try {
-        finalBuffer = await this.synthesizeWithMsEdgeTTS(cleanText, params.voiceName || 'en-US-ChristopherNeural');
+        finalBuffer = await this.synthesizeWithMsEdgeTTS(cleanText, params.voiceName, params.language);
         if (finalBuffer && finalBuffer.length > 500) {
-          console.log(`[VoiceProvider] Synthesized voiceover via Microsoft Edge Neural TTS (${finalBuffer.length} bytes, voice: ${params.voiceName || 'en-US-ChristopherNeural'})`);
+          selectedEngine = 'Microsoft Edge Neural';
+          console.log(`[VoiceProvider] Synthesized voiceover via Microsoft Edge Neural TTS (${finalBuffer.length} bytes, mapped voice: ${this.resolveEdgeVoice(params.voiceName, params.language)})`);
         }
       } catch (err: any) {
-        console.warn(`[VoiceProvider] Microsoft Edge TTS unavailable (${err.message}). Trying fallbacks...`);
+        console.warn(`[VoiceProvider] Microsoft Edge TTS failed (${err.message}). Trying Google Neural Stream...`);
       }
     }
 
-    // 2. Fallback to Windows SAPI Synthesizer (Windows only)
+    // 2. Try Google Speech Neural Stream (Universal 100% available fallback)
+    if (!finalBuffer || finalBuffer.length < 500) {
+      try {
+        finalBuffer = await this.synthesizeWithGoogleTTS(cleanText, params.language || 'en');
+        if (finalBuffer && finalBuffer.length > 500) {
+          selectedEngine = 'Google Neural Stream';
+          console.log(`[VoiceProvider] Synthesized voiceover via Google Neural Stream (${finalBuffer.length} bytes, lang: ${params.language || 'en'})`);
+        }
+      } catch (err: any) {
+        console.warn(`[VoiceProvider] Google Speech stream failed (${err.message}). Trying OS fallbacks...`);
+      }
+    }
+
+    // 3. Fallback to Windows SAPI Synthesizer (Windows only)
     if (!finalBuffer || finalBuffer.length < 500) {
       try {
         finalBuffer = await this.synthesizeWithWindowsSAPI(cleanText, params.voiceSpeed);
+        if (finalBuffer && finalBuffer.length > 500) {
+          selectedEngine = 'Windows SAPI';
+        }
       } catch {}
     }
 
-    // 3. Fallback to valid silent MP3 audio generated with FFmpeg if external networks fail
+    // 4. Last resort: FFmpeg silent fallback audio
     if (!finalBuffer || finalBuffer.length < 500) {
+      console.error('[VoiceProvider] CRITICAL: All voice engines failed. Using silent audio fallback.');
       finalBuffer = await this.generateSilentAudioBuffer(estimatedDuration);
     }
 
@@ -312,6 +503,8 @@ $synth.Dispose()
       }
     }
 
+    console.log(`[VoiceProvider] Final voiceover ready: ${finalBuffer.length} bytes, duration: ${realDuration}s, engine: ${selectedEngine}`);
+
     return {
       audioBuffer: finalBuffer,
       durationSec: realDuration,
@@ -321,4 +514,3 @@ $synth.Dispose()
 }
 
 export const voiceProvider: VoiceProvider = new MultiEngineVoiceProvider();
-

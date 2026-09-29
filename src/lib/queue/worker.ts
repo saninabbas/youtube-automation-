@@ -666,8 +666,62 @@ export class VideoPipelineWorker {
           .get(project.id) as GeneratedAsset | undefined;
 
         const clipPaths = clipAssets.map((c) => storage.getFilePath(c.storage_key));
-        const audioPath = storage.getFilePath(audioAsset.storage_key);
+        let audioPath = storage.getFilePath(audioAsset.storage_key);
         const subPath = subAsset ? storage.getFilePath(subAsset.storage_key) : undefined;
+
+        // Guaranteed audio verification on disk
+        let audioValid = false;
+        try {
+          if (fs.existsSync(audioPath)) {
+            const st = await fs.promises.stat(audioPath);
+            if (st.size > 1000) audioValid = true;
+          }
+        } catch {}
+
+        if (!audioValid) {
+          const remoteAudio = await storage.getObject(audioAsset.storage_key);
+          if (remoteAudio && remoteAudio.length > 1000) {
+            const dir = path.dirname(audioPath);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            await fs.promises.writeFile(audioPath, remoteAudio);
+            audioValid = true;
+          }
+        }
+
+        if (!audioValid) {
+          console.warn(`[Worker] Project ${project.id} audio track missing or silent. Auto-healing voiceover...`);
+          let scriptAsset = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'script' ORDER BY created_at DESC LIMIT 1")
+            .get(project.id) as GeneratedAsset | undefined;
+          let narrationText = project.topic || 'AutoRA High Quality Video Production';
+          if (scriptAsset) {
+            const sData = await storage.getObject(scriptAsset.storage_key);
+            if (sData) {
+              try {
+                const sObj: ScriptStructure = JSON.parse(sData.toString('utf8'));
+                const parts: string[] = [sObj.hook, sObj.introduction];
+                for (const sec of sObj.sections) {
+                  for (const sub of sec.subsections) parts.push(sub.narration);
+                }
+                parts.push(sObj.conclusion, sObj.callToAction);
+                narrationText = parts.filter(Boolean).join('\n\n');
+              } catch {}
+            }
+          }
+          const vRes = await voiceProvider.generateVoiceover({
+            text: narrationText,
+            voiceName: channel.voice,
+            voiceSpeed: channel.voice_speed,
+            language: project.language || channel.language,
+            projectId: project.id,
+          });
+          const dir = path.dirname(audioPath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          await fs.promises.writeFile(audioPath, vRes.audioBuffer);
+          await storage.putObject(audioAsset.storage_key, vRes.audioBuffer, `audio/${vRes.format}`);
+          db.prepare("UPDATE generated_assets SET duration_sec = ? WHERE id = ?").run(vRes.durationSec, audioAsset.id);
+          audioAsset.duration_sec = vRes.durationSec;
+        }
 
         const totalClipDuration = clipAssets.reduce((sum, c) => sum + (c.duration_sec || 0), 0);
         const effectiveDurationSec: number = (audioAsset && typeof audioAsset.duration_sec === 'number' && audioAsset.duration_sec > 0)

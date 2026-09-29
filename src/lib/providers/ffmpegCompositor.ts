@@ -165,6 +165,7 @@ export class FfmpegCompositor {
         const fallbackArgs: string[] = hasAudio
           ? [
               '-y',
+              '-stream_loop', '-1',
               '-f', 'concat',
               '-safe', '0',
               '-i', concatListPath,
