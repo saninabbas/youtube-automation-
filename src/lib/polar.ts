@@ -1,3 +1,5 @@
+import { getApiKey } from './db';
+
 /**
  * Polar.sh Billing & Checkout Integration Module
  *
@@ -25,10 +27,15 @@ export interface PolarCheckoutResult {
 }
 
 /**
- * Check whether Polar billing is configured in environment variables.
+ * Check whether Polar billing is configured in database or environment variables.
  */
 export function isPolarConfigured(): boolean {
   return !!(
+    getApiKey('polar_access_token') ||
+    getApiKey('polar_webhook_secret') ||
+    getApiKey('polar_checkout_url') ||
+    getApiKey('polar_checkout_url_creator') ||
+    getApiKey('polar_product_creator') ||
     process.env.POLAR_ACCESS_TOKEN ||
     process.env.POLAR_WEBHOOK_SECRET ||
     process.env.POLAR_CHECKOUT_URL ||
@@ -53,46 +60,46 @@ export function getPolarPlanConfig(planId: string, billingCycle: 'monthly' | 'an
   switch (norm) {
     case 'starter':
       productId = isAnnual
-        ? process.env.POLAR_PRODUCT_STARTER_ANNUAL || process.env.POLAR_PRODUCT_STARTER || null
-        : process.env.POLAR_PRODUCT_STARTER_MONTHLY || process.env.POLAR_PRODUCT_STARTER || null;
+        ? getApiKey('polar_product_starter_annual') || getApiKey('polar_product_starter') || process.env.POLAR_PRODUCT_STARTER_ANNUAL || process.env.POLAR_PRODUCT_STARTER || null
+        : getApiKey('polar_product_starter_monthly') || getApiKey('polar_product_starter') || process.env.POLAR_PRODUCT_STARTER_MONTHLY || process.env.POLAR_PRODUCT_STARTER || null;
       checkoutUrl = isAnnual
-        ? process.env.POLAR_CHECKOUT_URL_STARTER_ANNUAL || process.env.POLAR_CHECKOUT_URL_STARTER || null
-        : process.env.POLAR_CHECKOUT_URL_STARTER_MONTHLY || process.env.POLAR_CHECKOUT_URL_STARTER || null;
+        ? getApiKey('polar_checkout_url_starter_annual') || getApiKey('polar_checkout_url_starter') || process.env.POLAR_CHECKOUT_URL_STARTER_ANNUAL || process.env.POLAR_CHECKOUT_URL_STARTER || null
+        : getApiKey('polar_checkout_url_starter_monthly') || getApiKey('polar_checkout_url_starter') || process.env.POLAR_CHECKOUT_URL_STARTER_MONTHLY || process.env.POLAR_CHECKOUT_URL_STARTER || null;
       break;
 
     case 'creator':
     case 'pro':
       productId = isAnnual
-        ? process.env.POLAR_PRODUCT_CREATOR_ANNUAL || process.env.POLAR_PRODUCT_CREATOR || null
-        : process.env.POLAR_PRODUCT_CREATOR_MONTHLY || process.env.POLAR_PRODUCT_CREATOR || null;
+        ? getApiKey('polar_product_creator_annual') || getApiKey('polar_product_creator') || process.env.POLAR_PRODUCT_CREATOR_ANNUAL || process.env.POLAR_PRODUCT_CREATOR || null
+        : getApiKey('polar_product_creator_monthly') || getApiKey('polar_product_creator') || process.env.POLAR_PRODUCT_CREATOR_MONTHLY || process.env.POLAR_PRODUCT_CREATOR || null;
       checkoutUrl = isAnnual
-        ? process.env.POLAR_CHECKOUT_URL_CREATOR_ANNUAL || process.env.POLAR_CHECKOUT_URL_CREATOR || null
-        : process.env.POLAR_CHECKOUT_URL_CREATOR_MONTHLY || process.env.POLAR_CHECKOUT_URL_CREATOR || null;
+        ? getApiKey('polar_checkout_url_creator_annual') || getApiKey('polar_checkout_url_creator') || process.env.POLAR_CHECKOUT_URL_CREATOR_ANNUAL || process.env.POLAR_CHECKOUT_URL_CREATOR || null
+        : getApiKey('polar_checkout_url_creator_monthly') || getApiKey('polar_checkout_url_creator') || process.env.POLAR_CHECKOUT_URL_CREATOR_MONTHLY || process.env.POLAR_CHECKOUT_URL_CREATOR || null;
       break;
 
     case 'scale':
     case 'growth':
       productId = isAnnual
-        ? process.env.POLAR_PRODUCT_SCALE_ANNUAL || process.env.POLAR_PRODUCT_SCALE || null
-        : process.env.POLAR_PRODUCT_SCALE_MONTHLY || process.env.POLAR_PRODUCT_SCALE || null;
+        ? getApiKey('polar_product_scale_annual') || getApiKey('polar_product_scale') || process.env.POLAR_PRODUCT_SCALE_ANNUAL || process.env.POLAR_PRODUCT_SCALE || null
+        : getApiKey('polar_product_scale_monthly') || getApiKey('polar_product_scale') || process.env.POLAR_PRODUCT_SCALE_MONTHLY || process.env.POLAR_PRODUCT_SCALE || null;
       checkoutUrl = isAnnual
-        ? process.env.POLAR_CHECKOUT_URL_SCALE_ANNUAL || process.env.POLAR_CHECKOUT_URL_SCALE || null
-        : process.env.POLAR_CHECKOUT_URL_SCALE_MONTHLY || process.env.POLAR_CHECKOUT_URL_SCALE || null;
+        ? getApiKey('polar_checkout_url_scale_annual') || getApiKey('polar_checkout_url_scale') || process.env.POLAR_CHECKOUT_URL_SCALE_ANNUAL || process.env.POLAR_CHECKOUT_URL_SCALE || null
+        : getApiKey('polar_checkout_url_scale_monthly') || getApiKey('polar_checkout_url_scale') || process.env.POLAR_CHECKOUT_URL_SCALE_MONTHLY || process.env.POLAR_CHECKOUT_URL_SCALE || null;
       break;
 
     case 'agency':
       productId = isAnnual
-        ? process.env.POLAR_PRODUCT_AGENCY_ANNUAL || process.env.POLAR_PRODUCT_AGENCY || null
-        : process.env.POLAR_PRODUCT_AGENCY_MONTHLY || process.env.POLAR_PRODUCT_AGENCY || null;
+        ? getApiKey('polar_product_agency_annual') || getApiKey('polar_product_agency') || process.env.POLAR_PRODUCT_AGENCY_ANNUAL || process.env.POLAR_PRODUCT_AGENCY || null
+        : getApiKey('polar_product_agency_monthly') || getApiKey('polar_product_agency') || process.env.POLAR_PRODUCT_AGENCY_MONTHLY || process.env.POLAR_PRODUCT_AGENCY || null;
       checkoutUrl = isAnnual
-        ? process.env.POLAR_CHECKOUT_URL_AGENCY_ANNUAL || process.env.POLAR_CHECKOUT_URL_AGENCY || null
-        : process.env.POLAR_CHECKOUT_URL_AGENCY_MONTHLY || process.env.POLAR_CHECKOUT_URL_AGENCY || null;
+        ? getApiKey('polar_checkout_url_agency_annual') || getApiKey('polar_checkout_url_agency') || process.env.POLAR_CHECKOUT_URL_AGENCY_ANNUAL || process.env.POLAR_CHECKOUT_URL_AGENCY || null
+        : getApiKey('polar_checkout_url_agency_monthly') || getApiKey('polar_checkout_url_agency') || process.env.POLAR_CHECKOUT_URL_AGENCY_MONTHLY || process.env.POLAR_CHECKOUT_URL_AGENCY || null;
       break;
   }
 
   // Fallback to global checkout URL if specific plan URL not set
-  if (!checkoutUrl && process.env.POLAR_CHECKOUT_URL) {
-    checkoutUrl = process.env.POLAR_CHECKOUT_URL;
+  if (!checkoutUrl) {
+    checkoutUrl = getApiKey('polar_checkout_url') || process.env.POLAR_CHECKOUT_URL || null;
   }
 
   return { productId, checkoutUrl };
@@ -122,7 +129,7 @@ export async function createPolarCheckout(options: PolarCheckoutOptions): Promis
   }
 
   // 2. Polar API Custom Checkout Creation (when POLAR_ACCESS_TOKEN & productId are configured)
-  const accessToken = process.env.POLAR_ACCESS_TOKEN;
+  const accessToken = getApiKey('polar_access_token') || process.env.POLAR_ACCESS_TOKEN;
   if (accessToken && productId) {
     try {
       const response = await fetch('https://api.polar.sh/v1/checkouts/custom/', {

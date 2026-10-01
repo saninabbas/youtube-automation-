@@ -725,6 +725,16 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
   if (p === 'fal') {
     return process.env.FAL_KEY || process.env.FAL_AI_KEY || null;
   }
+  if (p === 'polar_access_token' || p === 'polar_token') {
+    return process.env.POLAR_ACCESS_TOKEN || null;
+  }
+  if (p === 'polar_webhook_secret' || p === 'polar_secret') {
+    return process.env.POLAR_WEBHOOK_SECRET || null;
+  }
+  if (p.startsWith('polar_')) {
+    const envKey = p.toUpperCase();
+    return process.env[envKey] || null;
+  }
   return null;
 }
 
