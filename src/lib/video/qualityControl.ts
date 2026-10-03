@@ -702,31 +702,38 @@ Return valid JSON strictly matching this structure:
   "strongVisualHook": { "passed": true, "score": 90, "details": "string" }
 }`;
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${params.geminiKey}`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(25000),
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
+      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
+      let res: Response | null = null;
+      for (const model of geminiModels) {
+        try {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${params.geminiKey}`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(15000),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
                 {
-                  inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: base64Img,
-                  },
+                  parts: [
+                    {
+                      inline_data: {
+                        mime_type: 'image/jpeg',
+                        data: base64Img,
+                      },
+                    },
+                    { text: prompt },
+                  ],
                 },
-                { text: prompt },
               ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-          },
-        }),
-      });
+              generationConfig: {
+                responseMimeType: 'application/json',
+              },
+            }),
+          });
+          if (res.ok) break;
+        } catch {}
+      }
 
-      if (!res.ok) return null;
+      if (!res || !res.ok) return null;
       const data: any = await res.json();
       const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!raw) return null;

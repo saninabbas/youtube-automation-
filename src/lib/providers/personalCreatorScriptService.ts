@@ -175,28 +175,32 @@ Length: ~${lengthMinutes} minutes`;
 
     // 2. Try Gemini
     if (geminiKey) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-          }),
-        });
+      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
+      for (const model of geminiModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            signal: AbortSignal.timeout(15000),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+            }),
+          });
 
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            const parsed = this.parseCleanJson(text);
-            if (parsed && parsed.scenes && parsed.scenes.length > 0) {
-              return this.finalizeScriptData(parsed, topic);
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              const parsed = this.parseCleanJson(text);
+              if (parsed && parsed.scenes && parsed.scenes.length > 0) {
+                return this.finalizeScriptData(parsed, topic);
+              }
             }
           }
+        } catch (err: any) {
+          console.warn(`[PersonalCreatorScriptService] Gemini (${model}) call failed:`, err.message);
         }
-      } catch (err: any) {
-        console.warn('[PersonalCreatorScriptService] Gemini call failed, using built-in generator:', err.message);
       }
     }
 

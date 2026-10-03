@@ -93,30 +93,34 @@ No markdown code fences, no extra text, just the raw JSON array.
 
     // 1. Try Gemini
     if (geminiKey) {
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: { responseMimeType: 'application/json' }
-          }),
-          signal: AbortSignal.timeout(30000)
-        });
+      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
+      for (const model of geminiModels) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: { responseMimeType: 'application/json' }
+            }),
+            signal: AbortSignal.timeout(15000)
+          });
 
-        if (res.ok) {
-          const data = await res.json();
-          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(cleanJson);
-            if (Array.isArray(parsed) && parsed.length >= 10) {
-              generatedTopics = parsed.slice(0, 30);
+          if (res.ok) {
+            const data = await res.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+              const parsed = JSON.parse(cleanJson);
+              if (Array.isArray(parsed) && parsed.length >= 10) {
+                generatedTopics = parsed.slice(0, 30);
+                break;
+              }
             }
           }
+        } catch (err: any) {
+          console.warn(`[Calendar API] Gemini (${model}) generation note:`, err.message);
         }
-      } catch (err: any) {
-        console.warn('[Calendar API] Gemini generation note:', err.message);
       }
     }
 

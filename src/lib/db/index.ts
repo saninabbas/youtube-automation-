@@ -175,6 +175,7 @@ export function getDb(): Database.Database {
     safeAddColumn('content_projects', 'publish_started_at', 'TEXT');
     safeAddColumn('content_projects', 'publish_completed_at', 'TEXT');
     safeAddColumn('content_projects', 'auto_publish', 'INTEGER NOT NULL DEFAULT 0');
+    safeAddColumn('content_projects', 'publish_error', 'TEXT');
     safeAddColumn('video_scenes', 'quality_report_json', 'TEXT');
 
     dbInstance.exec(`

@@ -801,52 +801,41 @@ You must return valid JSON strictly conforming to this schema:
   ): Promise<{ script: ScriptStructure; fullNarration: string }> {
     const prompt = this.buildMasterPrompt(params);
 
-    let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(120000),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        },
-      }),
-    });
+    const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
+    let res: Response | null = null;
+    let lastError = '';
 
-    if (!res.ok) {
-      // Fallback with standard settings
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(120000),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.7,
-            maxOutputTokens: 8192,
+    for (const model of geminiModels) {
+      try {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          signal: AbortSignal.timeout(15000),
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      });
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.7,
+              maxOutputTokens: 8192,
+            },
+          }),
+        });
+
+        if (res.ok) break;
+        lastError = await res.text();
+      } catch (err: any) {
+        lastError = err.message;
+      }
     }
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Gemini API error (${res.status}): ${errText}`);
+    if (!res || !res.ok) {
+      throw new Error(`Gemini API error: ${lastError.substring(0, 200)}`);
     }
 
     const data = await res.json();

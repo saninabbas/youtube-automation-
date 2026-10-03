@@ -52,6 +52,25 @@ class BackgroundPublishingScheduler {
     };
 
     try {
+      // 0. Recover stranded video generation jobs (>3 mins in PENDING or PROCESSING without progress update)
+      const stuckPipelineThreshold = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const stuckPipelineProjects = db.prepare(
+        `SELECT id, current_stage FROM content_projects 
+         WHERE status IN ('PENDING', 'PROCESSING') AND updated_at < ?`
+      ).all(stuckPipelineThreshold) as Array<{ id: string; current_stage: string }>;
+
+      if (stuckPipelineProjects.length > 0) {
+        try {
+          const { videoWorker } = await import('../queue/worker');
+          for (const proj of stuckPipelineProjects) {
+            console.log(`[SchedulerSweeper] Resuming stranded pipeline for project ${proj.id} (Stage: ${proj.current_stage || 'SCRIPT'})...`);
+            videoWorker.startProjectPipeline(proj.id, (proj.current_stage as any) || 'SCRIPT');
+          }
+        } catch (err: any) {
+          console.error('[SchedulerSweeper] Failed to trigger videoWorker resume:', err.message);
+        }
+      }
+
       // 1. Recover stuck jobs (>15 mins in UPLOADING without completion)
       const stuckThresholdIso = new Date(Date.now() - 15 * 60 * 1000).toISOString();
       db.prepare(

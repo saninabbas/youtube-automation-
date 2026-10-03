@@ -42,13 +42,14 @@ export async function checkProvidersHealth(): Promise<ProviderHealthReport> {
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (geminiKey) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }] }),
+        signal: AbortSignal.timeout(5000),
       });
       if (res.ok) {
-        report.gemini = { status: 'CONFIGURED', details: 'Gemini 3.8 Flash API active and verified.' };
+        report.gemini = { status: 'CONFIGURED', details: 'Gemini 2.0 Flash API active and verified.' };
       } else {
         report.gemini = { status: 'FAILED', details: `Gemini API returned status ${res.status}: ${res.statusText}` };
       }

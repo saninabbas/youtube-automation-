@@ -8,34 +8,27 @@ async function executeAiLlmPrompt(systemPrompt: string, userPrompt: string): Pro
   // 1. Try Gemini
   const geminiKey = getApiKey('gemini');
   if (geminiKey) {
-    try {
-      let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`;
-      let res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
-        }),
-      });
-      if (!res.ok) {
-        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`;
-        res = await fetch(url, {
+    const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
+    for (const model of geminiModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+        const res = await fetch(url, {
           method: 'POST',
+          signal: AbortSignal.timeout(15000),
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
             generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
           }),
         });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text && text.trim()) return text.trim();
+        }
+      } catch (e: any) {
+        console.warn(`[Copilot] Gemini (${model}) error:`, e.message);
       }
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text && text.trim()) return text.trim();
-      }
-    } catch (e: any) {
-      console.warn('[Copilot] Gemini execution error:', e.message);
     }
   }
 
