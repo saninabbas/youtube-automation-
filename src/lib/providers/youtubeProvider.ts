@@ -53,7 +53,7 @@ class DefaultYouTubeProvider implements YouTubeProvider {
   }
 
   private get redirectUri(): string {
-    return process.env.GOOGLE_REDIRECT_URI || process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3000/api/auth/youtube/callback';
+    return process.env.GOOGLE_REDIRECT_URI || process.env.YOUTUBE_REDIRECT_URI || (process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback` : 'https://autora.live/api/auth/youtube/callback');
   }
 
   getAuthUrl(userId: string = DEFAULT_USER_ID): string | null {
