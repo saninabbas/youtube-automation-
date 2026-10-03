@@ -1,10 +1,26 @@
 import { ProjectMetadata, getApiKey } from '../db';
 import { resolveGlobalVisualStyle, applyGlobalStyleToPrompt } from '../video/visualStyles';
 
+export interface ProductionBible {
+  topic: string;
+  niche: string;
+  visualStyle: string;
+  protagonistOrAnchor: string;
+  primarySetting: string;
+  lightingAndMood: string;
+  colorGrade: string;
+  continuityNotes: string;
+}
+
 export interface ScriptStructure {
   title: string;
+  productionBible?: ProductionBible;
   hook: string;
+  hookVisualPrompt?: string;
+  hookVisualSubject?: string;
   introduction: string;
+  introVisualPrompt?: string;
+  introVisualSubject?: string;
   sections: Array<{
     heading: string;
     subsections: Array<{
@@ -21,7 +37,11 @@ export interface ScriptStructure {
     }>;
   }>;
   conclusion: string;
+  conclusionVisualPrompt?: string;
+  conclusionVisualSubject?: string;
   callToAction: string;
+  ctaVisualPrompt?: string;
+  ctaVisualSubject?: string;
 }
 
 export interface GeneratedScene {
@@ -67,6 +87,141 @@ export interface AiProvider {
     niche: string;
     topic: string;
   }): ProjectMetadata;
+}
+
+export function resolveProductionBible(topic: string, niche: string, visualStyle: string = 'Cinematic High-Contrast'): ProductionBible {
+  const cleanTopic = topic.trim();
+  const normalized = ` ${cleanTopic.toLowerCase().replace(/[^a-z0-9]/g, ' ')} `;
+  const hasAnyWord = (words: string[]) => words.some((w) => normalized.includes(` ${w} `));
+
+  let protagonistOrAnchor = 'A focused, articulate documentary presenter and subject domain specialist';
+  let primarySetting = `A modern architectural documentary studio with atmospheric ambient depth matching ${niche}`;
+  let lightingAndMood = 'Volumetric atmospheric directional rim lighting, deep shadows, shallow depth of field';
+  let colorGrade = 'Cinematic 35mm film grade with balanced natural contrast';
+
+  if (hasAnyWord(['ai', 'artificial intelligence', 'tech', 'technology', 'robot', 'robotics', 'neural', 'software', 'coding', 'computing', 'developer', 'algorithm', 'engineer', 'prompt', 'model'])) {
+    protagonistOrAnchor = 'A focused software engineer in a dark minimalist hoodie working at an advanced multi-monitor workstation with glowing neural network diagrams and Python code';
+    primarySetting = 'Cutting-edge technology research laboratory and modern developer workstation with dual 4K displays and ambient cyan LED lighting';
+    lightingAndMood = 'Dramatic cool cyan key light with warm amber rim light, high contrast, shallow depth of field';
+    colorGrade = 'Deep slate blacks, vibrant cyber cyan, warm amber accents';
+  } else if (hasAnyWord(['wealth', 'money', 'finance', 'invest', 'investing', 'investment', 'stocks', 'broke', 'rich', 'cashflow', 'dollars', 'trading', 'crypto', 'bitcoin', 'business', 'ecommerce', 'sales'])) {
+    protagonistOrAnchor = 'An ambitious modern strategist and investor reviewing quantitative analytics charts and financial dashboards';
+    primarySetting = 'Panoramic architectural glass executive high-rise suite overlooking a bustling urban financial skyline at dusk';
+    lightingAndMood = 'Golden hour directional sunlight through floor-to-ceiling glass, architectural shadows, soft ambient fill';
+    colorGrade = 'Rich obsidian navy, warm champagne gold, deep forest green accents';
+  } else if (hasAnyWord(['stoic', 'stoicism', 'mindset', 'marcus', 'seneca', 'epictetus', 'philosophy', 'discipline', 'habits', 'mental', 'overthinking', 'focus', 'psychology'])) {
+    protagonistOrAnchor = 'A disciplined, contemplative individual reflecting with calm composure, unwavering focus, and resolute posture';
+    primarySetting = 'Serene minimalist stone sanctuary and classical architectural colonnade with natural stone textures and open sky';
+    lightingAndMood = 'Atmospheric chiaroscuro low-key illumination, soft dawn light rays, deep contemplative shadows';
+    colorGrade = 'Earthy granite slate, warm terracotta, desaturated olive, muted bronze';
+  } else if (hasAnyWord(['space', 'galaxy', 'universe', 'astronomy', 'astrophysics', 'black hole', 'blackhole', 'nasa', 'cosmos', 'cosmic', 'planet', 'physics', 'telescope'])) {
+    protagonistOrAnchor = 'Breathtaking celestial deep-space phenomena, interstellar nebulae, and high-altitude astronomical research arrays';
+    primarySetting = 'Expansive cosmic deep-space vacuum with swirling stellar dust clouds, adjacent to a futuristic orbital observatory';
+    lightingAndMood = 'Bioluminescent stellar core glow, intense stellar contrasts against the pitch-black cosmic void';
+    colorGrade = 'Deep space obsidian, electric stellar sapphire, cosmic violet, radiant gold';
+  } else if (hasAnyWord(['health', 'healthy', 'wellness', 'longevity', 'vitality', 'cardio', 'fitness', 'exercise', 'aging', 'diet', 'nutrition', 'food', 'foods', 'eat'])) {
+    protagonistOrAnchor = 'A healthy high-performance athlete and wellness researcher optimizing human vitality and cellular nutrition';
+    primarySetting = 'State-of-the-art sports science performance laboratory and modern organic culinary research studio';
+    lightingAndMood = 'Bright crisp natural daylight, soft airy bounce, vibrant fresh highlights';
+    colorGrade = 'Vibrant emerald green, fresh citrus orange, pure clinical white, warm natural wood';
+  } else if (hasAnyWord(['car', 'cars', 'supercar', 'supercars', 'bmw', 'ferrari', 'lamborghini', 'porsche', 'tesla', 'driving', 'automotive', 'racing', 'engine', 'vehicle', 'speed'])) {
+    protagonistOrAnchor = 'A sculpted aerodynamic concept supercar with aerodynamic carbon fiber bodywork and glowing LED matrix headlights';
+    primarySetting = 'Modern aerodynamic wind-tunnel testing facility and scenic sunlit mountain highway curves at golden hour';
+    lightingAndMood = 'Reflective metallic specular highlights, twilight horizon glow, sleek wet asphalt reflections';
+    colorGrade = 'Glossy obsidian carbon, racing crimson, cobalt blue, warm exhaust amber';
+  } else if (hasAnyWord(['ocean', 'sea', 'marine', 'water', 'deepsea', 'nature', 'wildlife', 'animals', 'animal', 'forest', 'plants', 'trees'])) {
+    protagonistOrAnchor = 'Majestic marine wildlife and pristine natural wilderness environments captured in authentic documentary realism';
+    primarySetting = 'Expansive untamed coastal shoreline, bioluminescent oceanic depths, and lush emerald ancient forest';
+    lightingAndMood = 'Organic golden hour sunlight filtering through canopies, misty coastal atmospheric haze';
+    colorGrade = 'Deep abyssal indigo, lush moss green, golden sunlight, pristine ocean aquamarine';
+  } else if (hasAnyWord(['history', 'ancient', 'mystery', 'pyramid', 'civilization', 'war', 'empire', 'roman', 'medieval'])) {
+    protagonistOrAnchor = 'Historical exploration scholar examining ancient architectural relics, hand-drawn cartography, and stone inscriptions';
+    primarySetting = 'Grand historical archival chamber with aged parchment, stone monuments, and towering vaulted ceilings';
+    lightingAndMood = 'Dramatic shaft of sunlight penetrating ancient stone corridors, warm flickering torchlight';
+    colorGrade = 'Aged parchment amber, weathered sandstone, deep shadow umber, antique gold';
+  }
+
+  return {
+    topic: cleanTopic,
+    niche,
+    visualStyle,
+    protagonistOrAnchor,
+    primarySetting,
+    lightingAndMood,
+    colorGrade,
+    continuityNotes: `Consistent character identity (${protagonistOrAnchor}) and persistent environment (${primarySetting}) across all scenes`,
+  };
+}
+
+export function stageSceneVisual(params: {
+  narration: string;
+  sceneIndex: number;
+  sectionName: string;
+  bible: ProductionBible;
+  globalStyle: any;
+  customCamera?: string;
+}): {
+  prompt: string;
+  subject: string;
+  environment: string;
+  cameraMovement: string;
+  continuityNotes: string;
+} {
+  const { narration, sceneIndex, sectionName, bible, customCamera } = params;
+  const cleanNarration = (narration || '').replace(/\s+/g, ' ').trim();
+  const lower = cleanNarration.toLowerCase();
+
+  // Determine narrative emotional tone for visual staging
+  const isConflict = /fail|struggle|problem|mistake|overwhelm|frustrat|error|quit|risk|danger|crash|trap|crisis|collapse/i.test(lower);
+  const isBreakthrough = /breakthrough|solution|secret|win|master|unlock|succeed|growth|advantage|future|power|results|triumph/i.test(lower);
+  const isAnalysis = /data|analyze|system|framework|code|algorithm|metric|process|mechanic|logic|science|research|test/i.test(lower);
+
+  let cameraMovement = customCamera || 'Slow linear forward push-in with centered focus';
+  if (!customCamera) {
+    if (sceneIndex === 1) {
+      cameraMovement = 'Dramatic slow forward push-in focusing tightly on subject tension';
+    } else if (sceneIndex === 2) {
+      cameraMovement = 'Smooth wide-angle horizontal tracking shot establishing the environment';
+    } else if (isConflict) {
+      cameraMovement = 'Intense medium close-up with shallow focus and subtle camera tension';
+    } else if (isBreakthrough) {
+      cameraMovement = 'Dynamic upward tilt and smooth forward glide with expanding perspective';
+    } else if (isAnalysis) {
+      cameraMovement = 'Steady cinematic tracking dolly glide revealing intricate technical details';
+    } else {
+      cameraMovement = 'Cinematic forward dolly with smooth depth separation';
+    }
+  }
+
+  // Extract a concise narrative sentence for the prompt
+  const firstSentence = cleanNarration.split(/[.!?]/)[0]?.trim() || cleanNarration.slice(0, 80);
+
+  // Formulate a concrete physical action
+  let visualAction = '';
+  if (sceneIndex === 1) {
+    visualAction = `facing the high-stakes reality: "${firstSentence}", experiencing intense dramatic focus`;
+  } else if (isConflict) {
+    visualAction = `confronting critical obstacles and complex challenges regarding "${firstSentence}", tension visible in expression and surroundings`;
+  } else if (isBreakthrough) {
+    visualAction = `demonstrating the winning breakthrough: "${firstSentence}", triumphant confident posture and visible mastery`;
+  } else if (isAnalysis) {
+    visualAction = `deeply engaged in strategic execution and detailed technical analysis: "${firstSentence}", interactive tools and data displayed`;
+  } else {
+    visualAction = `actively working through: "${firstSentence}", seamless professional mastery`;
+  }
+
+  const prompt = `${bible.protagonistOrAnchor} ${visualAction}, set inside ${bible.primarySetting}. ${cameraMovement}. ${bible.lightingAndMood}. ${bible.colorGrade}. 35mm anamorphic lens, shallow depth of field, 8k resolution, photorealistic film still, vertical 9:16 composition.`;
+
+  const subject = `${bible.protagonistOrAnchor.split(' ').slice(0, 6).join(' ')} - ${sectionName}`;
+  const continuityNotes = `Scene ${sceneIndex} maintains character identity (${bible.protagonistOrAnchor.slice(0, 35)}...) and persistent environment (${bible.primarySetting.slice(0, 35)}...)`;
+
+  return {
+    prompt,
+    subject,
+    environment: bible.primarySetting,
+    cameraMovement,
+    continuityNotes,
+  };
 }
 
 class DefaultAiProvider implements AiProvider {
@@ -153,66 +308,70 @@ class DefaultAiProvider implements AiProvider {
   }): Promise<GeneratedScene[]> {
     const { script, niche, visualStyle = 'Cinematic High-Contrast' } = params;
     const globalStyle = resolveGlobalVisualStyle(visualStyle);
+    const bible = script.productionBible || resolveProductionBible(script.title, niche, visualStyle);
     const scenes: GeneratedScene[] = [];
     let sceneIndex = 1;
 
-    // Scene 1: Hook (First 3-5 seconds high-retention visual hook)
+    // Scene 1: Hook (High-stakes dramatic visual staging directly illustrating the hook narration)
     const hookWords = script.hook.split(/\s+/).filter(Boolean).length;
     const hookDuration = Math.max(6, Math.round(hookWords / 2.3));
-    const hookCameraMovement = 'Slow linear forward push-in with centered focus';
-    const hookEnvironment = `Modern documentary studio with atmospheric ambient depth matching ${niche}`;
-    const rawHookPrompt = `High-impact cinematic opening visual for ${script.title}, ${niche} aesthetic, 4k ultra realistic`;
-    const hookPrompt = applyGlobalStyleToPrompt(rawHookPrompt, globalStyle, {
-      isHook: true,
-      niche,
-      environment: hookEnvironment,
-      cameraMovement: hookCameraMovement,
+    const hookStaging = stageSceneVisual({
+      narration: script.hook,
+      sceneIndex,
+      sectionName: 'Hook',
+      bible,
+      globalStyle,
     });
+    const hookPrompt = script.hookVisualPrompt && !script.hookVisualPrompt.startsWith('High-impact')
+      ? script.hookVisualPrompt
+      : hookStaging.prompt;
 
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Hook',
       narration: script.hook,
       visualPrompt: hookPrompt,
-      visualSubject: `High-impact visual representation of ${script.title}`,
-      environment: hookEnvironment,
-      cameraMovement: hookCameraMovement,
-      lighting: globalStyle.dna.lighting,
-      colorStyle: globalStyle.dna.colorPalette,
-      continuityNotes: `Establishes primary ${globalStyle.name} color grade and atmospheric tone for the entire video`,
+      visualSubject: script.hookVisualSubject || hookStaging.subject,
+      environment: hookStaging.environment,
+      cameraMovement: hookStaging.cameraMovement,
+      lighting: bible.lightingAndMood,
+      colorStyle: bible.colorGrade,
+      continuityNotes: `Establishes core visual anchor (${bible.protagonistOrAnchor.slice(0, 45)}...) and primary setting (${bible.primarySetting.slice(0, 45)}...)`,
       estimatedDurationSec: hookDuration,
       subtitleText: script.hook,
     });
 
-    // Scene 2: Introduction
+    // Scene 2: Introduction (Smooth transition establishing the narrative arc in the primary setting)
     const introWords = script.introduction.split(/\s+/).filter(Boolean).length;
     const introDuration = Math.max(10, Math.round(introWords / 2.3));
-    const introCameraMovement = 'Gentle wide-angle horizontal tracking glide';
-    const introEnvironment = `Expansive cinematic space matching ${niche} domain`;
-    const rawIntroPrompt = `Wide cinematic shot establishing context for ${script.title}, ${niche} aesthetic`;
-    const introPrompt = applyGlobalStyleToPrompt(rawIntroPrompt, globalStyle, {
-      isHook: false,
-      niche,
-      environment: introEnvironment,
-      cameraMovement: introCameraMovement,
+    const introStaging = stageSceneVisual({
+      narration: script.introduction,
+      sceneIndex,
+      sectionName: 'Introduction',
+      bible,
+      globalStyle,
+      customCamera: 'Smooth wide-angle horizontal tracking shot revealing the environment',
     });
+    const introPrompt = script.introVisualPrompt && !script.introVisualPrompt.startsWith('Wide cinematic')
+      ? script.introVisualPrompt
+      : introStaging.prompt;
 
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Introduction',
       narration: script.introduction,
       visualPrompt: introPrompt,
-      visualSubject: `Contextual thematic overview of ${script.title}`,
-      environment: introEnvironment,
-      cameraMovement: introCameraMovement,
-      lighting: globalStyle.dna.lighting,
-      colorStyle: globalStyle.dna.colorPalette,
-      continuityNotes: `Expands perspective from Scene 1 while maintaining cohesive ${globalStyle.name} visual DNA`,
+      visualSubject: script.introVisualSubject || introStaging.subject,
+      environment: introStaging.environment,
+      cameraMovement: introStaging.cameraMovement,
+      lighting: bible.lightingAndMood,
+      colorStyle: bible.colorGrade,
+      continuityNotes: `Maintains character and environment continuity from Scene 1 while broadening perspective`,
       estimatedDurationSec: introDuration,
       subtitleText: script.introduction,
     });
 
-    // Section Scenes with Visual Continuity and Exact Narration Segment Mapping
+    // Section Scenes: Story progression with explicit visual-narration synchronization and persistent anchors
     for (let sIdx = 0; sIdx < script.sections.length; sIdx++) {
       const section = script.sections[sIdx];
       for (let subIdx = 0; subIdx < section.subsections.length; subIdx++) {
@@ -220,94 +379,98 @@ class DefaultAiProvider implements AiProvider {
         const words = sub.narration.split(/\s+/).filter(Boolean).length;
         const duration = sub.durationSec || Math.max(8, Math.round(words / 2.3));
 
-        const prevEnv = subIdx > 0 ? section.subsections[subIdx - 1].environment : 'Consistent documentary context';
-        const camMovements = [
-          'Steady forward dolly glide with subtle depth shift',
-          'Smooth horizontal parallax tracking shot',
-          'Macro focus pull revealing intricate technical detail',
-          'Elevated medium angle with atmospheric lighting sweep',
-          'Centered cinematic framing with slow zoom',
-        ];
-        const cameraMovement = sub.cameraMovement || camMovements[(sIdx + subIdx) % camMovements.length];
-        const environment = sub.environment || `${niche} specific environment, ${globalStyle.name}`;
-
-        const rawPrompt = sub.visualPrompt || `Detailed visual representation of ${sub.subheading}, ${niche} context, smooth motion`;
-        const visualPrompt = applyGlobalStyleToPrompt(rawPrompt, globalStyle, {
-          isHook: false,
-          niche,
-          environment,
-          cameraMovement,
+        const subStaging = stageSceneVisual({
+          narration: sub.narration,
+          sceneIndex,
+          sectionName: `${section.heading} - ${sub.subheading}`,
+          bible,
+          globalStyle,
+          customCamera: sub.cameraMovement,
         });
+
+        const hasValidCustomPrompt = sub.visualPrompt &&
+          !sub.visualPrompt.startsWith('Detailed visual') &&
+          !sub.visualPrompt.startsWith('Cinematic photorealistic 8k visualization of Part') &&
+          sub.visualPrompt.length > 30;
+
+        const visualPrompt = hasValidCustomPrompt ? sub.visualPrompt : subStaging.prompt;
+        const visualSubject = sub.visualSubject && !sub.visualSubject.startsWith('High-impact')
+          ? sub.visualSubject
+          : subStaging.subject;
 
         scenes.push({
           sceneIndex: sceneIndex++,
           sectionName: `${section.heading} - ${sub.subheading}`,
           narration: sub.narration,
           visualPrompt,
-          visualSubject: sub.visualSubject || sub.subheading,
-          environment,
-          cameraMovement,
-          lighting: sub.lighting || globalStyle.dna.lighting,
-          colorStyle: sub.colorStyle || globalStyle.dna.colorPalette,
-          continuityNotes: sub.continuityNotes || `Maintains lighting and environmental palette from previous scene (${prevEnv})`,
+          visualSubject,
+          environment: sub.environment || subStaging.environment,
+          cameraMovement: sub.cameraMovement || subStaging.cameraMovement,
+          lighting: sub.lighting || bible.lightingAndMood,
+          colorStyle: sub.colorStyle || bible.colorGrade,
+          continuityNotes: sub.continuityNotes || subStaging.continuityNotes,
           estimatedDurationSec: duration,
           subtitleText: sub.narration,
         });
       }
     }
 
-    // Conclusion Scene
+    // Conclusion Scene (Inspiring resolution shot featuring the visual anchor in the primary setting)
     const conclWords = script.conclusion.split(/\s+/).filter(Boolean).length;
     const conclDuration = Math.max(10, Math.round(conclWords / 2.3));
-    const conclCamera = 'Slow wide-angle pull-out revealing grand scale';
-    const conclEnv = `Panoramic wide environment reflecting positive culmination in ${niche}`;
-    const rawConclPrompt = `Inspiring wide perspective closing shot summarizing ${script.title}, warm atmospheric glow`;
-    const conclPrompt = applyGlobalStyleToPrompt(rawConclPrompt, globalStyle, {
-      isHook: false,
-      niche,
-      environment: conclEnv,
-      cameraMovement: conclCamera,
+    const conclStaging = stageSceneVisual({
+      narration: script.conclusion,
+      sceneIndex,
+      sectionName: 'Conclusion',
+      bible,
+      globalStyle,
+      customCamera: 'Expansive wide-angle pull-out revealing full environment mastery',
     });
+    const conclPrompt = script.conclusionVisualPrompt && !script.conclusionVisualPrompt.startsWith('Inspiring wide')
+      ? script.conclusionVisualPrompt
+      : conclStaging.prompt;
 
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Conclusion',
       narration: script.conclusion,
       visualPrompt: conclPrompt,
-      visualSubject: `Synthesis and summary visualization for ${script.title}`,
-      environment: conclEnv,
-      cameraMovement: conclCamera,
-      lighting: globalStyle.dna.lighting,
-      colorStyle: globalStyle.dna.colorPalette,
-      continuityNotes: `Culmination of visual motifs, resolving into expansive wide shot`,
+      visualSubject: script.conclusionVisualSubject || conclStaging.subject,
+      environment: conclStaging.environment,
+      cameraMovement: conclStaging.cameraMovement,
+      lighting: bible.lightingAndMood,
+      colorStyle: bible.colorGrade,
+      continuityNotes: `Culmination of narrative arc, celebrating mastery in primary setting`,
       estimatedDurationSec: conclDuration,
       subtitleText: script.conclusion,
     });
 
-    // Call To Action Scene
+    // Call To Action Scene (Clean authoritative outro in the established setting)
     const ctaWords = script.callToAction.split(/\s+/).filter(Boolean).length;
     const ctaDuration = Math.max(6, Math.round(ctaWords / 2.3));
-    const ctaCamera = 'Subtle linear forward drift with elegant graphic overlay';
-    const ctaEnv = `Clean minimalist branded visual canvas in ${niche}`;
-    const rawCtaPrompt = `Sleek branded outro visual with subtle motion, subscription and notification invitation, clean minimalist style`;
-    const ctaPrompt = applyGlobalStyleToPrompt(rawCtaPrompt, globalStyle, {
-      isHook: false,
-      niche,
-      environment: ctaEnv,
-      cameraMovement: ctaCamera,
+    const ctaStaging = stageSceneVisual({
+      narration: script.callToAction,
+      sceneIndex,
+      sectionName: 'Call To Action',
+      bible,
+      globalStyle,
+      customCamera: 'Centered linear forward glide with clean graphic framing',
     });
+    const ctaPrompt = script.ctaVisualPrompt && !script.ctaVisualPrompt.startsWith('Sleek branded')
+      ? script.ctaVisualPrompt
+      : ctaStaging.prompt;
 
     scenes.push({
       sceneIndex: sceneIndex++,
       sectionName: 'Call To Action',
       narration: script.callToAction,
       visualPrompt: ctaPrompt,
-      visualSubject: `Branded channel outro graphic and engagement callout`,
-      environment: ctaEnv,
-      cameraMovement: ctaCamera,
-      lighting: globalStyle.dna.lighting,
-      colorStyle: globalStyle.dna.colorPalette,
-      continuityNotes: `Transitions smoothly from cinematic conclusion to clean outro slate`,
+      visualSubject: script.ctaVisualSubject || `Branded Channel Outro - ${params.script.title}`,
+      environment: ctaStaging.environment,
+      cameraMovement: ctaStaging.cameraMovement,
+      lighting: bible.lightingAndMood,
+      colorStyle: bible.colorGrade,
+      continuityNotes: `Transitions smoothly from cinematic conclusion into clean branded closing frame`,
       estimatedDurationSec: ctaDuration,
       subtitleText: script.callToAction,
     });
@@ -495,6 +658,7 @@ class DefaultAiProvider implements AiProvider {
       },
     ];
 
+    const bible = resolveProductionBible(cleanTopic, niche, visualStyle);
     const pillars = generateTopicPillars(cleanTopic, niche, domainFocus);
 
     const sections = [];
@@ -514,31 +678,34 @@ class DefaultAiProvider implements AiProvider {
       const sub1Duration = Math.max(8, Math.round((sectionDuration / 2) * 10) / 10);
       const sub2Duration = Math.max(8, Math.round((sectionDuration / 2) * 10) / 10);
 
+      const prompt1 = `${bible.protagonistOrAnchor} deeply engaged in ${p.sub1}: analyzing the core foundation of ${cleanTopic}, inside ${bible.primarySetting}. Slow steady cinematic push-in with shallow depth of field. ${bible.lightingAndMood}. ${bible.colorGrade}. 35mm anamorphic lens, 8k resolution, photorealistic film still, vertical 9:16.`;
+      const prompt2 = `${bible.protagonistOrAnchor} executing ${p.sub2}: demonstrating critical mechanics of ${cleanTopic}, inside ${bible.primarySetting}. Smooth horizontal parallax tracking glide. ${bible.lightingAndMood}. ${bible.colorGrade}. 35mm anamorphic lens, 8k resolution, photorealistic film still, vertical 9:16.`;
+
       sections.push({
         heading: `Part ${partNum}: ${p.title}`,
         subsections: [
           {
             subheading: p.sub1,
             narration: narrationA,
-            visualPrompt: `Cinematic photorealistic 8k visualization of ${p.title} - ${p.sub1}, focusing on ${p.subject}, ${visualStyle} lighting, ${defaultEnv}, 35mm anamorphic lens, volumetric atmospheric depth`,
-            visualSubject: p.subject,
-            environment: defaultEnv,
+            visualPrompt: prompt1,
+            visualSubject: `${cleanTopic} - ${p.sub1}`,
+            environment: bible.primarySetting,
             cameraMovement: 'Slow steady cinematic push-in with shallow depth of field',
-            lighting: 'Dramatic directional studio rim lighting with volumetric haze',
-            colorStyle: `${visualStyle} color grade`,
-            continuityNotes: `Establishes dramatic visual continuity for Part ${partNum}`,
+            lighting: bible.lightingAndMood,
+            colorStyle: bible.colorGrade,
+            continuityNotes: `Establishes dramatic visual continuity for Part ${partNum} featuring ${bible.protagonistOrAnchor.slice(0, 35)}...`,
             durationSec: sub1Duration,
           },
           {
             subheading: p.sub2,
             narration: narrationB,
-            visualPrompt: `High-impact cinematic shot depicting ${p.sub2}, ${p.subject}, atmospheric haze, photorealistic documentary style, ${visualStyle}`,
-            visualSubject: p.subject,
-            environment: defaultEnv,
+            visualPrompt: prompt2,
+            visualSubject: `${cleanTopic} - ${p.sub2}`,
+            environment: bible.primarySetting,
             cameraMovement: 'Smooth horizontal parallax tracking glide',
-            lighting: 'High-contrast cinematic illumination with deep atmospheric shadows',
-            colorStyle: `${visualStyle} palette`,
-            continuityNotes: `Direct continuous transition from ${p.sub1}`,
+            lighting: bible.lightingAndMood,
+            colorStyle: bible.colorGrade,
+            continuityNotes: `Direct continuous transition from ${p.sub1} inside ${bible.primarySetting.slice(0, 35)}...`,
             durationSec: sub2Duration,
           },
         ],
@@ -557,13 +724,27 @@ class DefaultAiProvider implements AiProvider {
       ? `Understanding ${cleanTopic} is the key to mastering ${niche}. Apply these principles today.`
       : `The analysis of ${cleanTopic} proves how rapidly ${niche} is evolving. By understanding these core mechanisms, you stay ahead of the curve and position yourself for long-term success.`;
 
+    const hookPrompt = `${bible.protagonistOrAnchor} confronting the pivotal reality of ${cleanTopic}, intense focused expression, set inside ${bible.primarySetting}. Dramatic slow forward push-in. ${bible.lightingAndMood}. ${bible.colorGrade}. 35mm anamorphic lens, 8k resolution, photorealistic, vertical 9:16.`;
+    const introPrompt = `${bible.protagonistOrAnchor} introducing the masterclass framework on ${cleanTopic}, inside ${bible.primarySetting}. Wide-angle horizontal tracking glide. ${bible.lightingAndMood}. ${bible.colorGrade}. 35mm anamorphic lens, 8k resolution, vertical 9:16.`;
+    const conclPrompt = `${bible.protagonistOrAnchor} achieving mastery in ${cleanTopic}, confident resolute posture, inside ${bible.primarySetting}. Expansive wide-angle pull-out. Warm triumphant golden rim lighting. 35mm anamorphic lens, 8k resolution, vertical 9:16.`;
+    const ctaPrompt = `${bible.protagonistOrAnchor} looking toward camera with engaging invitation, inside ${bible.primarySetting}. Centered linear forward glide. Sleek broadcast framing. 35mm lens, vertical 9:16.`;
+
     return {
       title: cleanTopic,
+      productionBible: bible,
       hook: hookText,
+      hookVisualPrompt: hookPrompt,
+      hookVisualSubject: `${cleanTopic} - Opening Hook`,
       introduction: introText,
+      introVisualPrompt: introPrompt,
+      introVisualSubject: `${cleanTopic} - Thematic Introduction`,
       sections,
       conclusion: conclusionText,
+      conclusionVisualPrompt: conclPrompt,
+      conclusionVisualSubject: `${cleanTopic} - Narrative Climax`,
       callToAction: ctaText,
+      ctaVisualPrompt: ctaPrompt,
+      ctaVisualSubject: `${cleanTopic} - Outro Call to Action`,
     };
   }
 
@@ -680,8 +861,22 @@ CRITICAL NARRATIVE CONTINUITY & SCENE COHESION RULES (MANDATORY FOR COMMERCIAL S
 You must return valid JSON strictly conforming to this schema:
 {
   "title": "${params.topic}",
+  "productionBible": {
+    "topic": "${params.topic}",
+    "niche": "${params.niche}",
+    "visualStyle": "${params.visualStyle || 'Cinematic'}",
+    "protagonistOrAnchor": "Detailed description of consistent visual subject or protagonist (e.g. 'Focused software engineer in a dark minimalist hoodie')",
+    "primarySetting": "Detailed recurring primary location/setting (e.g. 'Modern AI engineering laboratory with dual 4K monitors and ambient cyan lighting')",
+    "lightingAndMood": "Volumetric atmospheric rim lighting with shallow depth of field",
+    "colorGrade": "Consistent 35mm film color palette",
+    "continuityNotes": "Consistent character and location maintained across all scenes"
+  },
   "hook": "High-impact opening hook (~30-50 words)",
+  "hookVisualPrompt": "Concrete physical opening scene showing protagonistOrAnchor in primarySetting, 35mm film still, 8k photorealistic",
+  "hookVisualSubject": "Main subject in motion",
   "introduction": "Compelling narrative bridge into the story (~40-60 words)",
+  "introVisualPrompt": "Concrete physical establishing scene in primarySetting, 35mm film still, 8k photorealistic",
+  "introVisualSubject": "Main subject in motion",
   "sections": [
     {
       "heading": "Act / Chapter Title",
@@ -689,20 +884,24 @@ You must return valid JSON strictly conforming to this schema:
         {
           "subheading": "Scene Specific Title",
           "narration": "Deep narrative spoken text with transitional bridge (~80-120 words)...",
-          "visualPrompt": "Detailed cinematic visual prompt specifically depicting this moment of ${params.topic}, ${params.visualStyle || 'Cinematic'}, 4k photo",
+          "visualPrompt": "Concrete physical scene directly illustrating THIS narration, keeping protagonistOrAnchor in primarySetting, 35mm film still, 8k photorealistic",
           "visualSubject": "Main subject in motion",
-          "environment": "Physical cinematic setting",
+          "environment": "Consistent primarySetting",
           "cameraMovement": "Slow cinematic forward dolly / tracking glide",
           "lighting": "Atmospheric dramatic lighting matching the mood",
           "colorStyle": "${params.visualStyle || 'Cinematic'} color palette",
-          "continuityNotes": "Matches color grade and visual motif from preceding scene",
+          "continuityNotes": "Matches character and location from preceding scene",
           "durationSec": 30
         }
       ]
     }
   ],
   "conclusion": "Resonant philosophical or practical summary (~40-60 words)",
-  "callToAction": "Natural subscriber call to action for ${params.channelName} (~30-50 words)"
+  "conclusionVisualPrompt": "Concrete physical climax / resolution scene in primarySetting, 35mm film still, 8k photorealistic",
+  "conclusionVisualSubject": "Main subject in motion",
+  "callToAction": "Natural subscriber call to action for ${params.channelName} (~30-50 words)",
+  "ctaVisualPrompt": "Clean cinematic outro scene in primarySetting",
+  "ctaVisualSubject": "Main subject in motion"
 }`;
   }
 

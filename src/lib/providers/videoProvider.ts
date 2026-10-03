@@ -150,7 +150,7 @@ class DefaultVideoProvider implements VideoProvider {
       return 'FAL.ai AI Video Engine (Wan 2.1 / Kling / LTX)';
     }
     if (hasCloudflare) {
-      return 'Cloudflare Generative AI Engine (Flux 1 Schnell & Leonardo Phoenix — Real-Time AI Synthesis)';
+      return 'Cloudflare Generative AI Engine (SDXL-Lightning & Flux 1 Schnell — Real-Time AI Synthesis)';
     }
     if (openaiVideoProvider.isConfigured()) {
       return 'OpenAI Video Engine (Sora / OpenAI Video Generation)';
@@ -235,7 +235,9 @@ class DefaultVideoProvider implements VideoProvider {
 
       // Generate distinct visual prompt variation for each sub-clip
       const cameraSubStyle = subClipAngles[(sceneIndex + cIdx) % subClipAngles.length];
-      const subPrompt = `${visualPrompt} | Sub-clip ${cIdx + 1} (${cameraSubStyle}) | Environment: ${environment || niche} | Lighting: ${lighting || 'Studio'}`;
+      const subPrompt = cIdx === 0
+        ? visualPrompt
+        : `${visualPrompt}, shot variation: ${cameraSubStyle}`;
 
       await this.generateVideoClip({
         prompt: subPrompt,
@@ -245,14 +247,15 @@ class DefaultVideoProvider implements VideoProvider {
         clipIndex: cIdx + 1,
         niche,
         visualStyle,
-        cameraMovement,
+        cameraMovement: cameraSubStyle,
         lighting,
         colorStyle,
         continuityNotes,
         aspectRatio,
         projectId,
         sceneId,
-      });
+        topic: (params as any).topic,
+      } as any);
 
       clips.push({
         clipIndex: cIdx + 1,
@@ -447,9 +450,9 @@ class DefaultVideoProvider implements VideoProvider {
 
 
     // ============================================================
-    // AI VISUAL SYNTHESIZER (Fallback: AI Prompt Image + Ken Burns Motion)
+    // AI VISUAL SYNTHESIZER (AI Prompt Image + Ken Burns Motion)
     // ============================================================
-    // 2. Try Generating Real AI Visuals via Cloudflare Workers AI (Flux 1 Schnell & SDXL Lightning)
+    // 2. Try Generating Real AI Visuals via Cloudflare Workers AI (SDXL Lightning & Flux 1 Schnell)
     const cfToken = getApiKey('cloudflare_api_token') || process.env.CLOUDFLARE_API_TOKEN;
     const cfAccountId = getApiKey('cloudflare_account_id') || process.env.CLOUDFLARE_ACCOUNT_ID;
 
@@ -457,72 +460,86 @@ class DefaultVideoProvider implements VideoProvider {
     const tempDir = path.dirname(outputPath);
     const rand = Math.random().toString(36).substring(2, 7);
     const tempAiImgPath = path.join(tempDir, `cf_img_${sceneIndex}_${clipIndex}_${rand}.jpg`);
-    const enhancedPrompt = `${cleanPrompt}, cinematic 4k photo, vertical 9:16 composition, hyperrealistic, award winning photography, 8k resolution, photorealistic, 35mm film still, cinematic lighting, volumetric atmosphere, detailed textures`;
+    const enhancedPrompt = cleanPrompt.includes('photorealistic')
+      ? cleanPrompt
+      : `${cleanPrompt}, 8k resolution, photorealistic film still, 35mm lens, vertical 9:16 composition, cinematic lighting`;
 
-    // 2a. Attempt Cloudflare Workers AI Flux 1 Schnell (State of the Art Photorealism)
+    // 2a. Attempt Cloudflare Workers AI: SDXL Lightning (Ultra-fast ~1.5s, sharp, highly reliable)
     if (cfToken && cfAccountId) {
       try {
-        console.log(`[VideoProvider] Generating AI visual for Scene ${sceneIndex} using Cloudflare Flux 1 Schnell...`);
-        const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, {
+        console.log(`[VideoProvider] 🎨 Generating AI visual for Scene ${sceneIndex} using Cloudflare SDXL-Lightning...`);
+        const sdxlRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning`, {
           method: 'POST',
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Authorization': `Bearer ${cfToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ prompt: enhancedPrompt }),
+          body: JSON.stringify({
+            prompt: enhancedPrompt,
+            num_steps: 8,
+          }),
         });
 
-        if (res.ok) {
-          const data: any = await res.json();
-          if (data.result?.image) {
-            const imgBuf = Buffer.from(data.result.image, 'base64');
-            await fs.promises.writeFile(tempAiImgPath, imgBuf);
-            generatedAiImage = true;
-            console.log(`[VideoProvider] Flux 1 Schnell image generated successfully for Scene ${sceneIndex}`);
-          }
-        }
-
-        if (!generatedAiImage) {
-          // 2b. Fallback to Cloudflare Leonardo Phoenix 1.0
-          console.log(`[VideoProvider] Trying Cloudflare Leonardo Phoenix for Scene ${sceneIndex}...`);
-          const leoRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/leonardo/phoenix-1.0`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${cfToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: enhancedPrompt }),
-          });
-          if (leoRes.ok) {
-            const ab = await leoRes.arrayBuffer();
-            if (ab.byteLength > 5000) {
-              await fs.promises.writeFile(tempAiImgPath, Buffer.from(ab));
+        if (sdxlRes.ok) {
+          const ct = sdxlRes.headers.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const data: any = await sdxlRes.json();
+            if (data.result?.image) {
+              const imgBuf = Buffer.from(data.result.image, 'base64');
+              await fs.promises.writeFile(tempAiImgPath, imgBuf);
               generatedAiImage = true;
-              console.log(`[VideoProvider] Leonardo Phoenix visual generated for Scene ${sceneIndex}`);
+              console.log(`[VideoProvider] ✅ SDXL-Lightning visual generated successfully for Scene ${sceneIndex}`);
             }
-          }
-        }
-
-        if (!generatedAiImage) {
-          // 2c. Fallback to SDXL-Lightning
-          const sdxlRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${cfToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: enhancedPrompt }),
-          });
-          if (sdxlRes.ok) {
+          } else {
             const ab = await sdxlRes.arrayBuffer();
             if (ab.byteLength > 5000) {
               await fs.promises.writeFile(tempAiImgPath, Buffer.from(ab));
               generatedAiImage = true;
+              console.log(`[VideoProvider] ✅ SDXL-Lightning raw image generated successfully (${ab.byteLength} bytes) for Scene ${sceneIndex}`);
             }
           }
         }
-      } catch (cfErr: any) {
-        console.warn(`[VideoProvider] Cloudflare AI Image generation error (${cfErr.message}).`);
+      } catch (sdxlErr: any) {
+        console.warn(`[VideoProvider] SDXL-Lightning error (${sdxlErr.message}). Trying Flux 1 Schnell...`);
+      }
+
+      // 2b. Fallback to Cloudflare Flux 1 Schnell if SDXL was not produced
+      if (!generatedAiImage) {
+        try {
+          console.log(`[VideoProvider] 🎨 Generating AI visual for Scene ${sceneIndex} using Cloudflare Flux 1 Schnell...`);
+          const fluxRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(10000),
+            headers: {
+              'Authorization': `Bearer ${cfToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: enhancedPrompt }),
+          });
+
+          if (fluxRes.ok) {
+            const ct = fluxRes.headers.get('content-type') || '';
+            if (ct.includes('application/json')) {
+              const data: any = await fluxRes.json();
+              if (data.result?.image) {
+                const imgBuf = Buffer.from(data.result.image, 'base64');
+                await fs.promises.writeFile(tempAiImgPath, imgBuf);
+                generatedAiImage = true;
+                console.log(`[VideoProvider] ✅ Flux 1 Schnell image generated successfully for Scene ${sceneIndex}`);
+              }
+            } else {
+              const ab = await fluxRes.arrayBuffer();
+              if (ab.byteLength > 5000) {
+                await fs.promises.writeFile(tempAiImgPath, Buffer.from(ab));
+                generatedAiImage = true;
+                console.log(`[VideoProvider] ✅ Flux 1 Schnell raw image generated for Scene ${sceneIndex}`);
+              }
+            }
+          }
+        } catch (fluxErr: any) {
+          console.warn(`[VideoProvider] Flux 1 Schnell error (${fluxErr.message}). Trying Pollinations...`);
+        }
       }
     }
 
@@ -537,7 +554,7 @@ class DefaultVideoProvider implements VideoProvider {
           if (arrayBuf.byteLength > 5000) {
             await fs.promises.writeFile(tempAiImgPath, Buffer.from(arrayBuf));
             generatedAiImage = true;
-            console.log(`[VideoProvider] Pollinations AI image generated for Scene ${sceneIndex}`);
+            console.log(`[VideoProvider] ✅ Pollinations AI image generated for Scene ${sceneIndex}`);
           }
         }
       } catch (polliErr: any) {
@@ -606,7 +623,8 @@ class DefaultVideoProvider implements VideoProvider {
     // 3. Fallback: Search Stock Video Footage ONLY if AI generation failed
     try {
       const { stockVideoEngine } = await import('./stockVideoProvider');
-      const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche);
+      const topicParam = (params as any).topic;
+      const keywords = stockVideoEngine.extractSearchKeywords(cleanPrompt, niche, topicParam);
       const clipOffset = (sceneIndex * 3) + clipIndex;
       const stockAspectRatio: '9:16' | '16:9' = aspectRatio === '16:9' ? '16:9' : '9:16';
       const stockVideoUrl = await stockVideoEngine.findStockVideo(keywords, clipOffset, stockAspectRatio);

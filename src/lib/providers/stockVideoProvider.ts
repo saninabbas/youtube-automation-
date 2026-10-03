@@ -20,30 +20,44 @@ export class StockVideoEngine {
   }
 
   // Extract clean keywords for video search from visual prompt
-  public extractSearchKeywords(prompt: string, niche: string): string[] {
+  public extractSearchKeywords(prompt: string, niche: string, topic?: string): string[] {
+    const metaWordsRegex = /\b(scene|clip|shot|high|impact|definition|cinematic|lighting|context|modern|ultra|resolution|8k|4k|photo|photography|visual|style|contrast|focus|view|background|foreground|immediate|opening|wide|sub|angles|angle|establishing|detailed|dynamic|centering|push|pull|glide|representation|overview|breakdown|part|look|closely|leads|directly|realistic|atmospheric|ambient|aesthetic|depth|matching|consistent|smooth|motion|transition|transitions|subject|element|elements|reveals|understanding|foundation|illustrating|depicting|showing|focusing|dramatic|slow|steady|tracking|anamorphic|lens|volumetric|haze|rim|illumination|key|fill|color|palette|grade|grade|camera|movement|studio|space)\b/gi;
+
     const clean = prompt
-      .toLowerCase()
+      .replace(metaWordsRegex, ' ')
       .replace(/[^a-zA-Z0-9\s]/g, ' ')
-      .replace(/\b(scene|clip|shot|high|definition|cinematic|lighting|context|modern|ultra|resolution|8k|4k|photo|photography|visual|style|contrast|focus|view|background|foreground)\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    const words = clean.split(' ').filter((w) => w.length > 3);
+    const words = clean.toLowerCase().split(' ').filter((w) => w.length > 3);
     const candidates: string[] = [];
 
-    // 1. Two-word keyword phrase
+    // If topic is provided, prioritize key subject nouns from the topic
+    if (topic) {
+      const cleanTopic = topic.replace(/[^a-zA-Z0-9\s]/g, ' ').toLowerCase();
+      const topicWords = cleanTopic.split(/\s+/).filter(w => w.length > 3 && !metaWordsRegex.test(w));
+      if (topicWords.length >= 2) {
+        candidates.push(`${topicWords[0]} ${topicWords[1]}`);
+      }
+      for (const tw of topicWords.slice(0, 2)) {
+        if (!candidates.includes(tw)) candidates.push(tw);
+      }
+    }
+
+    // 1. Two-word keyword phrase from cleaned prompt
     if (words.length >= 2) {
-      candidates.push(`${words[0]} ${words[1]}`);
+      const phrase = `${words[0]} ${words[1]}`;
+      if (!candidates.includes(phrase)) candidates.push(phrase);
     }
 
     // 2. Single core keywords
     for (const w of words.slice(0, 3)) {
-      candidates.push(w);
+      if (!candidates.includes(w)) candidates.push(w);
     }
 
     // 3. Niche fallback keyword
     const nicheClean = niche.toLowerCase().split(' ')[0];
-    if (nicheClean && !candidates.includes(nicheClean)) {
+    if (nicheClean && nicheClean.length > 3 && !candidates.includes(nicheClean)) {
       candidates.push(nicheClean);
     }
 
@@ -62,7 +76,7 @@ export class StockVideoEngine {
     try {
       const url = `https://coverr.co/api/videos?query=${encodeURIComponent(query)}&page=1`;
       const res = await fetch(url, {
-        signal: AbortSignal.timeout(1500),
+        signal: AbortSignal.timeout(2000),
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'application/json',
@@ -76,9 +90,19 @@ export class StockVideoEngine {
           if (hit.base_filename) {
             const filename = hit.base_filename.toLowerCase();
             const qLower = query.toLowerCase();
-            // Prevent yoga/stretching/nature clips from being returned for tech, psychology, money or abstract topics
+
+            // Prevent irrelevant sports/running/yoga clips
             const isIrrelevantSport = (filename.includes('yoga') || filename.includes('stretching') || filename.includes('runner') || filename.includes('running')) &&
               !qLower.includes('yoga') && !qLower.includes('stretch') && !qLower.includes('run') && !qLower.includes('sport') && !qLower.includes('workout');
+
+            // CRITICAL: Prevent irrelevant ocean/wave/beach/nature clips when user topic is tech, business, money, etc.
+            const isNatureWaterClip = /wave|waves|ocean|beach|sea|coast|surf|shore|underwater|sand|dune|island|coral|tide/i.test(filename);
+            const queryRequestsWater = /ocean|sea|beach|wave|water|surf|coast|marine|aquatic|tide|coastal|swimming/i.test(qLower);
+
+            if (isNatureWaterClip && !queryRequestsWater) {
+              console.warn(`[StockVideo] Rejecting irrelevant ocean/water clip (${filename}) for query "${query}".`);
+              return null;
+            }
 
             if (!isIrrelevantSport) {
               this.coverrAvailable = true;
