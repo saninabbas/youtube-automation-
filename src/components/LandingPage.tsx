@@ -136,8 +136,8 @@ export function LandingPage() {
             <a href="#how-it-works" className="nav-pill-link">How It Works</a>
             <a href="#integrations" className="nav-pill-link">Integrations</a>
             <a href="#ai-models" className="nav-pill-link">AI Models</a>
-            <a href="#voices" className="nav-pill-link">Voices</a>
             <a href="#pricing" className="nav-pill-link">Pricing</a>
+            <Link href="/blog" className="nav-pill-link" style={{ color: '#c084fc', fontWeight: 600 }}>Blog</Link>
           </nav>
 
           {/* Desktop Auth Links (Only ONE primary CTA) */}
@@ -928,6 +928,7 @@ export function LandingPage() {
             <a href="#how-it-works" style={{ color: '#a1a1aa', textDecoration: 'none' }}>How It Works</a>
             <a href="#integrations" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Integrations</a>
             <a href="#pricing" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Pricing</a>
+            <Link href="/blog" style={{ color: '#c084fc', textDecoration: 'none', fontWeight: 600 }}>Blog</Link>
             <Link href="/login" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Login</Link>
           </div>
 
