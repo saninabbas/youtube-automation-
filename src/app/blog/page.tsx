@@ -97,7 +97,7 @@ export default function BlogIndexPage() {
                 <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
               </svg>
             </div>
-            <span style={{ fontSize: '20px', fontWeight: 800, tracking: '-0.02em', color: '#ffffff' }}>
+            <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff' }}>
               Auto<span style={{ background: 'linear-gradient(135deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>RA</span>
             </span>
           </Link>
