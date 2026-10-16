@@ -7,39 +7,7 @@ export const dynamic = 'force-dynamic';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Pakistan@1997';
 const ADMIN_USER = process.env.ADMIN_USER || 'sanin5';
 const COOKIE_NAME = 'admin_session_token';
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'autovideo_super_admin_hmac_secret_key_2026';
-
-export function signAdminToken(username: string): string {
-  const timestamp = Date.now().toString();
-  const signature = crypto
-    .createHmac('sha256', ADMIN_SECRET)
-    .update(`${timestamp}:${username}`)
-    .digest('hex');
-  return `${timestamp}.${username}.${signature}`;
-}
-
-export function verifyAdminToken(token: string): boolean {
-  if (!token || !token.includes('.')) return false;
-  const parts = token.split('.');
-  if (parts.length !== 3) return false;
-
-  const [timestamp, username, signature] = parts;
-  const tokenTime = parseInt(timestamp, 10);
-  if (isNaN(tokenTime) || Date.now() - tokenTime > 7 * 24 * 3600 * 1000) {
-    return false; // Expired after 7 days
-  }
-
-  const expectedSignature = crypto
-    .createHmac('sha256', ADMIN_SECRET)
-    .update(`${timestamp}:${username}`)
-    .digest('hex');
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'));
-  } catch {
-    return false;
-  }
-}
+import { signAdminToken, verifyAdminToken } from '@/lib/security/adminAuth';
 
 export async function GET() {
   try {

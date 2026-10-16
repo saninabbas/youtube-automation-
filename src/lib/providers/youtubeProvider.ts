@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { getDb, DEFAULT_USER_ID, OAuthConnection } from '../db';
 import { encryptToken, decryptToken } from '../security/encryption';
+import { IntegrationService } from '../config/integrationService';
 
 export type YouTubeVisibility = 'PRIVATE' | 'UNLISTED' | 'PUBLIC';
 
@@ -45,15 +46,15 @@ export interface YouTubeProvider {
 
 class DefaultYouTubeProvider implements YouTubeProvider {
   private get clientId(): string {
-    return process.env.GOOGLE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID || '';
+    return IntegrationService.getYoutubeConfig().clientId;
   }
 
   private get clientSecret(): string {
-    return process.env.GOOGLE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET || '';
+    return IntegrationService.getYoutubeConfig().clientSecret;
   }
 
   private get redirectUri(): string {
-    return process.env.GOOGLE_REDIRECT_URI || process.env.YOUTUBE_REDIRECT_URI || (process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback` : 'https://autora.live/api/auth/youtube/callback');
+    return IntegrationService.getYoutubeConfig().redirectUri;
   }
 
   getAuthUrl(userId: string = DEFAULT_USER_ID): string | null {

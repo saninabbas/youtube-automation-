@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb, grantUserCredits, getUserCredits } from '@/lib/db';
 import { verifyPolarWebhookSignature } from '@/lib/polar';
 import { PLANS } from '@/lib/billing';
+import { IntegrationService } from '@/lib/config/integrationService';
 
 export const dynamic = 'force-dynamic';
 
@@ -202,9 +203,24 @@ export async function POST(req: Request) {
       VALUES (?, ?, ?)
     `).run(eventId, eventType, now);
 
+    IntegrationService.logWebhookEvent({
+      provider: 'polar',
+      eventId,
+      eventType,
+      payload,
+      status: 'PROCESSED',
+    });
+
     return NextResponse.json({ received: true, status: 'PROCESSED' }, { status: 200 });
   } catch (err: any) {
     console.error('[Polar Webhook] Error processing webhook:', err);
+    IntegrationService.logWebhookEvent({
+      provider: 'polar',
+      eventId: `err_${Date.now()}`,
+      eventType: 'processing_error',
+      status: 'FAILED',
+      errorMessage: err.message || 'Internal webhook error',
+    });
     return NextResponse.json({ error: 'Internal webhook error' }, { status: 500 });
   }
 }

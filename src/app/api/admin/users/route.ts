@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getDb, grantUserCredits } from '@/lib/db';
-import { verifyAdminToken } from '../auth/route';
+import { verifyAdminToken } from '@/lib/security/adminAuth';
 import { v4 as uuidv4 } from 'uuid';
 
 export const dynamic = 'force-dynamic';

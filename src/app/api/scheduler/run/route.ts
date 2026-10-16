@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { publishingScheduler } from '@/lib/scheduler';
 import { getCurrentUser } from '@/lib/auth';
-import { verifyAdminToken } from '@/app/api/admin/auth/route';
+import { verifyAdminToken } from '@/lib/security/adminAuth';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';

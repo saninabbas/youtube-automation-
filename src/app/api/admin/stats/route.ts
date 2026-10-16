@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getDb } from '@/lib/db';
 import fs from 'fs';
 import path from 'path';
-import { verifyAdminToken } from '../auth/route';
+import { verifyAdminToken } from '@/lib/security/adminAuth';
 
 export const dynamic = 'force-dynamic';
 

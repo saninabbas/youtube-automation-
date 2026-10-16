@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getDb, grantUserCredits } from '@/lib/db';
+import { IntegrationService } from '@/lib/config/integrationService';
 
 import { POST as handlePolarWebhook } from '../polar-webhook/route';
 
 export const dynamic = 'force-dynamic';
 
 function getStripeClient(): Stripe | null {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const activeConfig = IntegrationService.getActivePaymentConfig();
+  const secretKey = activeConfig.stripe?.secretKey || process.env.STRIPE_SECRET_KEY;
   if (!secretKey || !secretKey.startsWith('sk_')) return null;
   return new Stripe(secretKey, { apiVersion: '2024-06-20' as any });
 }
@@ -19,7 +21,8 @@ export async function POST(req: Request) {
   }
   try {
     const signature = req.headers.get('stripe-signature');
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const activeConfig = IntegrationService.getActivePaymentConfig();
+    const webhookSecret = activeConfig.stripe?.webhookSecret || process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
       console.warn('[Stripe Webhook] STRIPE_WEBHOOK_SECRET is not configured.');
@@ -42,6 +45,13 @@ export async function POST(req: Request) {
       event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err: any) {
       console.error('[Stripe Webhook] Signature verification failed:', err.message);
+      IntegrationService.logWebhookEvent({
+        provider: 'stripe',
+        eventId: `failed_${Date.now()}`,
+        eventType: 'signature_verification_failure',
+        status: 'FAILED',
+        errorMessage: err.message,
+      });
       return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
     }
 
@@ -147,9 +157,24 @@ export async function POST(req: Request) {
       VALUES (?, ?, ?)
     `).run(event.id, event.type, now);
 
+    IntegrationService.logWebhookEvent({
+      provider: 'stripe',
+      eventId: event.id,
+      eventType: event.type,
+      payload: event.data.object,
+      status: 'PROCESSED',
+    });
+
     return NextResponse.json({ received: true, status: 'PROCESSED' }, { status: 200 });
   } catch (err: any) {
     console.error('[Stripe Webhook] Processing error:', err);
+    IntegrationService.logWebhookEvent({
+      provider: 'stripe',
+      eventId: `err_${Date.now()}`,
+      eventType: 'processing_error',
+      status: 'FAILED',
+      errorMessage: err.message || 'Unknown processing error',
+    });
     return NextResponse.json({ error: 'Webhook processing error' }, { status: 500 });
   }
 }

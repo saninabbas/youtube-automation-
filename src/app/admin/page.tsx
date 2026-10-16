@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import IntegrationsManager from '@/components/admin/IntegrationsManager';
+import GatewaysManager from '@/components/admin/GatewaysManager';
+import AiModelsManager from '@/components/admin/AiModelsManager';
+import WebhooksManager from '@/components/admin/WebhooksManager';
+import LogsManager from '@/components/admin/LogsManager';
 
 export default function SuperAdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -11,7 +16,7 @@ export default function SuperAdminPage() {
   const [loggingIn, setLoggingIn] = useState(false);
 
   // Admin Navigation State
-  const [activeTab, setActiveTab] = useState<'users' | 'overview' | 'channels' | 'keys' | 'diagnostics'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'overview' | 'integrations' | 'gateways' | 'ai-models' | 'webhooks' | 'logs' | 'channels' | 'keys' | 'diagnostics'>('users');
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -476,10 +481,15 @@ export default function SuperAdminPage() {
         <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px', flexWrap: 'wrap' }}>
           {[
             { id: 'users', label: '👥 Users & Subscriptions' },
-            { id: 'overview', label: '📊 System Health & Stats' },
+            { id: 'overview', label: '📊 System Health' },
+            { id: 'integrations', label: '🔌 API Integrations' },
+            { id: 'gateways', label: '💳 Payment Gateways' },
+            { id: 'ai-models', label: '⚡ AI Models & Routing' },
+            { id: 'webhooks', label: '🔔 Webhooks & Events' },
+            { id: 'logs', label: '📜 Audit & Logs' },
             { id: 'channels', label: '🎬 Channels & Projects' },
-            { id: 'keys', label: '🔑 API Key Vault' },
-            { id: 'diagnostics', label: '⚡ Engine Diagnostics' },
+            { id: 'keys', label: '🔑 Key Vault' },
+            { id: 'diagnostics', label: '⚡ Diagnostics' },
           ].map((t) => (
             <button
               key={t.id}
@@ -1448,6 +1458,41 @@ export default function SuperAdminPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB: API INTEGRATIONS                                    */}
+        {/* ======================================================== */}
+        {activeTab === 'integrations' && (
+          <IntegrationsManager onNotify={(m) => setMsg(m)} />
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB: PAYMENT GATEWAYS                                    */}
+        {/* ======================================================== */}
+        {activeTab === 'gateways' && (
+          <GatewaysManager onNotify={(m) => setMsg(m)} />
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB: AI MODELS & ROUTING                                 */}
+        {/* ======================================================== */}
+        {activeTab === 'ai-models' && (
+          <AiModelsManager onNotify={(m) => setMsg(m)} />
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB: WEBHOOKS & EVENTS                                   */}
+        {/* ======================================================== */}
+        {activeTab === 'webhooks' && (
+          <WebhooksManager onNotify={(m) => setMsg(m)} />
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB: AUDIT & LOGS                                        */}
+        {/* ======================================================== */}
+        {activeTab === 'logs' && (
+          <LogsManager onNotify={(m) => setMsg(m)} />
         )}
 
         {/* ======================================================== */}

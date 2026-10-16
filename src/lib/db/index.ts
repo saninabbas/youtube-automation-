@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { decryptToken } from '../security/encryption';
 
 export const DEFAULT_USER_ID = 'user_default';
 
@@ -492,6 +493,85 @@ export function getDb(): Database.Database {
         FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
         FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
       );
+
+      -- Central Integration Configurations
+      CREATE TABLE IF NOT EXISTS integration_configs (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        provider TEXT NOT NULL UNIQUE,
+        display_name TEXT NOT NULL,
+        credentials_encrypted TEXT,
+        settings_json TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        is_primary INTEGER NOT NULL DEFAULT 0,
+        last_tested_at TEXT,
+        last_test_status TEXT,
+        last_test_latency_ms INTEGER,
+        last_test_error TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_integration_configs_category ON integration_configs(category);
+      CREATE INDEX IF NOT EXISTS idx_integration_configs_provider ON integration_configs(provider);
+
+      -- Payment Gateways Management
+      CREATE TABLE IF NOT EXISTS payment_gateways (
+        id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL UNIQUE,
+        mode TEXT NOT NULL DEFAULT 'test',
+        is_enabled INTEGER NOT NULL DEFAULT 0,
+        is_default INTEGER NOT NULL DEFAULT 0,
+        credentials_encrypted TEXT,
+        settings_json TEXT,
+        webhook_secret_encrypted TEXT,
+        webhook_url TEXT,
+        last_tested_at TEXT,
+        last_test_status TEXT,
+        last_test_error TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_payment_gateways_provider ON payment_gateways(provider);
+
+      -- Integration Audit Logs
+      CREATE TABLE IF NOT EXISTS integration_audit_logs (
+        id TEXT PRIMARY KEY,
+        admin_user TEXT NOT NULL,
+        action TEXT NOT NULL,
+        target_type TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        details_json TEXT,
+        ip_address TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_integration_audit_target ON integration_audit_logs(target_type, target_id);
+      CREATE INDEX IF NOT EXISTS idx_integration_audit_created ON integration_audit_logs(created_at);
+
+      -- Connection Test Logs
+      CREATE TABLE IF NOT EXISTS connection_test_logs (
+        id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL,
+        status TEXT NOT NULL,
+        latency_ms INTEGER NOT NULL,
+        endpoint TEXT,
+        error_sanitized TEXT,
+        tested_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_conn_test_logs_provider ON connection_test_logs(provider, tested_at);
+
+      -- Webhook Events & Idempotency Logs
+      CREATE TABLE IF NOT EXISTS webhook_events (
+        id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL,
+        event_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        payload_json TEXT,
+        status TEXT NOT NULL DEFAULT 'PROCESSED',
+        error_message TEXT,
+        processed_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_events_unique ON webhook_events(provider, event_id);
+      CREATE INDEX IF NOT EXISTS idx_webhook_events_processed ON webhook_events(processed_at);
     `);
 
   }
@@ -683,7 +763,88 @@ export function maskApiKey(key?: string | null): string {
 export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): string | null {
   try {
     const db = getDb();
-    const row = db.prepare('SELECT api_key FROM api_credentials WHERE user_id = ? AND provider = ? AND is_active = 1').get(userId, provider.toLowerCase()) as { api_key: string } | undefined;
+    const p = provider.toLowerCase().trim();
+
+    // 1. Check central integration configs (AES-256-GCM encrypted)
+    const intRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = ? AND is_active = 1').get(p) as { credentials_encrypted?: string } | undefined;
+    if (intRow && intRow.credentials_encrypted) {
+      const dec = decryptToken(intRow.credentials_encrypted);
+      if (dec) {
+        try {
+          const parsed = JSON.parse(dec);
+          if (parsed.apiKey) return parsed.apiKey.trim();
+          if (parsed.apiToken) return parsed.apiToken.trim();
+          if (parsed.secretKey) return parsed.secretKey.trim();
+          if (parsed.accessToken) return parsed.accessToken.trim();
+          if (parsed.accountId) return parsed.accountId.trim();
+        } catch {}
+      }
+    }
+
+    // Direct aliases check in integration_configs
+    if (p === 'cloudflare_api_token' || p === 'cloudflare_token') {
+      const cfRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "cloudflare" AND is_active = 1').get() as any;
+      if (cfRow?.credentials_encrypted) {
+        const dec = decryptToken(cfRow.credentials_encrypted);
+        if (dec) {
+          try {
+            const parsed = JSON.parse(dec);
+            if (parsed.apiToken) return parsed.apiToken.trim();
+          } catch {}
+        }
+      }
+    }
+    if (p === 'cloudflare_account_id' || p === 'cloudflare_account') {
+      const cfRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "cloudflare" AND is_active = 1').get() as any;
+      if (cfRow?.credentials_encrypted) {
+        const dec = decryptToken(cfRow.credentials_encrypted);
+        if (dec) {
+          try {
+            const parsed = JSON.parse(dec);
+            if (parsed.accountId) return parsed.accountId.trim();
+          } catch {}
+        }
+      }
+    }
+    if (p === 'fal_key' || p === 'fal') {
+      const falRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "fal" AND is_active = 1').get() as any;
+      if (falRow?.credentials_encrypted) {
+        const dec = decryptToken(falRow.credentials_encrypted);
+        if (dec) {
+          try {
+            const parsed = JSON.parse(dec);
+            if (parsed.apiKey) return parsed.apiKey.trim();
+          } catch {}
+        }
+      }
+    }
+    if (p === 'pexels_api_key' || p === 'pexels') {
+      const pxRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "pexels" AND is_active = 1').get() as any;
+      if (pxRow?.credentials_encrypted) {
+        const dec = decryptToken(pxRow.credentials_encrypted);
+        if (dec) {
+          try {
+            const parsed = JSON.parse(dec);
+            if (parsed.apiKey) return parsed.apiKey.trim();
+          } catch {}
+        }
+      }
+    }
+    if (p === 'pixabay_api_key' || p === 'pixabay') {
+      const pxRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "pixabay" AND is_active = 1').get() as any;
+      if (pxRow?.credentials_encrypted) {
+        const dec = decryptToken(pxRow.credentials_encrypted);
+        if (dec) {
+          try {
+            const parsed = JSON.parse(dec);
+            if (parsed.apiKey) return parsed.apiKey.trim();
+          } catch {}
+        }
+      }
+    }
+
+    // 2. Check legacy api_credentials table
+    const row = db.prepare('SELECT api_key FROM api_credentials WHERE user_id = ? AND provider = ? AND is_active = 1').get(userId, p) as { api_key: string } | undefined;
     if (row && row.api_key && row.api_key.trim()) {
       return row.api_key.trim();
     }

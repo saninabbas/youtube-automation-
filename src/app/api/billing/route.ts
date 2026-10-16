@@ -5,11 +5,13 @@ import { getDb, getUserCredits, grantUserCredits } from '@/lib/db';
 import { calculateEntitlements, PLANS, getPaymentProviderStatus } from '@/lib/billing';
 import { isPolarConfigured, createPolarCheckout } from '@/lib/polar';
 import { apiError } from '@/lib/api-response';
+import { IntegrationService } from '@/lib/config/integrationService';
 
 export const dynamic = 'force-dynamic';
 
 function getStripeClient(): Stripe | null {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const activeConfig = IntegrationService.getActivePaymentConfig();
+  const secretKey = activeConfig.stripe?.secretKey || process.env.STRIPE_SECRET_KEY;
   if (!secretKey || !secretKey.startsWith('sk_')) {
     return null;
   }
@@ -106,85 +108,92 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Check Polar First (Preferred MoR payment gateway)
-    if (isPolarConfigured()) {
-      const polarResult = await createPolarCheckout({
-        userId: user.id,
-        userEmail: user.email,
-        planId: targetPlan.id,
-        billingCycle,
-      });
+    // Dynamically honor default payment gateway configured in Admin Dashboard
+    const activeGateway = IntegrationService.getActivePaymentConfig();
+    const preferStripe = activeGateway.provider === 'stripe';
 
-      if (polarResult.success && polarResult.url) {
-        return NextResponse.json({
-          success: true,
-          provider: 'polar',
-          url: polarResult.url,
-          checkoutId: polarResult.checkoutId,
-        });
-      }
-
-      // If Polar had an error but Stripe is not available, report Polar error
-      if (!process.env.STRIPE_SECRET_KEY) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: polarResult.error || 'Failed to initialize Polar checkout.',
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // 2. Stripe Checkout Fallback
-    const stripe = getStripeClient();
-    if (stripe) {
-      const priceId = getStripePriceId(planId, billingCycle);
-      if (!priceId) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Stripe Price ID is not configured for plan "${planId}" (${billingCycle}). Set STRIPE_PRICE_${planId.toUpperCase()}_${billingCycle.toUpperCase()} in environment variables.`,
-          },
-          { status: 400 }
-        );
-      }
-
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://autora.live';
-
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        client_reference_id: user.id,
-        customer_email: user.email,
-        metadata: {
+    const tryPolar = async () => {
+      if (isPolarConfigured()) {
+        const polarResult = await createPolarCheckout({
           userId: user.id,
+          userEmail: user.email,
           planId: targetPlan.id,
           billingCycle,
-          monthlyCredits: String(targetPlan.credits_monthly),
-        },
-        subscription_data: {
+        });
+
+        if (polarResult.success && polarResult.url) {
+          return {
+            success: true,
+            provider: 'polar',
+            url: polarResult.url,
+            checkoutId: polarResult.checkoutId,
+          };
+        }
+      }
+      return null;
+    };
+
+    const tryStripe = async () => {
+      const stripe = getStripeClient();
+      if (stripe) {
+        const priceId = getStripePriceId(planId, billingCycle);
+        if (!priceId) {
+          return {
+            error: `Stripe Price ID is not configured for plan "${planId}" (${billingCycle}). Set STRIPE_PRICE_${planId.toUpperCase()}_${billingCycle.toUpperCase()} in environment variables.`,
+          };
+        }
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://autora.live';
+
+        const session = await stripe.checkout.sessions.create({
+          mode: 'subscription',
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price: priceId,
+              quantity: 1,
+            },
+          ],
+          client_reference_id: user.id,
+          customer_email: user.email,
           metadata: {
             userId: user.id,
             planId: targetPlan.id,
+            billingCycle,
+            monthlyCredits: String(targetPlan.credits_monthly),
           },
-        },
-        success_url: `${appUrl}/billing?session_id={CHECKOUT_SESSION_ID}&status=success`,
-        cancel_url: `${appUrl}/billing?status=cancelled`,
-      });
+          subscription_data: {
+            metadata: {
+              userId: user.id,
+              planId: targetPlan.id,
+            },
+          },
+          success_url: `${appUrl}/billing?session_id={CHECKOUT_SESSION_ID}&status=success`,
+          cancel_url: `${appUrl}/billing?status=cancelled`,
+        });
 
-      return NextResponse.json({
-        success: true,
-        provider: 'stripe',
-        url: session.url,
-        sessionId: session.id,
-      });
+        return {
+          success: true,
+          provider: 'stripe',
+          url: session.url,
+          sessionId: session.id,
+        };
+      }
+      return null;
+    };
+
+    if (preferStripe) {
+      const stripeRes = await tryStripe();
+      if (stripeRes && stripeRes.success) return NextResponse.json(stripeRes);
+      const polarRes = await tryPolar();
+      if (polarRes && polarRes.success) return NextResponse.json(polarRes);
+      if (stripeRes && stripeRes.error) return NextResponse.json({ success: false, error: stripeRes.error }, { status: 400 });
+    } else {
+      const polarRes = await tryPolar();
+      if (polarRes && polarRes.success) return NextResponse.json(polarRes);
+      const stripeRes = await tryStripe();
+      if (stripeRes && stripeRes.success) return NextResponse.json(stripeRes);
+      if (stripeRes && stripeRes.error) return NextResponse.json({ success: false, error: stripeRes.error }, { status: 400 });
     }
 
     // 3. Neither Gateway Configured

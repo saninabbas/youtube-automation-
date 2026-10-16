@@ -222,3 +222,83 @@ CREATE TABLE IF NOT EXISTS user_voices (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_user_voices_user ON user_voices(user_id);
+
+-- Central Integration Configurations
+CREATE TABLE IF NOT EXISTS integration_configs (
+  id TEXT PRIMARY KEY,
+  category TEXT NOT NULL, -- 'ai_text', 'ai_video', 'stock_video', 'voice', 'storage', 'publishing', 'analytics', 'email'
+  provider TEXT NOT NULL UNIQUE, -- 'gemini', 'openrouter', 'openai', 'fal', 'cloudflare', 'pexels', 'pixabay', 'elevenlabs', 's3_r2', 'youtube', etc.
+  display_name TEXT NOT NULL,
+  credentials_encrypted TEXT, -- AES-256-GCM encrypted JSON string of credentials
+  settings_json TEXT, -- JSON string of provider options (default models, endpoints, timeouts, etc.)
+  is_active INTEGER NOT NULL DEFAULT 1,
+  is_primary INTEGER NOT NULL DEFAULT 0,
+  last_tested_at TEXT,
+  last_test_status TEXT, -- 'SUCCESS', 'FAILED', 'PENDING'
+  last_test_latency_ms INTEGER,
+  last_test_error TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_integration_configs_category ON integration_configs(category);
+CREATE INDEX IF NOT EXISTS idx_integration_configs_provider ON integration_configs(provider);
+
+-- Payment Gateways Management
+CREATE TABLE IF NOT EXISTS payment_gateways (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL UNIQUE, -- 'stripe', 'polar'
+  mode TEXT NOT NULL DEFAULT 'test', -- 'test', 'live'
+  is_enabled INTEGER NOT NULL DEFAULT 0,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  credentials_encrypted TEXT, -- AES-256-GCM encrypted JSON
+  settings_json TEXT, -- JSON (currency, methods, products map, etc.)
+  webhook_secret_encrypted TEXT, -- AES-256-GCM encrypted webhook secret
+  webhook_url TEXT,
+  last_tested_at TEXT,
+  last_test_status TEXT,
+  last_test_error TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_payment_gateways_provider ON payment_gateways(provider);
+
+-- Integration Audit Logs
+CREATE TABLE IF NOT EXISTS integration_audit_logs (
+  id TEXT PRIMARY KEY,
+  admin_user TEXT NOT NULL,
+  action TEXT NOT NULL, -- 'CREATE', 'UPDATE', 'DELETE', 'TEST', 'ROTATE_KEY', 'ENABLE', 'DISABLE', 'SWITCH_PRIMARY'
+  target_type TEXT NOT NULL, -- 'integration', 'gateway'
+  target_id TEXT NOT NULL,
+  details_json TEXT,
+  ip_address TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_integration_audit_target ON integration_audit_logs(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_integration_audit_created ON integration_audit_logs(created_at);
+
+-- Connection Test Logs
+CREATE TABLE IF NOT EXISTS connection_test_logs (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  status TEXT NOT NULL, -- 'SUCCESS', 'FAILED'
+  latency_ms INTEGER NOT NULL,
+  endpoint TEXT,
+  error_sanitized TEXT,
+  tested_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_conn_test_logs_provider ON connection_test_logs(provider, tested_at);
+
+-- Webhook Events & Idempotency Logs
+CREATE TABLE IF NOT EXISTS webhook_events (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL, -- 'stripe', 'polar'
+  event_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  payload_json TEXT,
+  status TEXT NOT NULL DEFAULT 'PROCESSED', -- 'PROCESSED', 'FAILED', 'IGNORED'
+  error_message TEXT,
+  processed_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_events_unique ON webhook_events(provider, event_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_processed ON webhook_events(processed_at);
+
