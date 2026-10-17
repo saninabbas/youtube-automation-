@@ -11,7 +11,8 @@
     "worker": "npx -y tsx scripts/run-scheduler.ts",
     "test": "npx -y tsx test-final-browser-qa.ts",
     "test:youtube": "npx -y tsx test-youtube-integration.ts",
-    "test:audit": "npx -y tsx test-final-production-audit.ts"
+    "test:audit": "npx -y tsx test-final-production-audit.ts",
+    "prepare": "husky"
   },
   "keywords": [
     "autora",
@@ -39,6 +40,8 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@ngrok/ngrok": "^1.7.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.2.0",
@@ -47,6 +50,7 @@
     "@types/react-dom": "^18.3.7",
     "@types/selenium-webdriver": "^4.1.28",
     "@types/uuid": "^10.0.0",
+    "husky": "^9.1.7",
     "playwright": "^1.50.0",
     "puppeteer": "^25.11.0",
     "puppeteer-core": "^25.11.0",
