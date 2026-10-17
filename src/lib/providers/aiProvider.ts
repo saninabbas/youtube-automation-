@@ -601,7 +601,7 @@ class DefaultAiProvider implements AiProvider {
 
     // Dynamic chapter count based on duration
     const numSections = isShorts
-      ? Math.max(2, Math.min(4, Math.round(targetLengthMinutes * 4)))
+      ? Math.max(2, Math.min(3, Math.round(targetLengthMinutes * 3)))
       : Math.min(12, Math.max(5, Math.round(targetLengthMinutes * 1.1)));
 
     const sectionDuration = Math.max(15, Math.round((targetLengthMinutes * 60 - 40) / numSections));
@@ -681,34 +681,39 @@ class DefaultAiProvider implements AiProvider {
       const prompt1 = `${bible.protagonistOrAnchor} deeply engaged in ${p.sub1}: analyzing the core foundation of ${cleanTopic}, inside ${bible.primarySetting}. Slow steady cinematic push-in with shallow depth of field. ${bible.lightingAndMood}. ${bible.colorGrade}. 35mm anamorphic lens, 8k resolution, photorealistic film still, vertical 9:16.`;
       const prompt2 = `${bible.protagonistOrAnchor} executing ${p.sub2}: demonstrating critical mechanics of ${cleanTopic}, inside ${bible.primarySetting}. Smooth horizontal parallax tracking glide. ${bible.lightingAndMood}. ${bible.colorGrade}. 35mm anamorphic lens, 8k resolution, photorealistic film still, vertical 9:16.`;
 
+      const sectionSubs: any[] = [
+        {
+          subheading: p.sub1,
+          narration: narrationA,
+          visualPrompt: prompt1,
+          visualSubject: `${cleanTopic} - ${p.sub1}`,
+          environment: bible.primarySetting,
+          cameraMovement: 'Slow steady cinematic push-in with shallow depth of field',
+          lighting: bible.lightingAndMood,
+          colorStyle: bible.colorGrade,
+          continuityNotes: `Establishes dramatic visual continuity for Part ${partNum} featuring ${bible.protagonistOrAnchor.slice(0, 35)}...`,
+          durationSec: sub1Duration,
+        },
+      ];
+
+      if (!isShorts) {
+        sectionSubs.push({
+          subheading: p.sub2,
+          narration: narrationB,
+          visualPrompt: prompt2,
+          visualSubject: `${cleanTopic} - ${p.sub2}`,
+          environment: bible.primarySetting,
+          cameraMovement: 'Smooth horizontal parallax tracking glide',
+          lighting: bible.lightingAndMood,
+          colorStyle: bible.colorGrade,
+          continuityNotes: `Direct continuous transition from ${p.sub1} inside ${bible.primarySetting.slice(0, 35)}...`,
+          durationSec: sub2Duration,
+        });
+      }
+
       sections.push({
         heading: `Part ${partNum}: ${p.title}`,
-        subsections: [
-          {
-            subheading: p.sub1,
-            narration: narrationA,
-            visualPrompt: prompt1,
-            visualSubject: `${cleanTopic} - ${p.sub1}`,
-            environment: bible.primarySetting,
-            cameraMovement: 'Slow steady cinematic push-in with shallow depth of field',
-            lighting: bible.lightingAndMood,
-            colorStyle: bible.colorGrade,
-            continuityNotes: `Establishes dramatic visual continuity for Part ${partNum} featuring ${bible.protagonistOrAnchor.slice(0, 35)}...`,
-            durationSec: sub1Duration,
-          },
-          {
-            subheading: p.sub2,
-            narration: narrationB,
-            visualPrompt: prompt2,
-            visualSubject: `${cleanTopic} - ${p.sub2}`,
-            environment: bible.primarySetting,
-            cameraMovement: 'Smooth horizontal parallax tracking glide',
-            lighting: bible.lightingAndMood,
-            colorStyle: bible.colorGrade,
-            continuityNotes: `Direct continuous transition from ${p.sub1} inside ${bible.primarySetting.slice(0, 35)}...`,
-            durationSec: sub2Duration,
-          },
-        ],
+        subsections: sectionSubs,
       });
     }
 

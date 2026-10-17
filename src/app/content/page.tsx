@@ -53,12 +53,14 @@ function ContentLibraryList() {
 
   useEffect(() => {
     fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    const hasActive = projects.some((p) => p.status === 'PENDING' || p.status === 'PROCESSING' || p.publishing_status === 'UPLOADING');
+    if (!hasActive) return;
 
     const interval = setInterval(() => {
-      const hasActive = projects.some((p) => p.status === 'PENDING' || p.status === 'PROCESSING' || p.publishing_status === 'UPLOADING');
-      if (hasActive) {
-        fetchProjects();
-      }
+      fetchProjects();
     }, 4000);
 
     return () => clearInterval(interval);

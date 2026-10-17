@@ -753,11 +753,11 @@ export function maskApiKey(key?: string | null): string {
   if (!key || typeof key !== 'string') return '';
   const trimmed = key.trim();
   if (trimmed.length <= 8) {
-    return '********';
+    return '••••••••';
   }
   const prefix = trimmed.slice(0, 4);
   const suffix = trimmed.slice(-4);
-  return `${prefix}********${suffix}`;
+  return `${prefix}••••••••${suffix}`;
 }
 
 export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): string | null {
