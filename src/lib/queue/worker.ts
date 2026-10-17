@@ -5,7 +5,7 @@ import { getDb, ContentProject, Channel, VideoScene, GeneratedAsset, VideoJob, P
 import { aiProvider, ScriptStructure, GeneratedScene } from '../providers/aiProvider';
 import { videoProvider } from '../providers/videoProvider';
 import { voiceProvider } from '../providers/voiceProvider';
-import { subtitleProvider } from '../providers/subtitleProvider';
+import { subtitleProvider, SubtitleCue } from '../providers/subtitleProvider';
 import { ffmpegCompositor } from '../providers/ffmpegCompositor';
 import { thumbnailProvider } from '../providers/thumbnailProvider';
 import { storage } from '../storage';
@@ -571,13 +571,45 @@ export class VideoPipelineWorker {
           scenes = db.prepare('SELECT * FROM video_scenes WHERE project_id = ? ORDER BY scene_index ASC').all(project.id) as VideoScene[];
         }
 
-        const cues = subtitleProvider.generateCues(
-          scenes.map((s) => ({
-            sceneIndex: s.scene_index,
-            estimatedDurationSec: s.estimated_duration_sec,
-            subtitleText: s.subtitle_text,
-          }))
-        );
+        let audioAsset = db
+          .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'audio' ORDER BY created_at DESC LIMIT 1")
+          .get(project.id) as GeneratedAsset | undefined;
+
+        if (!audioAsset) {
+          await this.executeStage('VOICE', project, channel);
+          audioAsset = db
+            .prepare("SELECT * FROM generated_assets WHERE project_id = ? AND asset_type = 'audio' ORDER BY created_at DESC LIMIT 1")
+            .get(project.id) as GeneratedAsset | undefined;
+        }
+
+        const scenePayload = scenes.map((s) => ({
+          sceneIndex: s.scene_index,
+          estimatedDurationSec: s.estimated_duration_sec,
+          subtitleText: s.subtitle_text,
+        }));
+
+        let cues: SubtitleCue[];
+        if (audioAsset) {
+          const audioPath = storage.getFilePath(audioAsset.storage_key);
+          let audioBuf: Buffer | null = null;
+          if (fs.existsSync(audioPath)) {
+            audioBuf = await fs.promises.readFile(audioPath);
+          } else {
+            audioBuf = await storage.getObject(audioAsset.storage_key);
+          }
+
+          if (audioBuf && audioBuf.length > 1000) {
+            cues = await subtitleProvider.generateCuesFromAudio({
+              audioBuffer: audioBuf,
+              scenes: scenePayload,
+              language: project.language || channel.language,
+            });
+          } else {
+            cues = subtitleProvider.generateCues(scenePayload);
+          }
+        } else {
+          cues = subtitleProvider.generateCues(scenePayload);
+        }
 
         const srtContent = subtitleProvider.generateSrt(cues);
         const vttContent = subtitleProvider.generateVtt(cues);
@@ -599,7 +631,7 @@ export class VideoPipelineWorker {
           'subtitles',
           srtAsset.key,
           srtAsset.url,
-          JSON.stringify({ cueCount: cues.length, vttKey, style: channel.subtitle_style }),
+          JSON.stringify({ cueCount: cues.length, vttKey, style: channel.subtitle_style, provider: 'whisper-large-v3-turbo' }),
           now
         );
         break;

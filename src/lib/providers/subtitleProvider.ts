@@ -1,3 +1,5 @@
+import { getApiKey } from '../db';
+
 export interface SubtitleCue {
   index: number;
   startTimeSec: number;
@@ -7,11 +9,132 @@ export interface SubtitleCue {
 
 export interface SubtitleProvider {
   generateCues(scenes: Array<{ sceneIndex: number; estimatedDurationSec: number; subtitleText: string }>): SubtitleCue[];
+  generateCuesFromAudio(params: {
+    audioBuffer: Buffer;
+    scenes?: Array<{ sceneIndex: number; estimatedDurationSec: number; subtitleText: string }>;
+    language?: string;
+  }): Promise<SubtitleCue[]>;
   generateSrt(cues: SubtitleCue[]): string;
   generateVtt(cues: SubtitleCue[]): string;
 }
 
 class DefaultSubtitleProvider implements SubtitleProvider {
+  /**
+   * Primary alignment engine: Whisper Large v3 Turbo via Cloudflare Workers AI.
+   * Transcribes narration audio with millisecond-exact word timestamps and groups words
+   * into punchy kinetic captions optimized for YouTube Shorts / vertical retention.
+   */
+  async generateCuesFromAudio(params: {
+    audioBuffer: Buffer;
+    scenes?: Array<{ sceneIndex: number; estimatedDurationSec: number; subtitleText: string }>;
+    language?: string;
+  }): Promise<SubtitleCue[]> {
+    const { audioBuffer, scenes = [], language = 'en' } = params;
+
+    const accountId = getApiKey('cloudflare_account_id') || process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = getApiKey('cloudflare') || getApiKey('cloudflare_api_token') || process.env.CLOUDFLARE_API_TOKEN;
+
+    if (accountId && apiToken && audioBuffer && audioBuffer.length > 1000) {
+      try {
+        console.log(`[SubtitleProvider] Transcribing audio via Cloudflare Whisper Large v3 Turbo (${audioBuffer.length} bytes)...`);
+        const base64Audio = audioBuffer.toString('base64');
+        const models = ['@cf/openai/whisper-large-v3-turbo', '@cf/openai/whisper'];
+
+        for (const model of models) {
+          try {
+            const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${apiToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                audio: base64Audio,
+                task: 'transcribe',
+                language: language.substring(0, 2),
+                vad_filter: true,
+              }),
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && data.result) {
+                // Extract word timestamps from segments or top-level words
+                let words: Array<{ word: string; start: number; end: number }> = [];
+                if (Array.isArray(data.result.segments)) {
+                  words = data.result.segments.flatMap((s: any) => s.words || []);
+                }
+                if (words.length === 0 && Array.isArray(data.result.words)) {
+                  words = data.result.words;
+                }
+
+                if (words.length > 0) {
+                  const cues = this.groupWordsIntoKineticCues(words);
+                  if (cues.length > 0) {
+                    console.log(`[SubtitleProvider] Successfully generated ${cues.length} frame-perfect cues using ${model}.`);
+                    return cues;
+                  }
+                }
+              }
+            } else {
+              const errBody = await res.text().catch(() => '');
+              console.warn(`[SubtitleProvider] ${model} request returned status ${res.status}: ${errBody.substring(0, 200)}`);
+            }
+          } catch (modelErr: any) {
+            console.warn(`[SubtitleProvider] Error querying ${model}: ${modelErr.message}`);
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[SubtitleProvider] Whisper audio transcription failed: ${err.message}. Falling back to scene estimator.`);
+      }
+    }
+
+    // Fallback: Proportional duration estimation from scenes
+    return this.generateCues(scenes);
+  }
+
+  /**
+   * Groups millisecond-precision Whisper words into punchy, mobile-optimized captions (3-4 words max).
+   */
+  private groupWordsIntoKineticCues(words: Array<{ word: string; start: number; end: number }>): SubtitleCue[] {
+    const cues: SubtitleCue[] = [];
+    let currentGroup: Array<{ word: string; start: number; end: number }> = [];
+    let cueIndex = 1;
+
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      const cleanWord = (w.word || '').trim();
+      if (!cleanWord) continue;
+
+      currentGroup.push({ word: cleanWord, start: w.start, end: w.end });
+
+      const hasPunctuation = /[.,!?:;]$/.test(cleanWord);
+      const nextWord = words[i + 1];
+      const isLongPause = nextWord ? nextWord.start - w.end > 0.55 : false;
+      const isAtChunkLimit = currentGroup.length >= 4;
+
+      if (hasPunctuation || isLongPause || isAtChunkLimit || i === words.length - 1) {
+        const rawText = currentGroup.map((g) => g.word).join(' ');
+        const start = Math.max(0, currentGroup[0].start);
+        let end = Math.max(start + 0.35, currentGroup[currentGroup.length - 1].end);
+
+        const formattedText = this.formatLines(rawText);
+
+        cues.push({
+          index: cueIndex++,
+          startTimeSec: Math.round(start * 1000) / 1000,
+          endTimeSec: Math.round(end * 1000) / 1000,
+          text: formattedText,
+        });
+
+        currentGroup = [];
+      }
+    }
+
+    return cues;
+  }
+
   generateCues(scenes: Array<{ sceneIndex: number; estimatedDurationSec: number; subtitleText: string }>): SubtitleCue[] {
     const cues: SubtitleCue[] = [];
     let currentTime = 0;
