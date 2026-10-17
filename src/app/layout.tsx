@@ -72,6 +72,7 @@ export default function RootLayout({
       <head>
         <meta name="fameswap-verification" content="RHGxQyVs29q0GKUj2KPw8BseWbVDXKvn" />
         <meta name="msvalidate.01" content="21F322662A2D24A02921E48351C71C99" />
+        <meta name="msvalidate.01" content="c105cdd51dcc4fdea375fe3461e0d9f4" />
       </head>
       <body>
         <ToastProvider>
