@@ -44,9 +44,13 @@ export const metadata: Metadata = {
   },
   other: {
     'fameswap-verification': 'RHGxQyVs29q0GKUj2KPw8BseWbVDXKvn',
+    'msvalidate.01': '21F322662A2D24A02921E48351C71C99',
   },
   verification: {
     google: 'google036228914f703f9d',
+    other: {
+      'msvalidate.01': '21F322662A2D24A02921E48351C71C99',
+    },
   },
   icons: {
     icon: '/favicon.ico',
@@ -67,6 +71,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="fameswap-verification" content="RHGxQyVs29q0GKUj2KPw8BseWbVDXKvn" />
+        <meta name="msvalidate.01" content="21F322662A2D24A02921E48351C71C99" />
       </head>
       <body>
         <ToastProvider>
