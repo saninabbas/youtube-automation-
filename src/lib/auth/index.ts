@@ -93,7 +93,7 @@ export function createSession(
   const db = getDb();
   const expiresAtMs = Date.now() + 30 * 24 * 3600 * 1000;
   const expiresAt = new Date(expiresAtMs).toISOString();
-  const sessionToken = signToken(userId, expiresAtMs);
+  const sessionToken = crypto.randomBytes(32).toString('hex');
   const now = new Date().toISOString();
   const sessionId = crypto.randomUUID();
 
@@ -102,8 +102,8 @@ export function createSession(
       INSERT INTO user_sessions (id, user_id, session_token, expires_at, user_agent, ip_address, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(sessionId, userId, sessionToken, expiresAt, userAgent || null, ipAddress || null, now);
-  } catch {
-    // Resilient to ephemeral serverless container DB
+  } catch (err: any) {
+    console.error('[Auth] Failed to insert session into database:', err.message);
   }
 
   return { sessionToken, expiresAt };
@@ -146,37 +146,39 @@ export function validateSession(sessionToken: string): { valid: boolean; user: U
     // fallback to signed token verification below
   }
 
-  // Resilient fallback for serverless container restarts
-  const verification = verifySignedToken(sessionToken);
-  if (verification.valid && verification.userId) {
-    try {
-      let u = db.prepare('SELECT * FROM users WHERE id = ?').get(verification.userId) as any;
-      if (!u) {
-        // Auto-provision user in local container DB
-        const nowIso = new Date().toISOString();
-        db.prepare(`
-          INSERT OR IGNORE INTO users (id, email, password_hash, salt, name, email_verified, role, status, onboarding_completed, created_at, updated_at)
-          VALUES (?, ?, '', '', 'Creator', 1, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
-        `).run(verification.userId, `user_${verification.userId.substring(0, 8)}@autovideo.local`, nowIso, nowIso);
-        u = db.prepare('SELECT * FROM users WHERE id = ?').get(verification.userId) as any;
+  // Resilient fallback for serverless container restarts with signed tokens
+  if (sessionToken.includes('.')) {
+    const verification = verifySignedToken(sessionToken);
+    if (verification.valid && verification.userId) {
+      try {
+        let u = db.prepare('SELECT * FROM users WHERE id = ?').get(verification.userId) as any;
+        if (!u) {
+          // Auto-provision user in local container DB
+          const nowIso = new Date().toISOString();
+          db.prepare(`
+            INSERT OR IGNORE INTO users (id, email, password_hash, salt, name, email_verified, role, status, onboarding_completed, created_at, updated_at)
+            VALUES (?, ?, '', '', 'Creator', 1, 'CUSTOMER', 'ACTIVE', 1, ?, ?)
+          `).run(verification.userId, `user_${verification.userId.substring(0, 8)}@autovideo.local`, nowIso, nowIso);
+          u = db.prepare('SELECT * FROM users WHERE id = ?').get(verification.userId) as any;
+        }
+        if (u && u.status === 'ACTIVE') {
+          const user: User = {
+            id: u.id,
+            email: u.email,
+            name: u.name,
+            avatar: u.avatar || null,
+            email_verified: u.email_verified || 1,
+            role: u.role || 'CUSTOMER',
+            status: u.status || 'ACTIVE',
+            onboarding_completed: u.onboarding_completed || 1,
+            created_at: u.created_at || now,
+            updated_at: u.updated_at || now,
+          };
+          return { valid: true, user };
+        }
+      } catch (e) {
+        console.error('Resilient session user fallback error:', e);
       }
-      if (u) {
-        const user: User = {
-          id: u.id,
-          email: u.email,
-          name: u.name,
-          avatar: u.avatar || null,
-          email_verified: u.email_verified || 1,
-          role: u.role || 'CUSTOMER',
-          status: u.status || 'ACTIVE',
-          onboarding_completed: u.onboarding_completed || 1,
-          created_at: u.created_at || now,
-          updated_at: u.updated_at || now,
-        };
-        return { valid: true, user };
-      }
-    } catch (e) {
-      console.error('Resilient session user fallback error:', e);
     }
   }
 
