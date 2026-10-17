@@ -783,7 +783,7 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
 
     // Direct aliases check in integration_configs
     if (p === 'cloudflare_api_token' || p === 'cloudflare_token') {
-      const cfRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "cloudflare" AND is_active = 1').get() as any;
+      const cfRow = db.prepare("SELECT credentials_encrypted FROM integration_configs WHERE provider = 'cloudflare' AND is_active = 1").get() as any;
       if (cfRow?.credentials_encrypted) {
         const dec = decryptToken(cfRow.credentials_encrypted);
         if (dec) {
@@ -795,7 +795,7 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
       }
     }
     if (p === 'cloudflare_account_id' || p === 'cloudflare_account') {
-      const cfRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "cloudflare" AND is_active = 1').get() as any;
+      const cfRow = db.prepare("SELECT credentials_encrypted FROM integration_configs WHERE provider = 'cloudflare' AND is_active = 1").get() as any;
       if (cfRow?.credentials_encrypted) {
         const dec = decryptToken(cfRow.credentials_encrypted);
         if (dec) {
@@ -807,7 +807,7 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
       }
     }
     if (p === 'fal_key' || p === 'fal') {
-      const falRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "fal" AND is_active = 1').get() as any;
+      const falRow = db.prepare("SELECT credentials_encrypted FROM integration_configs WHERE provider = 'fal' AND is_active = 1").get() as any;
       if (falRow?.credentials_encrypted) {
         const dec = decryptToken(falRow.credentials_encrypted);
         if (dec) {
@@ -819,7 +819,7 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
       }
     }
     if (p === 'pexels_api_key' || p === 'pexels') {
-      const pxRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "pexels" AND is_active = 1').get() as any;
+      const pxRow = db.prepare("SELECT credentials_encrypted FROM integration_configs WHERE provider = 'pexels' AND is_active = 1").get() as any;
       if (pxRow?.credentials_encrypted) {
         const dec = decryptToken(pxRow.credentials_encrypted);
         if (dec) {
@@ -831,7 +831,7 @@ export function getApiKey(provider: string, userId: string = DEFAULT_USER_ID): s
       }
     }
     if (p === 'pixabay_api_key' || p === 'pixabay') {
-      const pxRow = db.prepare('SELECT credentials_encrypted FROM integration_configs WHERE provider = "pixabay" AND is_active = 1').get() as any;
+      const pxRow = db.prepare("SELECT credentials_encrypted FROM integration_configs WHERE provider = 'pixabay' AND is_active = 1").get() as any;
       if (pxRow?.credentials_encrypted) {
         const dec = decryptToken(pxRow.credentials_encrypted);
         if (dec) {
