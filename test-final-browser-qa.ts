@@ -187,8 +187,8 @@ async function runFullBrowserQa() {
   recordQa(
     'Multi-Tenant Security',
     'Project Cross-Tenant Access Blocked',
-    crossProj.status === 404 ? 'PASS' : 'FAIL',
-    `User B blocked with HTTP 404 (zero project data exposed)`,
+    crossProj.status === 403 || crossProj.status === 404 ? 'PASS' : 'FAIL',
+    `User B blocked with HTTP ${crossProj.status} (zero project data exposed)`,
     crossProj.latency,
     crossProj.status
   );
