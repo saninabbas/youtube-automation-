@@ -86,6 +86,28 @@ export type PaymentProvider = 'polar' | 'stripe' | 'paddle' | 'none';
 
 export const PLANS: Plan[] = [
   {
+    id: 'starter',
+    name: 'Starter Plan',
+    price_monthly: 29,
+    price_annual: 24,
+    credits_monthly: 300,
+    estimated_videos: 12,
+    estimated_shorts: 24,
+    max_channels: 1,
+    max_resolution: '1080p Full HD',
+    is_popular: false,
+    cta_label: 'Get Starter Plan ($29/mo)',
+    features: [
+      '12 Full Videos / Month',
+      '1 Connected YouTube Channel',
+      'Standard Rendering Queue',
+      'Full 1080p MP4 Immediate Downloads',
+      'Microsoft Edge Neural Voices',
+      'Gemini Script Engine',
+      'Automated Captions & Subtitles',
+    ],
+  },
+  {
     id: 'creator',
     name: 'Creator Plan',
     price_monthly: 49,
@@ -93,12 +115,13 @@ export const PLANS: Plan[] = [
     credits_monthly: 750,
     estimated_videos: 30,
     estimated_shorts: 60,
-    max_channels: 1,
+    max_channels: 3,
     max_resolution: '1080p Full HD',
     is_popular: true,
     cta_label: 'Get Creator Plan ($49/mo)',
     features: [
       '30 Full Videos / Month (1 Daily Video)',
+      '3 Connected YouTube Channels',
       'Full 1080p MP4 Immediate Downloads',
       'Microsoft Edge & ElevenLabs Studio Voices',
       'Multi-Model Script Engine (Gemini + DeepSeek)',
@@ -115,14 +138,14 @@ export const PLANS: Plan[] = [
     credits_monthly: 2250,
     estimated_videos: 90,
     estimated_shorts: 180,
-    max_channels: 5,
+    max_channels: 10,
     max_resolution: '4K Ultra HD',
     badge: 'MAX POWER — 3 DAILY VIDEOS',
     is_popular: false,
     cta_label: 'Get Pro Plan ($99/mo)',
     features: [
       '90 Full Videos / Month (3 Daily Videos)',
-      'Unlimited Connected YouTube Channels',
+      '10 Connected YouTube Channels',
       'Priority Render Queue & Ultra-Fast Processing',
       'Google Veo 3.1 & FAL.ai Wan 2.1 Engine Access',
       'Custom Cloned Voice IDs + ElevenLabs Studio',
@@ -131,11 +154,34 @@ export const PLANS: Plan[] = [
       'VIP 24/7 Dedicated Support',
     ],
   },
+  {
+    id: 'agency',
+    name: 'Agency Scale Plan',
+    price_monthly: 199,
+    price_annual: 159,
+    credits_monthly: 5000,
+    estimated_videos: 200,
+    estimated_shorts: 400,
+    max_channels: 50,
+    max_resolution: '4K Ultra HD',
+    badge: 'ENTERPRISE & AGENCIES',
+    is_popular: false,
+    cta_label: 'Get Agency Plan ($199/mo)',
+    features: [
+      '200 Full Videos / Month',
+      '50 Connected YouTube Channels',
+      'Dedicated Render Nodes & Zero Queue Delay',
+      'All AI Video Models (Veo, Sora, Wan 2.1, Runway)',
+      'Unlimited Voice Cloning & Translation',
+      'Multi-User Team Workspaces',
+      'White-Label Video Rendering',
+      'Dedicated Account Manager',
+    ],
+  },
 ];
 
 export function getPlanById(id: string): Plan | null {
   const normalizedId = id.toLowerCase();
-  if (normalizedId === 'pro') return PLANS.find((p) => p.id === 'creator' || p.id === 'scale') || PLANS[1];
   return PLANS.find((p) => p.id.toLowerCase() === normalizedId) || null;
 }
 
