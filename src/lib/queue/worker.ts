@@ -378,12 +378,50 @@ export class VideoPipelineWorker {
           visualStyle: channel.visual_style,
         });
 
-        // Calibrate scene durations to exactly match true audio duration
-        const totalEstimatedDuration = scenes.reduce((sum, s) => sum + s.estimatedDurationSec, 0);
-        const durationRatio = totalEstimatedDuration > 0 ? actualAudioDuration / totalEstimatedDuration : 1.0;
+        // Calibrate scene durations to exactly match true audio speech boundaries via Whisper Large v3
+        let whisperAligned = false;
+        if (audioAsset) {
+          const audioPath = storage.getFilePath(audioAsset.storage_key);
+          let audioBuf: Buffer | null = null;
+          if (fs.existsSync(audioPath)) {
+            audioBuf = await fs.promises.readFile(audioPath);
+          } else {
+            audioBuf = await storage.getObject(audioAsset.storage_key);
+          }
 
-        for (const scene of scenes) {
-          scene.estimatedDurationSec = Math.max(4, Math.round(scene.estimatedDurationSec * durationRatio * 10) / 10);
+          if (audioBuf && audioBuf.length > 1000) {
+            const alignedDurations = await subtitleProvider.alignSceneDurationsWithWhisper({
+              scenes: scenes.map((s) => ({
+                sceneIndex: s.sceneIndex,
+                narration: s.narration,
+                estimatedDurationSec: s.estimatedDurationSec,
+              })),
+              audioBuffer: audioBuf,
+              totalAudioDurationSec: actualAudioDuration,
+              language: project.language || channel.language,
+            });
+
+            if (alignedDurations && alignedDurations.length === scenes.length) {
+              for (const scene of scenes) {
+                const match = alignedDurations.find((d) => d.sceneIndex === scene.sceneIndex);
+                if (match) {
+                  scene.estimatedDurationSec = match.durationSec;
+                }
+              }
+              whisperAligned = true;
+              console.log(`[VideoPipeline] All ${scenes.length} scenes 100% aligned to spoken narration via Whisper Large v3.`);
+            }
+          }
+        }
+
+        if (!whisperAligned) {
+          // Fallback: Proportional duration calibration
+          const totalEstimatedDuration = scenes.reduce((sum, s) => sum + s.estimatedDurationSec, 0);
+          const durationRatio = totalEstimatedDuration > 0 ? actualAudioDuration / totalEstimatedDuration : 1.0;
+
+          for (const scene of scenes) {
+            scene.estimatedDurationSec = Math.max(4, Math.round(scene.estimatedDurationSec * durationRatio * 10) / 10);
+          }
         }
 
         // Clear any previous scenes if retrying
