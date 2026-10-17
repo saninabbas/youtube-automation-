@@ -524,9 +524,9 @@ export default function HomePage() {
     switch (norm) {
       case 'SCRIPT':
         return 18;
-      case 'SCENES':
-        return 38;
       case 'VOICE':
+        return 38;
+      case 'SCENES':
         return 58;
       case 'VIDEO':
         return 78;
@@ -1323,14 +1323,14 @@ export default function HomePage() {
 
                 {/* Stage checklist */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '10px', color: '#71717a', fontWeight: 600 }}>
-                  <span style={{ color: ['SCRIPT', 'SCENES', 'VOICE', 'VIDEO', 'SUBTITLES', 'FINAL_VIDEO'].includes((activeRendering.current_stage || '').toUpperCase()) ? '#22c55e' : '#71717a' }}>
+                  <span style={{ color: ['SCRIPT', 'VOICE', 'SCENES', 'VIDEO', 'SUBTITLES', 'FINAL_VIDEO'].includes((activeRendering.current_stage || '').toUpperCase()) ? '#22c55e' : '#71717a' }}>
                     ✓ Script
                   </span>
-                  <span style={{ color: ['SCENES', 'VOICE', 'VIDEO', 'SUBTITLES', 'FINAL_VIDEO'].includes((activeRendering.current_stage || '').toUpperCase()) ? '#22c55e' : '#71717a' }}>
-                    ✓ Scenes
-                  </span>
-                  <span style={{ color: ['VOICE', 'VIDEO', 'SUBTITLES', 'FINAL_VIDEO'].includes((activeRendering.current_stage || '').toUpperCase()) ? '#22c55e' : '#71717a' }}>
+                  <span style={{ color: ['VOICE', 'SCENES', 'VIDEO', 'SUBTITLES', 'FINAL_VIDEO'].includes((activeRendering.current_stage || '').toUpperCase()) ? '#22c55e' : '#71717a' }}>
                     ● Voice
+                  </span>
+                  <span style={{ color: ['SCENES', 'VIDEO', 'SUBTITLES', 'FINAL_VIDEO'].includes((activeRendering.current_stage || '').toUpperCase()) ? '#22c55e' : '#71717a' }}>
+                    ✓ Scenes
                   </span>
                   <span style={{ color: ['VIDEO', 'SUBTITLES', 'FINAL_VIDEO'].includes((activeRendering.current_stage || '').toUpperCase()) ? '#22c55e' : '#71717a' }}>
                     ○ Visuals

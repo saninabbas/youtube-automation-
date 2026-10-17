@@ -13,13 +13,13 @@ import { sceneQualityChecker, QualityReport } from '../video/qualityControl';
 import { resolveGlobalVisualStyle } from '../video/visualStyles';
 import { AspectRatio } from '../providers/video-provider.types';
 
-export type PipelineStage = 'SCRIPT' | 'SCENES' | 'VIDEO' | 'VOICE' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
+export type PipelineStage = 'SCRIPT' | 'VOICE' | 'SCENES' | 'VIDEO' | 'SUBTITLES' | 'FINAL_VIDEO' | 'THUMBNAIL';
 
 export const PIPELINE_STAGES: PipelineStage[] = [
   'SCRIPT',
+  'VOICE',
   'SCENES',
   'VIDEO',
-  'VOICE',
   'SUBTITLES',
   'FINAL_VIDEO',
   'THUMBNAIL',
