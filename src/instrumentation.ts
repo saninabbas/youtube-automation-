@@ -1,12 +1,19 @@
 /**
  * Next.js Server Lifecycle Instrumentation Hook
  *
- * Automatically bootstraps background schedulers and queue processors
- * when the production Node.js server starts up.
+ * Bootstraps background schedulers only when explicitly enabled via environment variables
+ * or running dedicated worker instances.
  */
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Prevent unprompted background generation on startup unless explicitly enabled
+    const isWorkerEnabled = process.env.ENABLE_AUTONOMOUS_WORKER === 'true' || process.env.ENABLE_BACKGROUND_SCHEDULER === 'true';
+    if (!isWorkerEnabled) {
+      console.log('[AutoVideo] Background autonomous worker is idle. (Set ENABLE_AUTONOMOUS_WORKER=true or run "npm run worker" to enable automated background publishing).');
+      return;
+    }
+
     try {
       const { publishingScheduler } = await import('@/lib/scheduler');
       const pollIntervalMs = parseInt(process.env.SCHEDULER_INTERVAL_MS || '30000', 10);

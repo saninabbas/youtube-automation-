@@ -42,4 +42,5 @@ browser-qa-results.json
 screenshot-*.png
 qa-screenshots/
 mobile-ux-audit-results.json
+*.tmp
 

@@ -60,14 +60,29 @@ class BackgroundPublishingScheduler {
       ).all(stuckPipelineThreshold) as Array<{ id: string; current_stage: string }>;
 
       if (stuckPipelineProjects.length > 0) {
-        try {
-          const { videoWorker } = await import('../queue/worker');
-          for (const proj of stuckPipelineProjects) {
-            console.log(`[SchedulerSweeper] Resuming stranded pipeline for project ${proj.id} (Stage: ${proj.current_stage || 'SCRIPT'})...`);
-            videoWorker.startProjectPipeline(proj.id, (proj.current_stage as any) || 'SCRIPT');
+        if (process.env.AUTO_RESUME_STRANDED_PIPELINES === 'true') {
+          try {
+            const { videoWorker } = await import('../queue/worker');
+            for (const proj of stuckPipelineProjects) {
+              console.log(`[SchedulerSweeper] Resuming stranded pipeline for project ${proj.id} (Stage: ${proj.current_stage || 'SCRIPT'})...`);
+              videoWorker.startProjectPipeline(proj.id, (proj.current_stage as any) || 'SCRIPT');
+            }
+          } catch (err: any) {
+            console.error('[SchedulerSweeper] Failed to trigger videoWorker resume:', err.message);
           }
-        } catch (err: any) {
-          console.error('[SchedulerSweeper] Failed to trigger videoWorker resume:', err.message);
+        } else {
+          // Mark interrupted jobs as FAILED to prevent unexpected asset generation and API charges on server restart
+          const nowIso = new Date().toISOString();
+          for (const proj of stuckPipelineProjects) {
+            console.log(`[SchedulerSweeper] Marking interrupted project ${proj.id} as FAILED. User can retry manually in Studio.`);
+            db.prepare(
+              `UPDATE content_projects SET 
+                status = 'FAILED', 
+                publish_error = 'Pipeline generation was interrupted. Click Retry Stage in Studio to resume.', 
+                updated_at = ? 
+               WHERE id = ? AND status IN ('PENDING', 'PROCESSING')`
+            ).run(nowIso, proj.id);
+          }
         }
       }
 
