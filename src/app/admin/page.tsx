@@ -603,8 +603,8 @@ export default function SuperAdminPage() {
                   <option value="ALL">All Plans (Tiers)</option>
                   <option value="STARTER">Starter Plan ($19)</option>
                   <option value="CREATOR">Creator Plan ($49)</option>
-                  <option value="SCALE">Scale Plan ($99)</option>
-                  <option value="AGENCY">Agency Plan ($249)</option>
+                  <option value="PRO">Pro Plan ($99)</option>
+                  <option value="AGENCY">Agency Plan ($299)</option>
                 </select>
 
                 <select

@@ -126,23 +126,26 @@ export const PLANS: Plan[] = [
     price_monthly: 19,
     price_annual: 15,
     credits_monthly: 500,
-    estimated_videos: 10,       // 10 motion-still long videos (50 cr each)
-    estimated_shorts: 25,       // 25 motion-still shorts (20 cr each)
-    ai_clips_per_video: 0,      // No real AI video clips — Ken Burns motion stills
-    ai_voice: 'edge',           // Microsoft Edge Neural TTS (free)
+    estimated_videos: 10,       // 10 videos (50 cr each with 1 AI Hero Hook clip + motion stills)
+    estimated_shorts: 25,       // 25 shorts (20 cr each with 1 AI Hero Hook clip + motion stills)
+    ai_clips_per_video: 1,      // 1 Real AI Video Clip (Opening Hook Scene)
+    ai_voice: 'edge',           // Microsoft Edge Neural TTS (free, 50+ voices)
     max_channels: 1,
     max_resolution: '1080p Full HD',
+    badge: 'ENTRY CREATOR • 1 AI CLIP/VIDEO',
     is_popular: false,
     cta_label: 'Get Starter Plan ($19/mo)',
     features: [
-      '10 Full Videos / Month (Motion-Still Visuals)',
+      '10 Full Videos / Month (1 Daily Video on Starter)',
       '25 YouTube Shorts / Month',
+      '1 AI Video Clip per Video (Opening Hook Scene)',
+      'Animated Ken Burns Visuals (AI Diffusion Stills)',
+      '500 AI Video Credits Every Month',
       '1 Connected YouTube Channel',
-      'AI-Generated Script & Narration',
       'Microsoft Edge Neural Voices (50+ voices)',
-      'Animated Ken Burns Visuals (AI images + motion)',
+      'AI-Generated Script & Narration (Gemini)',
       'Automated Captions & Subtitles',
-      'Auto-Publish to YouTube',
+      'Zero-Waste Credit Protection',
     ],
   },
   {
@@ -151,17 +154,20 @@ export const PLANS: Plan[] = [
     price_monthly: 49,
     price_annual: 39,
     credits_monthly: 1500,
-    estimated_videos: 30,       // 30 motion-still long videos (50 cr each)
-    estimated_shorts: 75,       // 75 motion-still shorts (20 cr each)
-    ai_clips_per_video: 0,      // Motion stills — AI SDXL image + Ken Burns
-    ai_voice: 'elevenlabs',     // ElevenLabs studio voices
+    estimated_videos: 30,       // 30 videos (50 cr each with 2 AI Hero Clips + motion stills)
+    estimated_shorts: 75,       // 75 shorts (20 cr each with 2 AI Hero Clips: Hook + Climax)
+    ai_clips_per_video: 2,      // 2 Real AI Video Clips (Hook + Narrative Climax)
+    ai_voice: 'elevenlabs',     // ElevenLabs studio voices included
     max_channels: 3,
     max_resolution: '1080p Full HD',
+    badge: 'MOST POPULAR • 2 AI CLIPS/VIDEO',
     is_popular: true,
     cta_label: 'Get Creator Plan ($49/mo)',
     features: [
       '30 Full Videos / Month (1 Daily Video)',
       '75 YouTube Shorts / Month',
+      '2 AI Video Clips per Video (Hook + Climax Scenes)',
+      '1,500 AI Video Credits Every Month',
       '3 Connected YouTube Channels',
       'ElevenLabs Studio Voices (Rachel, Adam, Josh, Bella...)',
       'AI-Generated Visuals (SDXL + Flux + Ken Burns Motion)',
@@ -177,20 +183,22 @@ export const PLANS: Plan[] = [
     price_monthly: 99,
     price_annual: 79,
     credits_monthly: 4000,
-    estimated_videos: 16,       // 16 full AI-clip videos (250 cr each) — real AI video
-    estimated_shorts: 50,       // 50 AI-clip shorts (80 cr each)
-    ai_clips_per_video: 4,      // 4 out of 6 scenes get real FAL.ai/Veo AI video clips
+    estimated_videos: 16,       // 16 full AI videos (250 cr each, 4 AI video clips)
+    estimated_shorts: 50,       // 50 shorts (80 cr each, 100% all scenes AI video clips)
+    ai_clips_per_video: 4,      // 4 AI video clips per video (all scenes for Shorts)
     ai_voice: 'elevenlabs',
     max_channels: 10,
     max_resolution: '1080p Full HD',
-    badge: 'REAL AI VIDEO CLIPS',
+    badge: '4 AI CLIPS/VIDEO • ALL SHORTS AI',
     is_popular: false,
     cta_label: 'Get Pro Plan ($99/mo)',
     features: [
-      '16 Full AI Videos / Month (Real AI-Generated Clips)',
-      '50 AI-Powered YouTube Shorts / Month',
-      '10 Connected YouTube Channels',
+      '16 Full AI Videos / Month (4 AI Video Clips Each)',
+      '50 AI-Powered YouTube Shorts / Month (100% Pure AI Video)',
+      '4,000 AI Video Credits Every Month',
+      '4 Real AI Video Clips on Every Video',
       'FAL.ai Wan 2.1 & Google Veo 3.1 AI Video Engine',
+      '10 Connected YouTube Channels',
       'ElevenLabs Premium Studio Voices',
       'Priority Render Queue & Ultra-Fast Processing',
       'Advanced Content Copilot & Workflow Automation',
@@ -203,22 +211,24 @@ export const PLANS: Plan[] = [
     price_monthly: 299,
     price_annual: 239,
     credits_monthly: 15000,
-    estimated_videos: 60,       // 60 full AI-clip videos (250 cr each)
-    estimated_shorts: 187,      // 187 AI-clip shorts (80 cr each)
-    ai_clips_per_video: 6,      // All scenes get real AI video clips
+    estimated_videos: 60,       // 60 full AI videos (250 cr each, all scenes AI clips)
+    estimated_shorts: 187,      // 187 shorts (80 cr each, all scenes AI clips)
+    ai_clips_per_video: 6,      // 6 AI video clips (100% of all scenes)
     ai_voice: 'elevenlabs+clone',
     max_channels: 50,
     max_resolution: '4K Ultra HD',
-    badge: 'ENTERPRISE & AGENCIES',
+    badge: 'ENTERPRISE & AGENCIES • 100% AI VIDEO',
     is_popular: false,
     cta_label: 'Get Agency Plan ($299/mo)',
     features: [
       '60 Full AI Videos / Month (All Scenes AI-Generated)',
-      '187 AI YouTube Shorts / Month',
+      '187 AI YouTube Shorts / Month (100% Pure AI Video)',
+      '15,000 AI Video Credits Every Month',
+      'All Scenes Powered by Real AI Video Generation',
       '50 Connected YouTube Channels',
+      'Dedicated Render Nodes — Zero Queue Delay',
       'All AI Video Models (Veo, FAL.ai, Cloudflare MiniMax)',
       'Unlimited Custom Voice Cloning + ElevenLabs',
-      'Dedicated Render Nodes — Zero Queue Delay',
       'Multi-User Team Workspaces',
       'White-Label Video Rendering',
       'Dedicated Account Manager',
@@ -228,6 +238,9 @@ export const PLANS: Plan[] = [
 
 export function getPlanById(id: string): Plan | null {
   const normalizedId = id.toLowerCase();
+  if (normalizedId === 'growth') return PLANS.find((p) => p.id === 'creator') || PLANS[1];
+  if (normalizedId === 'scale') return PLANS.find((p) => p.id === 'pro') || PLANS[2];
+  if (normalizedId === 'enterprise') return PLANS.find((p) => p.id === 'agency') || PLANS[3];
   return PLANS.find((p) => p.id.toLowerCase() === normalizedId) || null;
 }
 
@@ -264,7 +277,7 @@ export function calculateEntitlements(
   const plan = getPlanById(planId) || PLANS[0];
 
   return {
-    can_generate_video: creditBalance >= 25,
+    can_generate_video: creditBalance >= 20,
     can_publish_youtube: true,
     can_use_copilot: true,
     max_channels: plan.max_channels,
@@ -319,30 +332,29 @@ export function calculateProjectCreditCost(params: {
   const tier = (params.userTier || 'CREATOR').toLowerCase();
   const plan = getPlanById(tier) || PLANS[1];
 
-  let isAiClip = false;
-  if (params.visualMediaMode === 'ai_clip') {
-    isAiClip = true;
-  } else if (params.visualMediaMode === 'motion_still') {
-    isAiClip = false;
-  } else {
-    // 'auto' mode: uses plan's AI clip allocation
-    isAiClip = plan.ai_clips_per_video > 0;
-  }
-
   let baseCredits = 0;
-  if (isShort) {
-    baseCredits = isAiClip ? CREDIT_COSTS.AI_CLIP_SHORT : CREDIT_COSTS.MOTION_STILL_SHORT;
+  if (params.visualMediaMode === 'ai_clip') {
+    // Explicit full AI clip mode requested
+    baseCredits = isShort ? CREDIT_COSTS.AI_CLIP_SHORT : CREDIT_COSTS.AI_CLIP_VIDEO;
+  } else if (params.visualMediaMode === 'motion_still') {
+    // Explicit motion still mode requested
+    baseCredits = isShort ? CREDIT_COSTS.MOTION_STILL_SHORT : CREDIT_COSTS.MOTION_STILL_VIDEO;
   } else {
-    baseCredits = isAiClip ? CREDIT_COSTS.AI_CLIP_VIDEO : CREDIT_COSTS.MOTION_STILL_VIDEO;
+    // 'auto' mode: uses cost-effective hero-scene allocation calibrated to plan tier
+    // Starter & Creator: 1-2 hero AI clips + motion stills (20 cr short / 50 cr long)
+    // Pro & Agency: high/full AI clip allocation (80 cr short / 250 cr long)
+    if (plan.id === 'pro' || plan.id === 'agency') {
+      baseCredits = isShort ? CREDIT_COSTS.AI_CLIP_SHORT : CREDIT_COSTS.AI_CLIP_VIDEO;
+    } else {
+      baseCredits = isShort ? CREDIT_COSTS.MOTION_STILL_SHORT : CREDIT_COSTS.MOTION_STILL_VIDEO;
+    }
   }
 
-  // Voice add-on: check if ElevenLabs voice is chosen
+  // Voice add-on: only charge fee if plan doesn't include ElevenLabs (e.g. Starter tier)
   const voiceStr = (params.voice || '').toLowerCase();
-  const isElevenLabs =
-    voiceStr.includes('elevenlabs') ||
-    voiceStr.startsWith('eleven_') ||
-    plan.ai_voice.startsWith('elevenlabs');
-  if (isElevenLabs) {
+  const requestedElevenLabs = voiceStr.includes('elevenlabs') || voiceStr.startsWith('eleven_');
+  const planIncludesElevenLabs = plan.ai_voice.startsWith('elevenlabs');
+  if (requestedElevenLabs && !planIncludesElevenLabs) {
     baseCredits += isShort ? CREDIT_COSTS.ELEVENLABS_VOICE_SHORT : CREDIT_COSTS.ELEVENLABS_VOICE_LONG;
   }
 
@@ -354,7 +366,7 @@ export function calculateProjectCreditCost(params: {
  */
 export function getPlanHeroClipLimit(planId: string): number {
   const plan = getPlanById(planId);
-  return plan ? plan.ai_clips_per_video : 0;
+  return plan ? plan.ai_clips_per_video : 1;
 }
 
 /**
