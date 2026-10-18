@@ -1,18 +1,25 @@
 import { cookies, headers } from 'next/headers';
 import crypto from 'crypto';
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'autovideo_super_admin_hmac_secret_key_2026';
-
 export function signAdminToken(username: string): string {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) {
+    throw new Error('ADMIN_SECRET environment variable is not configured.');
+  }
   const timestamp = Date.now().toString();
   const signature = crypto
-    .createHmac('sha256', ADMIN_SECRET)
+    .createHmac('sha256', secret)
     .update(`${timestamp}:${username}`)
     .digest('hex');
   return `${timestamp}.${username}.${signature}`;
 }
 
 export function verifyAdminToken(token: string): boolean {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) {
+    // Fail closed: without ADMIN_SECRET configured, no admin token is ever valid
+    return false;
+  }
   if (!token || !token.includes('.')) return false;
   const parts = token.split('.');
   if (parts.length !== 3) return false;
@@ -24,12 +31,14 @@ export function verifyAdminToken(token: string): boolean {
   }
 
   const expectedSignature = crypto
-    .createHmac('sha256', ADMIN_SECRET)
+    .createHmac('sha256', secret)
     .update(`${timestamp}:${username}`)
     .digest('hex');
 
   try {
-    return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'));
+    const sigBuf = Buffer.from(signature, 'hex');
+    const expBuf = Buffer.from(expectedSignature, 'hex');
+    return sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
   } catch {
     return false;
   }
@@ -61,3 +70,4 @@ export function checkAdminSession(): { authorized: boolean; username: string | n
     return { authorized: false, username: null };
   }
 }
+

@@ -1,13 +1,18 @@
 import crypto from 'crypto';
+import { getDb } from '@/lib/db';
 
 const STATE_MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes expiration window
 
 function getStateSecret(): string {
-  return process.env.AUTH_SECRET || process.env.ADMIN_SECRET || 'autovideo_oauth_state_hmac_secret_2026';
+  const secret = process.env.AUTH_SECRET || process.env.ADMIN_SECRET;
+  if (!secret) {
+    throw new Error('Missing AUTH_SECRET or ADMIN_SECRET in environment.');
+  }
+  return secret;
 }
 
-// Track used nonces in memory to prevent replay attacks
-const usedNonces = new Set<string>();
+// Fallback in-memory tracking if DB is temporarily unreachable
+const memoryNonces = new Set<string>();
 
 /**
  * Generates an unpredictable, cryptographically signed, single-use, time-limited OAuth state token.
@@ -33,6 +38,11 @@ export function verifyOAuthState(
     return { valid: false, error: 'Missing OAuth state' };
   }
 
+  const secret = process.env.AUTH_SECRET || process.env.ADMIN_SECRET;
+  if (!secret) {
+    return { valid: false, error: 'OAuth state secret is not configured on this server.' };
+  }
+
   try {
     let jsonStr: string;
     try {
@@ -55,7 +65,7 @@ export function verifyOAuthState(
 
     // 2. Verify cryptographic signature
     const data = `${userId}:${timestamp}:${nonce}`;
-    const expectedSig = crypto.createHmac('sha256', getStateSecret()).update(data).digest('hex');
+    const expectedSig = crypto.createHmac('sha256', secret).update(data).digest('hex');
 
     const sigBuffer = Buffer.from(signature, 'hex');
     const expectedBuffer = Buffer.from(expectedSig, 'hex');
@@ -64,9 +74,33 @@ export function verifyOAuthState(
       return { valid: false, error: 'Tampered OAuth state signature' };
     }
 
-    // 3. Single-use check (replay protection)
-    if (usedNonces.has(nonce)) {
-      return { valid: false, error: 'OAuth state has already been consumed (replay attempt detected)' };
+    // 3. Single-use check (replay protection with DB persistence)
+    try {
+      const db = getDb();
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS oauth_nonces (
+          nonce TEXT PRIMARY KEY,
+          created_at INTEGER NOT NULL
+        )
+      `).run();
+
+      const expirationThreshold = Date.now() - STATE_MAX_AGE_MS;
+      db.prepare('DELETE FROM oauth_nonces WHERE created_at < ?').run(expirationThreshold);
+
+      db.prepare('INSERT INTO oauth_nonces (nonce, created_at) VALUES (?, ?)').run(nonce, Date.now());
+    } catch (dbErr: any) {
+      if (
+        dbErr.message?.includes('UNIQUE') ||
+        dbErr.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' ||
+        dbErr.message?.includes('PRIMARY KEY')
+      ) {
+        return { valid: false, error: 'OAuth state has already been consumed (replay attempt detected)' };
+      }
+      // Memory fallback if DB is undergoing maintenance
+      if (memoryNonces.has(nonce)) {
+        return { valid: false, error: 'OAuth state has already been consumed (replay attempt detected)' };
+      }
+      memoryNonces.add(nonce);
     }
 
     // 4. Session matching check
@@ -74,9 +108,9 @@ export function verifyOAuthState(
       return { valid: false, error: 'OAuth state does not match the active session user' };
     }
 
-    usedNonces.add(nonce);
     return { valid: true, userId };
   } catch (err: any) {
     return { valid: false, error: 'Invalid or unparseable OAuth state' };
   }
 }
+

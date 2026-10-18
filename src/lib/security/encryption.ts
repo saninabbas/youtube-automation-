@@ -4,7 +4,10 @@ const ALGORITHM = 'aes-256-gcm';
 const PREFIX = 'enc:v1:';
 
 function getEncryptionKey(): Buffer {
-  const envKey = process.env.ENCRYPTION_KEY || process.env.ADMIN_SECRET || 'autovideo_default_encryption_key_32b!';
+  const envKey = process.env.ENCRYPTION_KEY || process.env.ADMIN_SECRET;
+  if (!envKey) {
+    throw new Error('ENCRYPTION_KEY or ADMIN_SECRET environment variable is required for credential encryption.');
+  }
   // Deterministically hash the key to ensure it is always 32 bytes for aes-256-gcm
   return crypto.createHash('sha256').update(envKey).digest();
 }

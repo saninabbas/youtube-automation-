@@ -39,6 +39,22 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
       }
 
+      // Transparent salt migration: If user was using legacy deterministic salt, re-hash with fresh random salt
+      try {
+        const legacySalt = getEmailSalt(cleanEmail);
+        if (user.salt === legacySalt) {
+          const fresh = hashPassword(password);
+          db.prepare('UPDATE users SET password_hash = ?, salt = ?, updated_at = ? WHERE id = ?').run(
+            fresh.hash,
+            fresh.salt,
+            new Date().toISOString(),
+            user.id
+          );
+        }
+      } catch (migrateErr) {
+        console.warn('[Auth] Salt migration skipped:', migrateErr);
+      }
+
     const userAgent = req.headers.get('user-agent') || undefined;
     const { sessionToken, expiresAt } = createSession(user.id, userAgent, ip);
 

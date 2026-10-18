@@ -16,13 +16,23 @@ export interface User {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 1. CRYPTOGRAPHIC PASSWORD HASHING (SCRYPT + DETERMINISTIC SALT)
+// 1. CRYPTOGRAPHIC PASSWORD HASHING (SCRYPT + PER-USER RANDOM SALT)
 // ─────────────────────────────────────────────────────────────
 
-const AUTH_SECRET = process.env.ADMIN_SECRET || 'autovideo_saas_secure_fallback_secret_key_2026';
+function getAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET || process.env.ADMIN_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET or ADMIN_SECRET environment variable is required.');
+  }
+  return secret;
+}
 
+/**
+ * @deprecated Legacy deterministic email salt helper. Retained only for backwards-compatible login migration.
+ */
 export function getEmailSalt(email: string): string {
-  return crypto.createHmac('sha256', AUTH_SECRET).update(email.toLowerCase().trim()).digest('hex').slice(0, 32);
+  const secret = process.env.AUTH_SECRET || process.env.ADMIN_SECRET || 'legacy_migration_salt_key_only';
+  return crypto.createHmac('sha256', secret).update(email.toLowerCase().trim()).digest('hex').slice(0, 32);
 }
 
 export function getUserIdFromEmail(email: string): string {
@@ -61,13 +71,16 @@ export const SESSION_TOKEN_COOKIE = 'auth_session_token';
 export const SESSION_COOKIE = 'auth_session_token';
 
 export function signToken(userId: string, expiresTimestamp: number): string {
+  const secret = getAuthSecret();
   const data = `${userId}.${expiresTimestamp}`;
-  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
+  const sig = crypto.createHmac('sha256', secret).update(data).digest('hex');
   return `${data}.${sig}`;
 }
 
 export function verifySignedToken(token: string): { valid: boolean; userId?: string } {
   try {
+    const secret = process.env.AUTH_SECRET || process.env.ADMIN_SECRET;
+    if (!secret) return { valid: false };
     const parts = token.split('.');
     if (parts.length !== 3) return { valid: false };
     const [userId, expiresStr, sig] = parts;
@@ -75,8 +88,10 @@ export function verifySignedToken(token: string): { valid: boolean; userId?: str
     if (isNaN(expiresTimestamp) || Date.now() > expiresTimestamp) {
       return { valid: false };
     }
-    const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(`${userId}.${expiresTimestamp}`).digest('hex');
-    if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+    const expectedSig = crypto.createHmac('sha256', secret).update(`${userId}.${expiresTimestamp}`).digest('hex');
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expectedSig);
+    if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
       return { valid: true, userId };
     }
   } catch {
@@ -104,6 +119,7 @@ export function createSession(
     `).run(sessionId, userId, sessionToken, expiresAt, userAgent || null, ipAddress || null, now);
   } catch (err: any) {
     console.error('[Auth] Failed to insert session into database:', err.message);
+    throw new Error(`Failed to persist user session: ${err.message}`);
   }
 
   return { sessionToken, expiresAt };
@@ -291,10 +307,10 @@ export function clearSessionCookie(res: NextResponse): void {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 4. IN-MEMORY RATE LIMITING (SLIDING WINDOW)
+// 4. PERSISTENT RATE LIMITING (SQLITE BACKED WITH MEMORY FALLBACK)
 // ─────────────────────────────────────────────────────────────
 
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const memoryRateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 export function checkRateLimit(
   key: string,
@@ -302,19 +318,51 @@ export function checkRateLimit(
   windowMs = 60000
 ): { allowed: boolean; remaining: number } {
   const now = Date.now();
-  const record = rateLimitStore.get(key);
 
-  if (!record || now > record.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: limit - 1 };
+  try {
+    const db = getDb();
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        key TEXT PRIMARY KEY,
+        count INTEGER NOT NULL,
+        reset_at INTEGER NOT NULL
+      )
+    `).run();
+
+    // Clean expired rate limits periodically
+    db.prepare('DELETE FROM rate_limits WHERE reset_at < ?').run(now);
+
+    const record = db.prepare('SELECT count, reset_at FROM rate_limits WHERE key = ?').get(key) as
+      | { count: number; reset_at: number }
+      | undefined;
+
+    if (!record || now > record.reset_at) {
+      db.prepare('INSERT OR REPLACE INTO rate_limits (key, count, reset_at) VALUES (?, 1, ?)').run(
+        key,
+        now + windowMs
+      );
+      return { allowed: true, remaining: limit - 1 };
+    }
+
+    if (record.count >= limit) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    db.prepare('UPDATE rate_limits SET count = count + 1 WHERE key = ?').run(key);
+    return { allowed: true, remaining: limit - (record.count + 1) };
+  } catch {
+    // Memory fallback if DB is temporarily unavailable
+    const record = memoryRateLimitStore.get(key);
+    if (!record || now > record.resetAt) {
+      memoryRateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+      return { allowed: true, remaining: limit - 1 };
+    }
+    if (record.count >= limit) {
+      return { allowed: false, remaining: 0 };
+    }
+    record.count += 1;
+    return { allowed: true, remaining: limit - record.count };
   }
-
-  if (record.count >= limit) {
-    return { allowed: false, remaining: 0 };
-  }
-
-  record.count += 1;
-  return { allowed: true, remaining: limit - record.count };
 }
 
 // ─────────────────────────────────────────────────────────────

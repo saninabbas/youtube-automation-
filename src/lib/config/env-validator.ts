@@ -11,6 +11,7 @@ export interface EnvValidationResult {
 
 const INSECURE_DEFAULT_PASSWORDS = [
   'AutoVideoAdmin2026!#',
+  'Pakistan@1997',
   'admin',
   'password',
   '123456',
@@ -32,10 +33,17 @@ export function validateEnvironment(): EnvValidationResult {
 
   // 1. Production Secrets & Insecure Defaults Check
   const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminUser = process.env.ADMIN_USER;
   if (isProd) {
     if (!adminPassword || INSECURE_DEFAULT_PASSWORDS.includes(adminPassword)) {
       errors.push(
         'CRITICAL: Production ADMIN_PASSWORD is missing or set to an insecure default. Provide a strong custom password.'
+      );
+    }
+
+    if (!adminUser || adminUser === 'sanin5' || adminUser === 'admin') {
+      errors.push(
+        'CRITICAL: Production ADMIN_USER is missing or set to an insecure default. Provide a custom admin username.'
       );
     }
 

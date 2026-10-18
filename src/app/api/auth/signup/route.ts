@@ -34,8 +34,7 @@ export async function POST(req: Request) {
     }
 
     const userId = getUserIdFromEmail(cleanEmail);
-    const salt = getEmailSalt(cleanEmail);
-    const { hash } = hashPassword(password, salt);
+    const { hash, salt } = hashPassword(password);
     const verificationToken = crypto.randomBytes(24).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
     const now = new Date().toISOString();

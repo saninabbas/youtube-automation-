@@ -7,6 +7,32 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Validate production environment security and fail closed
+    try {
+      const { validateEnvironment } = await import('@/lib/config/env-validator');
+      const envCheck = validateEnvironment();
+      if (!envCheck.valid) {
+        console.error('================================================================');
+        console.error('🚨 CRITICAL PRODUCTION ENVIRONMENT VALIDATION ERRORS:');
+        for (const err of envCheck.errors) {
+          console.error(`  - ${err}`);
+        }
+        console.error('================================================================');
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(`Server halted: ${envCheck.errors.length} critical environment validation error(s) detected.`);
+        }
+      }
+      if (envCheck.warnings.length > 0) {
+        for (const warn of envCheck.warnings) {
+          console.warn(`[EnvValidator Warning] ${warn}`);
+        }
+      }
+    } catch (valErr: any) {
+      if (process.env.NODE_ENV === 'production') {
+        throw valErr;
+      }
+    }
+
     // Prevent unprompted background generation on startup unless explicitly enabled
     const isWorkerEnabled = process.env.ENABLE_AUTONOMOUS_WORKER === 'true' || process.env.ENABLE_BACKGROUND_SCHEDULER === 'true';
     if (!isWorkerEnabled) {
