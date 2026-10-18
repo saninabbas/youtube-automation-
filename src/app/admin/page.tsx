@@ -10,7 +10,7 @@ import LogsManager from '@/components/admin/LogsManager';
 
 export default function SuperAdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const [username, setUsername] = useState('sanin5');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loggingIn, setLoggingIn] = useState(false);
@@ -1568,7 +1568,7 @@ export default function SuperAdminPage() {
                   { id: 'veo', name: 'Google Veo 3.1 Video API', desc: 'Google DeepMind photorealistic 1080p generative video engine (Requires Pay-as-you-go Gemini key)' },
                   { id: 'fal', name: 'FAL.ai Video Engine (Wan 2.1 / Kling / LTX)', desc: 'Cloud GPU generative video models (Wan 2.1 14B, Kling 2.1, LTX-Video)' },
                   { id: 'runway', name: 'Runway Gen-3 / Gen-4 Alpha', desc: 'Hollywood-grade generative AI motion video synthesis engine' },
-                  { id: 'sora', name: 'OpenAI Sora / Video Engine', desc: 'OpenAI photorealistic physics text-to-video generative AI' },
+                  { id: 'sora', name: 'OpenAI Sora / Video Engine (Deprecated / Preview)', desc: 'OpenAI text-to-video (Experimental/Preview — falls back to Veo / Wan 2.1 / motion stills)' },
                   { id: 'luma', name: 'Luma Dream Machine (Ray 2)', desc: 'Cinematic camera motion and realistic physics text-to-video' },
                 ].map((p) => {
                   const isConfigured = !!credentials[p.id];

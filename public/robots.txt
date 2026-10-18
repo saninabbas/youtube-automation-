@@ -3,20 +3,23 @@ User-agent: *
 Allow: /
 Allow: /landing
 Allow: /blog
-Allow: /calendar
 Allow: /templates
-Allow: /workflow
-Allow: /billing
 Allow: /login
 Allow: /signup
 
-# Disallow protected and internal API areas from search index
+# Disallow authenticated, user-specific, admin, and internal API routes
 Disallow: /admin
 Disallow: /api/
-Disallow: /settings/security
+Disallow: /calendar
+Disallow: /billing
+Disallow: /dashboard
+Disallow: /content
+Disallow: /workflow
+Disallow: /channels
+Disallow: /settings
+Disallow: /analytics
 Disallow: /reset-password
 Disallow: /verify-email
 
 # XML Sitemaps
 Sitemap: https://autora.live/sitemap.xml
-Sitemap: https://autora.live/admin-sitemap.xml
