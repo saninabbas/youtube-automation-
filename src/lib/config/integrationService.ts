@@ -131,8 +131,8 @@ export const KNOWN_INTEGRATIONS: Record<string, IntegrationDefinition> = {
   sora: {
     provider: 'sora',
     category: 'ai_video',
-    displayName: 'OpenAI Sora Video AI',
-    description: 'Next-generation physics-coherent text-to-video and cinematic generation',
+    displayName: 'OpenAI Sora Video AI (Deprecated / Preview)',
+    description: 'Experimental text-to-video slot. Note: Public OpenAI Sora API is in restricted preview; falls back to Google Veo / Wan 2.1 / motion stills',
     defaultSettings: {
       defaultModel: 'sora-1.0',
       resolution: '1080p',

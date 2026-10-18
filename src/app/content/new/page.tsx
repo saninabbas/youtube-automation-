@@ -70,6 +70,7 @@ function CreateVideoWizardContent() {
   // Advanced Options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [visualStyle, setVisualStyle] = useState('Cinematic High-Contrast');
+  const [visualMediaMode, setVisualMediaMode] = useState<'auto' | 'ai_clip' | 'motion_still'>('auto');
   const [videoLength, setVideoLength] = useState<number>(1);
 
   // Focus trap ref
@@ -505,6 +506,7 @@ function CreateVideoWizardContent() {
           aspect_ratio: videoLength >= 2 ? '16:9' : '9:16',
           voice: activeVoice,
           visual_style: visualStyle,
+          visual_media_mode: visualMediaMode,
         }),
       });
 
@@ -927,6 +929,33 @@ function CreateVideoWizardContent() {
                     <option value="Photorealistic 8K">Natural Realism</option>
                     <option value="Modern Clean">Minimalist Modern</option>
                   </select>
+                </div>
+
+                <div>
+                  <label htmlFor="visual-media-mode-select" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#a1a1aa', marginBottom: '6px' }}>
+                    Visual Media Mode
+                  </label>
+                  <select
+                    id="visual-media-mode-select"
+                    value={visualMediaMode}
+                    onChange={(e) => setVisualMediaMode(e.target.value as any)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      fontSize: '13px',
+                      background: '#121215',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '6px',
+                      color: '#fff'
+                    }}
+                  >
+                    <option value="auto">Auto (AI Video Clips if keys configured, else Motion Stills)</option>
+                    <option value="ai_clip">AI Video Clips Only (Google Veo / FAL Wan 2.1)</option>
+                    <option value="motion_still">Diffusion Motion Stills (Fastest, 60fps Ken Burns)</option>
+                  </select>
+                  <div style={{ fontSize: '11px', color: '#71717a', marginTop: '6px', lineHeight: '1.4' }}>
+                    ℹ️ If AI video keys (Veo/Wan 2.1) are unset, AUTORA synthesizes 1080p high-contrast diffusion motion visuals to avoid render failures.
+                  </div>
                 </div>
 
                 <div>
