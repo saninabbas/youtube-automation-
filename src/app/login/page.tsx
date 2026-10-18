@@ -26,10 +26,18 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text().catch(() => '');
+        data = { error: text || `Server returned status ${res.status}` };
+      }
 
       if (!res.ok) {
-        if (data.unverified) {
+        if (res.status === 502 || res.status === 503) {
+          setError('Server is updating or restarting (502 Bad Gateway). Please wait a few moments and try again.');
+        } else if (data.unverified) {
           setUnverified(true);
         } else {
           setError(data.error || 'Login failed. Please try again.');
@@ -38,8 +46,8 @@ export default function LoginPage() {
       }
 
       window.location.href = '/';
-    } catch {
-      setError('Network error. Please check your connection and try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }

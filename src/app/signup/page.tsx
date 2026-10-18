@@ -33,16 +33,26 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text().catch(() => '');
+        data = { error: text || `Server returned status ${res.status}` };
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create account. Please try again.');
+        if (res.status === 502 || res.status === 503) {
+          setError('Server is updating or restarting (502 Bad Gateway). Please wait a few moments and try again.');
+        } else {
+          setError(data.error || 'Failed to create account. Please try again.');
+        }
         return;
       }
 
       window.location.href = '/';
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }

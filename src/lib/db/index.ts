@@ -36,11 +36,21 @@ export function getDb(): Database.Database {
     }
 
     // Run schema initialization
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    let schemaSql: string;
-    if (fs.existsSync(schemaPath)) {
-      schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    } else {
+    const possibleSchemaPaths = [
+      path.join(__dirname, 'schema.sql'),
+      path.join(process.cwd(), 'src', 'lib', 'db', 'schema.sql'),
+      path.join(process.cwd(), 'schema.sql'),
+    ];
+    let schemaSql = '';
+    for (const p of possibleSchemaPaths) {
+      if (fs.existsSync(p)) {
+        try {
+          schemaSql = fs.readFileSync(p, 'utf8');
+          break;
+        } catch {}
+      }
+    }
+    if (!schemaSql) {
       schemaSql = `
         CREATE TABLE IF NOT EXISTS channels (
           id TEXT PRIMARY KEY,
