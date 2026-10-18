@@ -3,6 +3,39 @@
  *
  * Provides normalized pricing, calculated video outputs, credit allotments,
  * and multi-tier monetization packages.
+ *
+ * ─── CREDIT COST BASIS ───────────────────────────────────────────────────────
+ * 1 credit ≈ $0.01 platform cost (with ~3-4× markup for margin)
+ *
+ * Real API Costs Per Scene Clip (5-8 sec):
+ *   FAL.ai Wan 2.1 720p    → ~$0.40/clip
+ *   FAL.ai Wan 2.1 1080p   → ~$0.60/clip
+ *   Google Veo 3.1 Lite    → ~$0.64/clip (1080p @ $0.08/s × 8s)
+ *   Google Veo 3.1 Fast    → ~$0.96/clip (1080p @ $0.12/s × 8s)
+ *   Cloudflare SDXL Image  → ~$0.00 (free tier quota)
+ *   Motion Still (Ken Burns)→ ~$0.00
+ *
+ * Real API Costs Per Voice:
+ *   ElevenLabs (8-min video) → ~$0.55 (~5,500 chars × $0.10/1k chars)
+ *   ElevenLabs (60s short)   → ~$0.07 (~700 chars)
+ *   ElevenLabs (15s short)   → ~$0.018 (~175 chars)
+ *   Microsoft Edge TTS       → $0.00 (free)
+ *
+ * ─── COMPETITOR BENCHMARKS ───────────────────────────────────────────────────
+ *   InVideo AI  : $20/mo → 400 cr | $60/mo → 2000 cr | $150/mo → 5000 cr
+ *   Pictory AI  : $29/mo → 200 video-min | $59/mo → 600 min | $199/mo → 1800 min
+ *   Synthesia   : 120 credits/min video | $29/mo → 10 min | $89/mo → 30 min
+ *
+ * ─── AUTORA CREDIT DESIGN ────────────────────────────────────────────────────
+ *   Motion-Still Short (≤60s, 4 scenes)  = 20 credits  (~$0.20 cost, $0.00 AI)
+ *   AI-Clip Short (≤60s, 4 scenes FAL)   = 80 credits  (~$0.80 → covers 2 clips)
+ *   Motion-Still Long Video (8min, 6 sc) = 50 credits  (~$0.50 cost)
+ *   AI-Clip Long Video (8min, 6 sc FAL)  = 250 credits (~$2.50 → covers 4 clips)
+ *   ElevenLabs Voice add-on (long)       = 15 credits  (~$0.15)
+ *   ElevenLabs Voice add-on (short)      = 5 credits   (~$0.05)
+ *   Thumbnail generation                 = 5 credits
+ *   Copilot / Script request             = 2 credits
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 // ============================================================
@@ -17,6 +50,8 @@ export interface Plan {
   credits_monthly: number;
   estimated_videos: number;
   estimated_shorts: number;
+  ai_clips_per_video: number;   // how many scenes get real AI video clips
+  ai_voice: 'edge' | 'elevenlabs' | 'elevenlabs+clone';
   max_channels: number;
   max_resolution: string;
   badge?: string;
@@ -90,21 +125,24 @@ export const PLANS: Plan[] = [
     name: 'Starter Plan',
     price_monthly: 19,
     price_annual: 15,
-    credits_monthly: 250,
-    estimated_videos: 10,
-    estimated_shorts: 20,
+    credits_monthly: 500,
+    estimated_videos: 10,       // 10 motion-still long videos (50 cr each)
+    estimated_shorts: 25,       // 25 motion-still shorts (20 cr each)
+    ai_clips_per_video: 0,      // No real AI video clips — Ken Burns motion stills
+    ai_voice: 'edge',           // Microsoft Edge Neural TTS (free)
     max_channels: 1,
     max_resolution: '1080p Full HD',
     is_popular: false,
     cta_label: 'Get Starter Plan ($19/mo)',
     features: [
-      '10 Full Videos / Month',
+      '10 Full Videos / Month (Motion-Still Visuals)',
+      '25 YouTube Shorts / Month',
       '1 Connected YouTube Channel',
-      'Standard Rendering Queue',
-      'Full 1080p MP4 Immediate Downloads',
-      'Microsoft Edge Neural Voices',
-      'Gemini Script Engine',
+      'AI-Generated Script & Narration',
+      'Microsoft Edge Neural Voices (50+ voices)',
+      'Animated Ken Burns Visuals (AI images + motion)',
       'Automated Captions & Subtitles',
+      'Auto-Publish to YouTube',
     ],
   },
   {
@@ -112,18 +150,21 @@ export const PLANS: Plan[] = [
     name: 'Creator Plan',
     price_monthly: 49,
     price_annual: 39,
-    credits_monthly: 750,
-    estimated_videos: 30,
-    estimated_shorts: 60,
+    credits_monthly: 1500,
+    estimated_videos: 30,       // 30 motion-still long videos (50 cr each)
+    estimated_shorts: 75,       // 75 motion-still shorts (20 cr each)
+    ai_clips_per_video: 0,      // Motion stills — AI SDXL image + Ken Burns
+    ai_voice: 'elevenlabs',     // ElevenLabs studio voices
     max_channels: 3,
     max_resolution: '1080p Full HD',
     is_popular: true,
     cta_label: 'Get Creator Plan ($49/mo)',
     features: [
       '30 Full Videos / Month (1 Daily Video)',
+      '75 YouTube Shorts / Month',
       '3 Connected YouTube Channels',
-      'Full 1080p MP4 Immediate Downloads',
-      'Microsoft Edge & ElevenLabs Studio Voices',
+      'ElevenLabs Studio Voices (Rachel, Adam, Josh, Bella...)',
+      'AI-Generated Visuals (SDXL + Flux + Ken Burns Motion)',
       'Multi-Model Script Engine (Gemini + DeepSeek)',
       'Automated Captions & Subtitle Burn-In',
       'Zero-Waste Policy (Failed jobs never count)',
@@ -132,47 +173,52 @@ export const PLANS: Plan[] = [
   },
   {
     id: 'pro',
-    name: 'Pro Automation Plan',
+    name: 'Pro AI Video Plan',
     price_monthly: 99,
     price_annual: 79,
-    credits_monthly: 2250,
-    estimated_videos: 90,
-    estimated_shorts: 180,
+    credits_monthly: 4000,
+    estimated_videos: 16,       // 16 full AI-clip videos (250 cr each) — real AI video
+    estimated_shorts: 50,       // 50 AI-clip shorts (80 cr each)
+    ai_clips_per_video: 4,      // 4 out of 6 scenes get real FAL.ai/Veo AI video clips
+    ai_voice: 'elevenlabs',
     max_channels: 10,
-    max_resolution: '4K Ultra HD',
-    badge: 'MAX POWER — 3 DAILY VIDEOS',
+    max_resolution: '1080p Full HD',
+    badge: 'REAL AI VIDEO CLIPS',
     is_popular: false,
     cta_label: 'Get Pro Plan ($99/mo)',
     features: [
-      '90 Full Videos / Month (3 Daily Videos)',
+      '16 Full AI Videos / Month (Real AI-Generated Clips)',
+      '50 AI-Powered YouTube Shorts / Month',
       '10 Connected YouTube Channels',
+      'FAL.ai Wan 2.1 & Google Veo 3.1 AI Video Engine',
+      'ElevenLabs Premium Studio Voices',
       'Priority Render Queue & Ultra-Fast Processing',
-      'Google Veo 3.1 & FAL.ai Wan 2.1 Engine Access',
-      'Custom Cloned Voice IDs + ElevenLabs Studio',
       'Advanced Content Copilot & Workflow Automation',
-      '4K Ultra HD & High-Bitrate Video Exports',
       'VIP 24/7 Dedicated Support',
     ],
   },
   {
     id: 'agency',
     name: 'Agency Scale Plan',
-    price_monthly: 199,
-    price_annual: 159,
-    credits_monthly: 5000,
-    estimated_videos: 200,
-    estimated_shorts: 400,
+    price_monthly: 299,
+    price_annual: 239,
+    credits_monthly: 15000,
+    estimated_videos: 60,       // 60 full AI-clip videos (250 cr each)
+    estimated_shorts: 187,      // 187 AI-clip shorts (80 cr each)
+    ai_clips_per_video: 6,      // All scenes get real AI video clips
+    ai_voice: 'elevenlabs+clone',
     max_channels: 50,
     max_resolution: '4K Ultra HD',
     badge: 'ENTERPRISE & AGENCIES',
     is_popular: false,
-    cta_label: 'Get Agency Plan ($199/mo)',
+    cta_label: 'Get Agency Plan ($299/mo)',
     features: [
-      '200 Full Videos / Month',
+      '60 Full AI Videos / Month (All Scenes AI-Generated)',
+      '187 AI YouTube Shorts / Month',
       '50 Connected YouTube Channels',
-      'Dedicated Render Nodes & Zero Queue Delay',
-      'All AI Video Models (Veo, Sora, Wan 2.1, Runway)',
-      'Unlimited Voice Cloning & Translation',
+      'All AI Video Models (Veo, FAL.ai, Cloudflare MiniMax)',
+      'Unlimited Custom Voice Cloning + ElevenLabs',
+      'Dedicated Render Nodes — Zero Queue Delay',
       'Multi-User Team Workspaces',
       'White-Label Video Rendering',
       'Dedicated Account Manager',
@@ -233,8 +279,112 @@ export function calculateEntitlements(
 // CREDIT COST CONSTANTS
 // ============================================================
 
+// Research-backed pricing (1 credit ≈ $0.01 platform cost, ~3-4× margin)
 export const CREDIT_COSTS = {
-  VIDEO_GENERATION: 25,
-  THUMBNAIL_GENERATION: 5,
-  COPILOT_REQUEST: 1,
+  // ── Long-form videos (8-min, ~6 scenes) ─────────────────
+  MOTION_STILL_VIDEO: 50,      // Ken Burns AI image + motion  (~$0.50 cost)
+  AI_CLIP_VIDEO: 250,          // FAL.ai/Veo real AI clips (~$2.50 → ~4 clips @ $0.60)
+
+  // ── YouTube Shorts (≤60s, ~4 scenes) ────────────────────
+  MOTION_STILL_SHORT: 20,      // Ken Burns AI image + motion  (~$0.20 cost)
+  AI_CLIP_SHORT: 80,           // FAL.ai real AI clips (~$0.80 → ~2 clips @ $0.40)
+
+  // ── Voice add-ons ────────────────────────────────────────
+  ELEVENLABS_VOICE_LONG: 15,   // ElevenLabs for long video (~$0.55 cost)
+  ELEVENLABS_VOICE_SHORT: 5,   // ElevenLabs for short (~$0.07 cost)
+
+  // ── Other operations ─────────────────────────────────────
+  THUMBNAIL_GENERATION: 5,     // AI thumbnail (~$0.05 cost)
+  COPILOT_REQUEST: 2,          // Script/copilot AI call (~$0.02 cost)
+
+  // ── Legacy alias (backward compat with existing deduction code) ──
+  VIDEO_GENERATION: 50,        // Default = motion-still long video
 } as const;
+
+// ============================================================
+// DYNAMIC COST CALCULATION & HERO SCENE ALLOCATION
+// ============================================================
+
+/**
+ * Calculates the exact credit cost for a project based on duration,
+ * visual generation mode (AI clip vs motion still), and voice provider.
+ */
+export function calculateProjectCreditCost(params: {
+  targetLengthMinutes: number;
+  visualMediaMode?: 'auto' | 'ai_clip' | 'motion_still';
+  voice?: string;
+  userTier?: string;
+}): number {
+  const isShort = params.targetLengthMinutes < 2;
+  const tier = (params.userTier || 'CREATOR').toLowerCase();
+  const plan = getPlanById(tier) || PLANS[1];
+
+  let isAiClip = false;
+  if (params.visualMediaMode === 'ai_clip') {
+    isAiClip = true;
+  } else if (params.visualMediaMode === 'motion_still') {
+    isAiClip = false;
+  } else {
+    // 'auto' mode: uses plan's AI clip allocation
+    isAiClip = plan.ai_clips_per_video > 0;
+  }
+
+  let baseCredits = 0;
+  if (isShort) {
+    baseCredits = isAiClip ? CREDIT_COSTS.AI_CLIP_SHORT : CREDIT_COSTS.MOTION_STILL_SHORT;
+  } else {
+    baseCredits = isAiClip ? CREDIT_COSTS.AI_CLIP_VIDEO : CREDIT_COSTS.MOTION_STILL_VIDEO;
+  }
+
+  // Voice add-on: check if ElevenLabs voice is chosen
+  const voiceStr = (params.voice || '').toLowerCase();
+  const isElevenLabs =
+    voiceStr.includes('elevenlabs') ||
+    voiceStr.startsWith('eleven_') ||
+    plan.ai_voice.startsWith('elevenlabs');
+  if (isElevenLabs) {
+    baseCredits += isShort ? CREDIT_COSTS.ELEVENLABS_VOICE_SHORT : CREDIT_COSTS.ELEVENLABS_VOICE_LONG;
+  }
+
+  return baseCredits;
+}
+
+/**
+ * Returns how many scenes are entitled to real AI video clips for a plan.
+ */
+export function getPlanHeroClipLimit(planId: string): number {
+  const plan = getPlanById(planId);
+  return plan ? plan.ai_clips_per_video : 0;
+}
+
+/**
+ * Determines whether a specific scene qualifies as a "Hero Scene" eligible for real
+ * AI text-to-video generation (FAL.ai Wan 2.1 / Google Veo) vs cinematic motion-still.
+ *
+ * Priority Order:
+ * 1. Scene 1 (Hook) — Crucial for viewer retention in the first 3-5 seconds
+ * 2. Climax / Core Takeaway (Second-to-last scene)
+ * 3. Primary Introduction / Core Concept (Scene 2)
+ * 4. Mid-point narrative climax
+ */
+export function isHeroScene(sceneIndex: number, totalScenes: number, maxClips: number): boolean {
+  if (maxClips <= 0) return false;
+  if (maxClips >= totalScenes) return true;
+
+  const priority: number[] = [1];
+  if (totalScenes > 2) {
+    priority.push(totalScenes - 1);
+  }
+  if (totalScenes > 3) {
+    priority.push(2);
+  }
+  if (totalScenes > 4) {
+    priority.push(Math.floor(totalScenes / 2));
+  }
+  for (let i = 1; i <= totalScenes; i++) {
+    if (!priority.includes(i)) priority.push(i);
+  }
+
+  const heroSet = new Set(priority.slice(0, maxClips));
+  return heroSet.has(sceneIndex);
+}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb, DEFAULT_USER_ID, ContentProject, Channel, deductUserCredits, getMonthlyVideoUsage } from '@/lib/db';
+import { getDb, DEFAULT_USER_ID, ContentProject, Channel, deductUserCredits, getUserCredits, getMonthlyVideoUsage } from '@/lib/db';
+import { calculateProjectCreditCost } from '@/lib/billing';
 import { videoWorker } from '@/lib/queue/worker';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -136,17 +137,47 @@ export async function POST(request: Request) {
     const willAutoPublish = auto_publish || channel.auto_publish ? 1 : 0;
     const initialPublishStatus = scheduled_at ? 'SCHEDULED' : willAutoPublish ? 'SCHEDULED' : 'DRAFT';
 
-    // Deduct 25 credits for automated generation
-    try {
-      deductUserCredits(userId, 25, 'GENERATE_VIDEO', `Generated video: ${topic.trim().substring(0, 40)}`, projectId);
-    } catch {}
-
     const numericLength = Number(target_length_minutes);
     const parsedLength = !isNaN(numericLength) && numericLength > 0 ? numericLength : 5;
+    const resolvedVisualMediaMode = body.visual_media_mode || 'auto';
+
+    // Calculate exact credit requirement based on length, media mode, voice, and plan tier
+    const userCredits = getUserCredits(userId);
+    const requiredCredits = calculateProjectCreditCost({
+      targetLengthMinutes: parsedLength,
+      visualMediaMode: resolvedVisualMediaMode,
+      voice: voice || channel.voice,
+      userTier: userCredits?.tier || 'CREATOR',
+    });
+
+    if (userCredits.balance < requiredCredits) {
+      return NextResponse.json(
+        {
+          error: `Insufficient credits. This generation requires ${requiredCredits} credits, but your account balance is ${userCredits.balance} credits. Please upgrade your plan or top up credits.`,
+          requiredCredits,
+          balance: userCredits.balance,
+        },
+        { status: 402 }
+      );
+    }
+
+    // Deduct calculated credits with transaction logging
+    try {
+      deductUserCredits(
+        userId,
+        requiredCredits,
+        'GENERATE_VIDEO',
+        `Generated video: ${topic.trim().substring(0, 40)} (${parsedLength < 2 ? 'Short' : 'Long-form'}, ${requiredCredits} credits)`,
+        projectId
+      );
+    } catch (err: any) {
+      console.warn('[ProjectsRoute] Credit deduction warning:', err?.message);
+    }
+
     const resolvedAspectRatio = body.aspect_ratio || (parsedLength >= 2 ? '16:9' : '9:16');
     const projectMetadata = JSON.stringify({
       aspectRatio: resolvedAspectRatio,
-      visualMediaMode: body.visual_media_mode || 'auto',
+      visualMediaMode: resolvedVisualMediaMode,
     });
 
     db.prepare(
