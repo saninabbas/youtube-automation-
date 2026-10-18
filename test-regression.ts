@@ -234,7 +234,7 @@ async function runTestSuite() {
   console.log('\n--- TEST SUITE 7: Provider API Key Security & YouTube Isolation ---');
 
   // Customer session cannot authenticate as Admin
-  const { verifyAdminToken } = await import('./src/app/api/admin/auth/route');
+  const { verifyAdminToken } = await import('./src/lib/security/adminAuth');
   assert(!verifyAdminToken(sessionA.sessionToken), 'Customer session token is REJECTED by verifyAdminToken (cannot access admin endpoints)');
 
   // YouTube OAuth isolation test

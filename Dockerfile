@@ -1,5 +1,5 @@
 # Production Dockerfile for AUTORA Next.js SaaS (Debian glibc for rock-solid better-sqlite3 and ffmpeg)
-FROM node:20-slim AS base
+FROM node:22-bookworm-slim AS base
 
 # Install ffmpeg, python, make, g++ for native C++ addons
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Ensure storage and data directories exist with proper non-root ownership
-RUN mkdir -p /app/data /app/storage && chown -R node:node /app
+RUN mkdir -p /app/data /app/storage /tmp/data && chown -R node:node /app /tmp/data
 
 # Install dependencies deterministically from lockfile
 COPY --chown=node:node package.json package-lock.json ./

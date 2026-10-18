@@ -15,6 +15,8 @@
     "test": "npm run test:unit",
     "test:unit": "npx -y tsx tests/run-unit-tests.ts",
     "test:routes": "npx -y tsx tests/route-auth.test.ts",
+    "test:regression": "npx -y tsx test-regression.ts",
+    "test:pages": "npx -y tsx scripts/test-all-pages.ts",
     "test:e2e": "npx -y tsx test-final-browser-qa.ts",
     "test:youtube": "npx -y tsx test-youtube-integration.ts",
     "test:audit": "npx -y tsx test-final-production-audit.ts",

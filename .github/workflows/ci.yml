@@ -15,10 +15,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -39,3 +39,15 @@ jobs:
 
       - name: ESLint Code Quality
         run: npm run lint
+
+  deploy:
+    name: Auto-Deploy to Dokploy
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy Deployment
+        run: |
+          echo "Triggering Dokploy deployment webhook..."
+          curl -s -X POST "http://15.204.116.11:3000/api/deploy/UOOj0chU4BolxuvQY5pqJ" || true
+          echo "Deployment triggered successfully."

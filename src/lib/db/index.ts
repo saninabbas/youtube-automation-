@@ -11,21 +11,41 @@ let dbInstance: Database.Database | null = null;
 export function getDb(): Database.Database {
   if (!dbInstance) {
     const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-    const dataDir = isServerless ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    let dataDir = isServerless ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
+
+    // Ensure directory exists and is writable, fallback to /tmp/data if permission denied
+    try {
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      const testFile = path.join(dataDir, '.write-test-' + Date.now());
+      fs.writeFileSync(testFile, '1');
+      fs.unlinkSync(testFile);
+    } catch (permErr: any) {
+      console.warn(`[DB] Directory ${dataDir} is not writable: ${permErr.message}. Falling back to /tmp/data.`);
+      dataDir = path.join('/tmp', 'data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
     }
 
-    const dbPath = path.join(dataDir, 'app.db');
+    let dbPath = path.join(dataDir, 'app.db');
     console.log(`[DB] Initializing database at ${dbPath}`);
     try {
       dbInstance = new Database(dbPath);
     } catch (err: any) {
-      console.error(`[DB] Error opening database at ${dbPath}: ${err.message}. Recreating clean database...`);
+      console.error(`[DB] Error opening database at ${dbPath}: ${err.message}. Trying /tmp/data fallback...`);
       try {
-        if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
-      } catch {}
-      dbInstance = new Database(dbPath);
+        dataDir = path.join('/tmp', 'data');
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        dbPath = path.join(dataDir, 'app.db');
+        dbInstance = new Database(dbPath);
+      } catch (fallbackErr: any) {
+        console.error(`[DB] Fatal: could not open database in /tmp: ${fallbackErr.message}`);
+        throw fallbackErr;
+      }
     }
     try {
       dbInstance.pragma('journal_mode = DELETE');
