@@ -161,9 +161,7 @@ export default function HomePage() {
 
   const fetchDashboardData = async () => {
     try {
-      if (typeof document !== 'undefined' && (document.cookie.includes('auth_session_token') || document.cookie.includes('session'))) {
-        setLoading(true);
-      }
+      setLoading(true);
       const meRes = await fetch('/api/auth/me');
       if (meRes.ok) {
         const meData = await meRes.json();

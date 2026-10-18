@@ -40,7 +40,7 @@ export default function SignupPage() {
         return;
       }
 
-      window.location.href = '/onboarding';
+      window.location.href = '/';
     } catch {
       setError('Network error. Please try again.');
     } finally {

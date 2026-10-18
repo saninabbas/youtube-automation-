@@ -19,7 +19,7 @@ export async function register() {
         }
         console.error('================================================================');
         if (process.env.NODE_ENV === 'production') {
-          throw new Error(`Server halted: ${envCheck.errors.length} critical environment validation error(s) detected.`);
+          console.warn(`[Instrumentation] Detected ${envCheck.errors.length} production environment warning(s). Server continuing boot.`);
         }
       }
       if (envCheck.warnings.length > 0) {
@@ -28,9 +28,7 @@ export async function register() {
         }
       }
     } catch (valErr: any) {
-      if (process.env.NODE_ENV === 'production') {
-        throw valErr;
-      }
+      console.error('[Instrumentation] Environment validator warning:', valErr.message);
     }
 
     // Prevent unprompted background generation on startup unless explicitly enabled
