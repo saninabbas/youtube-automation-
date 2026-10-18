@@ -1,7 +1,8 @@
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb, ContentProject, Channel, VideoScene, GeneratedAsset, VideoJob, ProjectTelemetry, ProjectMetadata } from '../db';
+import { getDb, ContentProject, Channel, VideoScene, GeneratedAsset, VideoJob, ProjectTelemetry, ProjectMetadata, getUserCredits } from '../db';
+import { getPlanById, isHeroScene, PLANS } from '../billing';
 import { aiProvider, ScriptStructure, GeneratedScene } from '../providers/aiProvider';
 import { videoProvider } from '../providers/videoProvider';
 import { voiceProvider } from '../providers/voiceProvider';
@@ -522,15 +523,38 @@ export class VideoPipelineWorker {
           }
         } catch {}
 
+        // ── HERO SCENE ALLOCATION & PACKAGE CALCULATIONS ─────────────
+        // Fetch user plan to enforce AI clip quota and only generate real AI video clips
+        // for high-impact Hero Scenes (e.g. Hook, Climax), using Ken Burns motion-stills for the rest.
+        const userCredits = getUserCredits(project.user_id);
+        const userPlan = getPlanById(userCredits?.tier || 'CREATOR') || PLANS[1];
+
+        let maxHeroAiClips = userPlan.ai_clips_per_video;
+        if (projectVisualMediaMode === 'motion_still') {
+          maxHeroAiClips = 0;
+        } else if (projectVisualMediaMode === 'ai_clip') {
+          maxHeroAiClips = scenes.length;
+        }
+
+        console.log(
+          `[VideoPipeline] AI Video Allocation: UserTier=${userPlan.name}, TotalScenes=${scenes.length}, MaxHeroAiClips=${maxHeroAiClips}, Mode=${projectVisualMediaMode}`
+        );
+
         for (const scene of scenes) {
           let attempt = 1;
           let currentPrompt = scene.visual_prompt;
           let bestClips: Array<{ clipIndex: number; storageKey: string; url: string; durationSec: number }> = [];
           let latestQcReport: QualityReport | null = null;
 
+          // Check if this scene qualifies as a Hero Scene (Hook #1, Climax, etc.)
+          const isHero = isHeroScene(scene.scene_index, scenes.length, maxHeroAiClips);
+          const effectiveMediaMode: 'ai_clip' | 'motion_still' = isHero ? 'ai_clip' : 'motion_still';
+
           try {
             while (attempt <= MAX_QC_ATTEMPTS) {
-              console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio}, Mode: ${projectVisualMediaMode})...`);
+              console.log(
+                `[VideoPipeline] Generating clip for Scene ${scene.scene_index}/${scenes.length} (${isHero ? '⭐ HERO SCENE: Real AI Video Clip' : '🎬 MOTION-STILL: Ken Burns Dynamic Diffusion'}) (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio})...`
+              );
 
               const clips = await videoProvider.generateVideoClipsForScene({
                 projectId: project.id,
@@ -547,7 +571,7 @@ export class VideoPipelineWorker {
                 colorStyle: scene.color_style || undefined,
                 continuityNotes: scene.continuity_notes || undefined,
                 aspectRatio: projectAspectRatio,
-                visualMediaMode: projectVisualMediaMode,
+                visualMediaMode: effectiveMediaMode,
               } as any);
 
               if (clips && clips.length > 0) {
