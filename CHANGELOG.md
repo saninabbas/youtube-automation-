@@ -14,7 +14,7 @@ All notable changes to the AutoVideo SaaS platform are documented in this file.
 ### Commercial SaaS Transformation & Enterprise Hardening
 - **Customer Authentication**: Full customer lifecycle including Signup, Email Verification, Onboarding, Workspace creation, Login, Password Reset, Active Sessions, and Account Deletion.
 - **Multi-Tenant Data Isolation**: Database-level query scoping (`WHERE user_id = ?`) across all projects, scenes, channels, OAuth tokens, and assets with automated penetration tests.
-- **Billing Architecture**: Calculated pricing packages (Starter $19/mo, Pro $49/mo, Scale $99/mo, Agency $199/mo) with Annual 20% savings toggle and transaction ledgers.
+- **Billing Architecture**: Calculated pricing packages (Starter $19/mo, Creator $49/mo, Pro $99/mo, Agency $199/mo) with Annual 20% savings toggle and transaction ledgers.
 - **AutoVideo AI Copilot**: Contextual AI studio assistant with real LLM execution for 9 distinct actions.
 - **10-Stage Automation Pipeline**: Full state tracking (QUEUED, PROCESSING, COMPLETED, FAILED, RETRY) with native FFmpeg 1080p rendering.
 - **Super Admin Separation**: HMAC-signed session tokens, isolated route protection, server diagnostics, and in-browser API key management.

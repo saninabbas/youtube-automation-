@@ -33,7 +33,7 @@
 - Strict SQLite database isolation between customer accounts (Tenant B receives HTTP 404 for Tenant A resources).
 
 ### 💳 Commercial Billing & Credit System
-- 4 Calculated Tiers: Starter ($19/mo), Pro Creator ($49/mo), Growth ($99/mo), Agency ($199/mo) with Annual 20% savings.
+- 4 Calculated Tiers: Starter ($19/mo), Creator ($49/mo), Pro ($99/mo), Agency ($199/mo) with Annual 20% savings.
 - Credit-based usage tracking, transaction ledgers, and credit top-up packages.
 
 ### 🛡️ Super Admin Control Panel
@@ -57,4 +57,5 @@
 2. **Comprehensive Documentation**: Complete installation, configuration, Google Cloud setup, and deployment guide (`DOCUMENTATION.md`).
 3. **Automated Test Suites**: Pre-configured browser QA and YouTube integration test suites (`test-final-browser-qa.ts` and `test-youtube-integration.ts`).
 4. **Environment Template**: Fully documented `.env.example`.
-5. **Commercial License**: Royalty-free MIT commercial usage rights (`LICENSE.txt`).
+5. **Commercial License**: Commercial Software License Agreement (`LICENSE.txt`) granting perpetual deployment, modification, and SaaS monetization rights.
+
