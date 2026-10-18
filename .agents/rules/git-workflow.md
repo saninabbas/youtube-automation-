@@ -39,4 +39,7 @@ All commits MUST follow the Conventional Commits specification:
 1. **Atomic Commits**: Never lump unrelated files into a single generic commit. Split changes into logical, cohesive commits by scope.
 2. **Present-Tense Imperative**: Start the summary with a lowercase verb (`implement`, `fix`, `add`, `optimize`, `prevent`), never past tense (`fixed`, `added`).
 3. **Always Clean Working Tree**: Verify with `git status` that no unwanted untracked files or leftover conflicts remain.
-4. **Push Seamlessly**: When requested to push, ensure the branch is aligned with `origin/main` and execute `git push origin main`.
+4. **Pull Before Starting & Before Pushing**: Always synchronize with `git fetch origin` and `git pull --rebase origin <branch>` before starting work and before pushing.
+5. **Feature Branches Required**: In collaborative workspaces, create dedicated branches (`feature/*`, `fix/*`) and rebase against `origin/main` rather than working directly on `main`.
+6. **Post-Pull Dependency Sync**: Immediately run `npm install` if incoming changes updated `package.json` or lockfiles.
+7. **Push Seamlessly**: When requested to push, ensure the branch is aligned with the remote and execute `git push origin <branch>`.
