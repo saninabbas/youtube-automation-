@@ -20,16 +20,16 @@ export async function OPTIONS() {
 function resolvePlanCredits(planIdOrName: string): { planId: string; credits: number } {
   const norm = (planIdOrName || '').toLowerCase().trim();
   if (norm.includes('starter')) {
-    return { planId: 'starter', credits: 200 };
+    return { planId: 'starter', credits: 250 };
   }
-  if (norm.includes('scale') || norm.includes('growth')) {
-    return { planId: 'scale', credits: 1500 };
+  if (norm.includes('pro') || norm.includes('scale') || norm.includes('growth')) {
+    return { planId: 'pro', credits: 2250 };
   }
-  if (norm.includes('agency')) {
-    return { planId: 'agency', credits: 4000 };
+  if (norm.includes('agency') || norm.includes('enterprise')) {
+    return { planId: 'agency', credits: 5000 };
   }
   // Default to creator tier
-  return { planId: 'creator', credits: 600 };
+  return { planId: 'creator', credits: 750 };
 }
 
 export async function POST(req: Request) {

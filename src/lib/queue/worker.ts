@@ -56,8 +56,28 @@ export class VideoPipelineWorker {
       try {
         console.log(`[VideoPipeline] Starting execution for project ${projectId} (Active: ${this.activeJobs.size}/${this.maxConcurrency})`);
         await this.processPipeline(projectId, fromStage);
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Pipeline fatal error for project ${projectId}:`, err);
+        try {
+          const db = getDb();
+          const proj = db.prepare('SELECT user_id, status FROM content_projects WHERE id = ?').get(projectId) as any;
+          if (proj && proj.status !== 'COMPLETED') {
+            db.prepare('UPDATE content_projects SET status = ?, error_message = ?, updated_at = ? WHERE id = ?').run(
+              'FAILED',
+              err?.message || 'Fatal pipeline error',
+              new Date().toISOString(),
+              projectId
+            );
+            const { grantUserCredits } = await import('../db');
+            grantUserCredits(
+              proj.user_id,
+              25,
+              'REFUND',
+              `Zero-waste credit refund: Fatal pipeline error`,
+              projectId
+            );
+          }
+        } catch {}
       } finally {
         this.activeJobs.delete(projectId);
         this.processNextInQueue();
@@ -168,6 +188,21 @@ export class VideoPipelineWorker {
         db.prepare(
           'UPDATE content_projects SET status = ?, current_stage = ?, error_message = ?, updated_at = ? WHERE id = ?'
         ).run('FAILED', stage, errorMsg, failTime, projectId);
+
+        // ZERO-WASTE POLICY: Refund credits deducted for failed job
+        try {
+          const { grantUserCredits } = await import('../db');
+          grantUserCredits(
+            project.user_id,
+            25,
+            'REFUND',
+            `Zero-waste refund: Generation failed at stage ${stage} (${errorMsg.slice(0, 50)})`,
+            projectId
+          );
+          console.log(`[VideoPipeline] 🛡️ Zero-Waste Policy: Refunded 25 credits to user ${project.user_id} for failed project ${projectId}`);
+        } catch (refErr: any) {
+          console.error(`[VideoPipeline] Could not process zero-waste refund for project ${projectId}:`, refErr.message);
+        }
 
         return; // Halt pipeline on failure
       }
@@ -478,10 +513,12 @@ export class VideoPipelineWorker {
         let previousScene: VideoScene | null = null;
 
         let projectAspectRatio: AspectRatio = project.target_length_minutes >= 2 ? '16:9' : '9:16';
+        let projectVisualMediaMode: 'auto' | 'ai_clip' | 'motion_still' = 'auto';
         try {
           if (project.metadata_json) {
             const meta = JSON.parse(project.metadata_json);
             if (meta.aspectRatio) projectAspectRatio = meta.aspectRatio;
+            if (meta.visualMediaMode) projectVisualMediaMode = meta.visualMediaMode;
           }
         } catch {}
 
@@ -493,7 +530,7 @@ export class VideoPipelineWorker {
 
           try {
             while (attempt <= MAX_QC_ATTEMPTS) {
-              console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio})...`);
+              console.log(`[VideoPipeline] Generating clip for Scene ${scene.scene_index} (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio}, Mode: ${projectVisualMediaMode})...`);
 
               const clips = await videoProvider.generateVideoClipsForScene({
                 projectId: project.id,
@@ -510,6 +547,7 @@ export class VideoPipelineWorker {
                 colorStyle: scene.color_style || undefined,
                 continuityNotes: scene.continuity_notes || undefined,
                 aspectRatio: projectAspectRatio,
+                visualMediaMode: projectVisualMediaMode,
               } as any);
 
               if (clips && clips.length > 0) {

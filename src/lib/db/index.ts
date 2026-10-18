@@ -1045,7 +1045,13 @@ export function deductUserCredits(userId: string = DEFAULT_USER_ID, amount: numb
   return true;
 }
 
-export function grantUserCredits(userId: string, amount: number, type: string, description: string): number {
+export function grantUserCredits(
+  userId: string,
+  amount: number,
+  type: string,
+  description: string,
+  projectId?: string | null
+): number {
   const db = getDb();
   const now = new Date().toISOString();
 
@@ -1062,8 +1068,8 @@ export function grantUserCredits(userId: string, amount: number, type: string, d
   try {
     db.prepare(`
       INSERT INTO credit_transactions (id, user_id, amount, balance_after, type, description, project_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
-    `).run(uuidv4(), userId, amount, updated.balance, type, description, now);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(uuidv4(), userId, amount, updated.balance, type, description, projectId || null, now);
   } catch (err) {
     console.warn('[grantUserCredits] Error logging transaction:', err);
   }

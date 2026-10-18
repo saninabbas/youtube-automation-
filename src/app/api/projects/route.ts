@@ -144,7 +144,10 @@ export async function POST(request: Request) {
     const numericLength = Number(target_length_minutes);
     const parsedLength = !isNaN(numericLength) && numericLength > 0 ? numericLength : 5;
     const resolvedAspectRatio = body.aspect_ratio || (parsedLength >= 2 ? '16:9' : '9:16');
-    const projectMetadata = JSON.stringify({ aspectRatio: resolvedAspectRatio });
+    const projectMetadata = JSON.stringify({
+      aspectRatio: resolvedAspectRatio,
+      visualMediaMode: body.visual_media_mode || 'auto',
+    });
 
     db.prepare(
       `INSERT INTO content_projects (
