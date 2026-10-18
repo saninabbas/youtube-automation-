@@ -24,6 +24,8 @@ export interface YouTubeUploadParams {
   visibility?: YouTubeVisibility;
   scheduledPublishTime?: string; // ISO 8601 string for scheduled release
   thumbnailFilePath?: string;
+  selfDeclaredMadeForKids?: boolean;
+  containsSyntheticMedia?: boolean;
 }
 
 export interface YouTubeUploadResult {
@@ -293,6 +295,30 @@ class DefaultYouTubeProvider implements YouTubeProvider {
 
       const privacyStatus = scheduledPublishTime ? 'private' : visibility.toLowerCase();
 
+      // Resolve madeForKids and containsSyntheticMedia flags with safe defaults
+      let madeForKids = params.selfDeclaredMadeForKids ?? false;
+      let syntheticMedia = params.containsSyntheticMedia ?? true; // Safe default on for AI-generated visual content
+
+      try {
+        const db = getDb();
+        const proj = db.prepare('SELECT channel_id, metadata_json FROM content_projects WHERE id = ?').get(params.projectId) as any;
+        if (proj) {
+          if (proj.metadata_json) {
+            try {
+              const meta = JSON.parse(proj.metadata_json);
+              if (meta.containsSyntheticMedia !== undefined) syntheticMedia = !!meta.containsSyntheticMedia;
+              if (meta.selfDeclaredMadeForKids !== undefined) madeForKids = !!meta.selfDeclaredMadeForKids;
+            } catch {}
+          }
+          if (proj.channel_id && params.selfDeclaredMadeForKids === undefined) {
+            const chan = db.prepare('SELECT content_rules, niche FROM channels WHERE id = ?').get(proj.channel_id) as any;
+            if (chan && (chan.niche?.toLowerCase().includes('kids') || chan.content_rules?.toLowerCase().includes('kids'))) {
+              madeForKids = true;
+            }
+          }
+        }
+      } catch {}
+
       const metadata: any = {
         snippet: {
           title: title.slice(0, 100),
@@ -302,7 +328,8 @@ class DefaultYouTubeProvider implements YouTubeProvider {
         },
         status: {
           privacyStatus,
-          selfDeclaredMadeForKids: false,
+          selfDeclaredMadeForKids: madeForKids,
+          containsSyntheticMedia: syntheticMedia,
         },
       };
 
