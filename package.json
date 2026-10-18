@@ -7,9 +7,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "scheduler": "npx -y tsx scripts/run-scheduler.ts",
     "worker": "npx -y tsx scripts/run-scheduler.ts",
-    "test": "npx -y tsx test-final-browser-qa.ts",
+    "test": "npm run test:unit",
+    "test:unit": "npx -y tsx tests/run-unit-tests.ts",
+    "test:routes": "npx -y tsx tests/route-auth.test.ts",
+    "test:e2e": "npx -y tsx test-final-browser-qa.ts",
     "test:youtube": "npx -y tsx test-youtube-integration.ts",
     "test:audit": "npx -y tsx test-final-production-audit.ts",
     "prepare": "husky"
@@ -25,7 +30,7 @@
     "nextjs"
   ],
   "author": "AUTORA Team",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE.txt",
   "type": "commonjs",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1111.0",
