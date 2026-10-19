@@ -54,6 +54,7 @@ export function decryptToken(encryptedToken: string | null | undefined): string 
 
     let decrypted = decipher.update(ciphertextHex, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
+    return decrypted;
   } catch {
     // If key has rotated or mismatch, gracefully fall back to environment credentials
     return null;

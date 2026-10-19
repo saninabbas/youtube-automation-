@@ -514,12 +514,34 @@ export class VideoPipelineWorker {
         let previousScene: VideoScene | null = null;
 
         let projectAspectRatio: AspectRatio = project.target_length_minutes >= 2 ? '16:9' : '9:16';
-        let projectVisualMediaMode: 'auto' | 'ai_clip' | 'motion_still' = 'auto';
+        let projectVisualMediaMode: 'auto' | 'ai_clip' | 'motion_still' = 'ai_clip';
+        let projectGenerationMode: 'text-to-video' | 'image-to-video' = 'text-to-video';
+        let projectPreset: any = 'CINEMATIC_DOC';
+        let projectReferenceImageUrl: string | undefined = undefined;
+        let projectCharacterRef: any = undefined;
+
         try {
           if (project.metadata_json) {
             const meta = JSON.parse(project.metadata_json);
             if (meta.aspectRatio) projectAspectRatio = meta.aspectRatio;
             if (meta.visualMediaMode) projectVisualMediaMode = meta.visualMediaMode;
+            if (meta.generationMode) projectGenerationMode = meta.generationMode;
+            if (meta.preset) projectPreset = meta.preset;
+            if (meta.referenceImageUrl) projectReferenceImageUrl = meta.referenceImageUrl;
+            if (meta.characterId) {
+              const { getCharacterById } = await import('../db');
+              const c = getCharacterById(meta.characterId);
+              if (c) {
+                projectCharacterRef = {
+                  characterId: c.id,
+                  name: c.name,
+                  description: c.description,
+                  referenceImageUrl: c.reference_image_url || undefined,
+                  gender: c.gender || undefined,
+                  voiceId: c.voice_id || undefined,
+                };
+              }
+            }
           }
         } catch {}
 
@@ -553,7 +575,7 @@ export class VideoPipelineWorker {
           try {
             while (attempt <= MAX_QC_ATTEMPTS) {
               console.log(
-                `[VideoPipeline] Generating clip for Scene ${scene.scene_index}/${scenes.length} (${isHero ? '⭐ HERO SCENE: Real AI Video Clip' : '🎬 MOTION-STILL: Ken Burns Dynamic Diffusion'}) (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio})...`
+                `[VideoPipeline] Generating clip for Scene ${scene.scene_index}/${scenes.length} (${isHero ? '⭐ HERO SCENE: Real AI Video Clip' : '🎬 MOTION-STILL: Ken Burns Dynamic Diffusion'}) (Attempt ${attempt}/${MAX_QC_ATTEMPTS}, AspectRatio: ${projectAspectRatio}, Preset: ${projectPreset})...`
               );
 
               const clips = await videoProvider.generateVideoClipsForScene({
@@ -572,6 +594,10 @@ export class VideoPipelineWorker {
                 continuityNotes: scene.continuity_notes || undefined,
                 aspectRatio: projectAspectRatio,
                 visualMediaMode: effectiveMediaMode,
+                generationMode: projectGenerationMode,
+                preset: projectPreset,
+                referenceImageUrl: projectReferenceImageUrl,
+                characterRef: projectCharacterRef,
               } as any);
 
               if (clips && clips.length > 0) {
