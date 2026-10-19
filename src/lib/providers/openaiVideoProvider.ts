@@ -12,6 +12,18 @@ export class OpenAIVideoProvider implements VideoGenerationProvider {
     return !!(key && key.trim().length > 10);
   }
 
+  supportsImageToVideo(): boolean {
+    return false;
+  }
+
+  supportsCharacterReference(): boolean {
+    return false;
+  }
+
+  supportsNativeAudio(): boolean {
+    return false;
+  }
+
   private getApiKey(): string {
     const key = getApiKey('openai') || process.env.OPENAI_API_KEY;
     if (!key) {

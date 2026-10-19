@@ -302,3 +302,70 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_events_unique ON webhook_events(provider, event_id);
 CREATE INDEX IF NOT EXISTS idx_webhook_events_processed ON webhook_events(processed_at);
 
+-- Automated Daily SEO Blog System Tables
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  excerpt TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'Guides',
+  read_time TEXT NOT NULL DEFAULT '8 min read',
+  publish_date TEXT NOT NULL,
+  author_name TEXT NOT NULL DEFAULT 'Sanin Abbas',
+  author_role TEXT NOT NULL DEFAULT 'Founder & AI Architect',
+  author_avatar TEXT NOT NULL DEFAULT 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  cover_image TEXT NOT NULL,
+  gradient TEXT NOT NULL DEFAULT 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  featured INTEGER NOT NULL DEFAULT 0,
+  content TEXT NOT NULL,
+  seo_title TEXT,
+  seo_description TEXT,
+  status TEXT NOT NULL DEFAULT 'DRAFT', -- 'DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'
+  word_count INTEGER NOT NULL DEFAULT 0,
+  published_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status, published_at);
+
+CREATE TABLE IF NOT EXISTS editorial_calendar (
+  id TEXT PRIMARY KEY,
+  day_index INTEGER NOT NULL UNIQUE,
+  target_date TEXT,
+  topic TEXT NOT NULL,
+  primary_keyword TEXT NOT NULL,
+  search_intent TEXT NOT NULL,
+  supporting_keywords_json TEXT NOT NULL DEFAULT '[]',
+  target_audience TEXT NOT NULL,
+  proposed_title TEXT NOT NULL,
+  proposed_slug TEXT NOT NULL UNIQUE,
+  category TEXT NOT NULL DEFAULT 'Guides',
+  research_sources_json TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'SCHEDULED', -- 'SCHEDULED', 'DRAFT_GENERATED', 'APPROVED', 'PUBLISHED', 'SKIPPED'
+  post_id TEXT,
+  published_at TEXT,
+  error_message TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_editorial_calendar_day ON editorial_calendar(day_index);
+CREATE INDEX IF NOT EXISTS idx_editorial_calendar_status ON editorial_calendar(status);
+
+-- Character & Visual Consistency Registry
+CREATE TABLE IF NOT EXISTS project_characters (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  project_id TEXT,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  reference_image_url TEXT,
+  gender TEXT,
+  voice_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_characters_user_project ON project_characters(user_id, project_id);
+

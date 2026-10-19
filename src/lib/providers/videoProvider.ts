@@ -4,11 +4,15 @@ import path from 'path';
 import fs from 'fs';
 import { storage, getTempDir } from '../storage';
 import { getApiKey } from '../db';
-import { AspectRatio } from './video-provider.types';
+import { AspectRatio, GenerationMode, TrendingPreset, CharacterReference, ClipGenerationParams } from './video-provider.types';
 import { openaiVideoProvider } from './openaiVideoProvider';
 import { falVideoProvider } from './falVideoProvider';
 import { cloudflareVideoProvider } from './cloudflareVideoProvider';
 import { veoVideoProvider } from './veoVideoProvider';
+import { runwayVideoProvider } from './runwayVideoProvider';
+import { lumaVideoProvider } from './lumaVideoProvider';
+import { buildEnhancedVideoPrompt } from '../video/presets';
+import { characterManager } from '../video/characterManager';
 
 const execFileAsync = util.promisify(execFile);
 
@@ -139,36 +143,34 @@ class DefaultVideoProvider implements VideoProvider {
   }
 
   getProviderName(): string {
-    const cfToken = getApiKey('cloudflare_api_token') || getApiKey('cloudflare') || process.env.CLOUDFLARE_API_TOKEN;
-    const cfAccountId = getApiKey('cloudflare_account_id') || getApiKey('cloudflare_account') || process.env.CLOUDFLARE_ACCOUNT_ID;
-    const hasCloudflare = !!(cfToken && cfAccountId);
-
     if (veoVideoProvider.isConfigured()) {
-      return 'Google Veo 3.1 & Gemini Engine (Real AI Generation)';
+      return 'Google Veo 3.1 & Gemini Engine (Real AI Video)';
+    }
+    if (runwayVideoProvider.isConfigured()) {
+      return 'Runway Developer API (Gen-4.5 / Gen-4 Turbo)';
+    }
+    if (lumaVideoProvider.isConfigured()) {
+      return 'Luma Dream Machine (Ray 2 AI Video)';
     }
     if (falVideoProvider.isConfigured()) {
       return 'FAL.ai AI Video Engine (Wan 2.1 / Kling / LTX)';
     }
-    if (hasCloudflare) {
-      return 'Cloudflare Generative AI Engine (SDXL-Lightning & Flux 1 Schnell — Real-Time AI Synthesis)';
+    if (cloudflareVideoProvider.isConfigured()) {
+      return 'Cloudflare Workers AI (MiniMax Hailuo 2.3)';
     }
     if (openaiVideoProvider.isConfigured()) {
-      return 'OpenAI Video Engine (Sora / OpenAI Video Generation — Deprecated/Preview)';
+      return 'OpenAI Video Engine (Preview)';
     }
-    const runway = getApiKey('runway');
-    const replicate = getApiKey('replicate');
-    if (runway || replicate) {
-      const active = runway ? 'Runway Gen-3' : 'Replicate SVD';
-      return `Generative AI Video Engine (${active} Provider Active)`;
-    }
-    return 'Autonomous Generative AI Video Engine (Real-Time AI Synthesis)';
+    return 'Autonomous AI Video Engine (Real-Time Synthesis)';
   }
 
   public isAiVideoConfigured(): boolean {
     return (
+      veoVideoProvider.isConfigured() ||
+      runwayVideoProvider.isConfigured() ||
+      lumaVideoProvider.isConfigured() ||
       falVideoProvider.isConfigured() ||
       cloudflareVideoProvider.isConfigured() ||
-      veoVideoProvider.isConfigured() ||
       openaiVideoProvider.isConfigured()
     );
   }
@@ -359,11 +361,14 @@ class DefaultVideoProvider implements VideoProvider {
       }
 
       // ============================================================
-      // AI VIDEO GENERATION CASCADE (Real Text-to-Video)
-      // These providers generate actual AI video, not stock footage
+      // AI VIDEO GENERATION CASCADE (Real Motion Text-to-Video & Image-to-Video)
+      // These providers generate genuine motion video clips, not still images
       // ============================================================
 
-      const aiClipParams = {
+      const isI2V = (params as any).generationMode === 'image-to-video' || !!(params as any).referenceImageUrl;
+      const characterRef = (params as any).characterRef || (projectId ? characterManager.getCharacterForProject('default', projectId) : undefined);
+
+      const aiClipParams: ClipGenerationParams = {
         prompt: params.prompt,
         sceneIndex,
         durationSec,
@@ -378,12 +383,62 @@ class DefaultVideoProvider implements VideoProvider {
         continuityNotes,
         projectId,
         sceneId,
+        generationMode: isI2V ? 'image-to-video' : 'text-to-video',
+        referenceImageUrl: (params as any).referenceImageUrl,
+        characterRef: characterRef || undefined,
+        preset: (params as any).preset,
+        negativePrompt: (params as any).negativePrompt,
       };
 
-      // Tier 0: FAL.ai AI Video (Wan 2.1 / LTX-Video) — Best quality-to-cost ratio
+      // 1. Google Veo 3.1 (Flagship cinematic quality, native audio, character references)
+      if (veoVideoProvider.isConfigured()) {
+        try {
+          console.log(`[VideoProvider] 🎬 Tier 1: Google Veo 3.1 (${aiClipParams.generationMode}) for Scene ${sceneIndex} Clip ${clipIndex}...`);
+          await veoVideoProvider.generateClip(aiClipParams);
+
+          if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
+            console.log(`[VideoProvider] ✅ Google Veo 3.1 AI video generated for Scene ${sceneIndex}`);
+            return;
+          }
+        } catch (veoErr: any) {
+          console.warn(`[VideoProvider] Veo 3.1 error: ${veoErr.message}. Trying next tier...`);
+        }
+      }
+
+      // 2. Runway Developer API (Gen-4.5 / Gen-4 Turbo)
+      if (runwayVideoProvider.isConfigured()) {
+        try {
+          console.log(`[VideoProvider] 🎬 Tier 2: Runway Developer API (Gen-4.5) for Scene ${sceneIndex} Clip ${clipIndex}...`);
+          await runwayVideoProvider.generateClip(aiClipParams);
+
+          if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
+            console.log(`[VideoProvider] ✅ Runway Gen-4.5 AI video generated for Scene ${sceneIndex}`);
+            return;
+          }
+        } catch (runwayErr: any) {
+          console.warn(`[VideoProvider] Runway error: ${runwayErr.message}. Trying next tier...`);
+        }
+      }
+
+      // 3. Luma Dream Machine (Ray 2)
+      if (lumaVideoProvider.isConfigured()) {
+        try {
+          console.log(`[VideoProvider] 🎬 Tier 3: Luma Dream Machine (Ray 2) for Scene ${sceneIndex} Clip ${clipIndex}...`);
+          await lumaVideoProvider.generateClip(aiClipParams);
+
+          if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
+            console.log(`[VideoProvider] ✅ Luma Ray 2 AI video generated for Scene ${sceneIndex}`);
+            return;
+          }
+        } catch (lumaErr: any) {
+          console.warn(`[VideoProvider] Luma error: ${lumaErr.message}. Trying next tier...`);
+        }
+      }
+
+      // 4. FAL.ai AI Video (Wan 2.1 14B / Kling / LTX-Video)
       if (falVideoProvider.isConfigured()) {
         try {
-          console.log(`[VideoProvider] 🎬 Tier 0: FAL.ai AI Video for Scene ${sceneIndex} Clip ${clipIndex}...`);
+          console.log(`[VideoProvider] 🎬 Tier 4: FAL.ai AI Video (${aiClipParams.generationMode}) for Scene ${sceneIndex} Clip ${clipIndex}...`);
           await falVideoProvider.generateClip(aiClipParams);
 
           if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
@@ -395,10 +450,10 @@ class DefaultVideoProvider implements VideoProvider {
         }
       }
 
-      // Tier 1: Cloudflare MiniMax Hailuo 2.3 — Free daily quota
-      if (cloudflareVideoProvider.isConfigured()) {
+      // 5. Cloudflare Workers AI (MiniMax Hailuo 2.3)
+      if (cloudflareVideoProvider.isConfigured() && !isI2V) {
         try {
-          console.log(`[VideoProvider] 🎬 Tier 1: Cloudflare MiniMax Hailuo for Scene ${sceneIndex} Clip ${clipIndex}...`);
+          console.log(`[VideoProvider] 🎬 Tier 5: Cloudflare MiniMax Hailuo for Scene ${sceneIndex} Clip ${clipIndex}...`);
           await cloudflareVideoProvider.generateClip(aiClipParams);
 
           if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
@@ -410,19 +465,8 @@ class DefaultVideoProvider implements VideoProvider {
         }
       }
 
-      // Tier 2: Google Veo 3.1 — Uses existing Gemini API key
-      if (veoVideoProvider.isConfigured()) {
-        try {
-          console.log(`[VideoProvider] 🎬 Tier 2: Google Veo 3.1 for Scene ${sceneIndex} Clip ${clipIndex}...`);
-          await veoVideoProvider.generateClip(aiClipParams);
-
-          if (fs.existsSync(outputPath) && (await fs.promises.stat(outputPath)).size > 5000) {
-            console.log(`[VideoProvider] ✅ Google Veo AI video generated for Scene ${sceneIndex}`);
-            return;
-          }
-        } catch (veoErr: any) {
-          console.warn(`[VideoProvider] Veo error: ${veoErr.message}. Falling back to image/stock engine...`);
-        }
+      if (visualMediaMode === 'ai_clip') {
+        console.warn(`[VideoProvider] ⚠️ AI Video clip mode was requested for Scene ${sceneIndex}, but active AI video models were unavailable. Executing high-resolution visual synthesis fallback.`);
       }
     }
 

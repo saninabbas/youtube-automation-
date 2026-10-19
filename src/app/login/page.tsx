@@ -28,10 +28,10 @@ export default function LoginPage() {
       });
       let data: any = {};
       try {
-        data = await res.json();
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
       } catch {
-        const text = await res.text().catch(() => '');
-        data = { error: text || `Server returned status ${res.status}` };
+        data = { error: `Server error (${res.status}). Please try again.` };
       }
 
       if (!res.ok) {
@@ -40,14 +40,14 @@ export default function LoginPage() {
         } else if (data.unverified) {
           setUnverified(true);
         } else {
-          setError(data.error || 'Login failed. Please try again.');
+          setError(data.error || `Login failed (HTTP ${res.status}). Please try again.`);
         }
         return;
       }
 
       window.location.href = '/';
     } catch (err: any) {
-      setError(err?.message || 'Network error. Please check your connection and try again.');
+      setError(err?.message && !err.message.includes('fetch') ? err.message : 'Unable to connect to server. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }

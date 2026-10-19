@@ -3211,24 +3211,74 @@ Inside **[AUTORA.LIVE](/signup)**, our rendering pipeline enforces safe zone geo
   },
 ];
 
+// Dynamic Database Bridge
+import { getPublishedDbBlogPosts, getDbBlogPostBySlug, DbBlogPost } from '../db';
+
+function convertDbPostToBlogPost(dbPost: DbBlogPost): BlogPost {
+  let tags: string[] = [];
+  try {
+    tags = JSON.parse(dbPost.tags_json);
+  } catch {
+    tags = ['AI Video', 'YouTube Automation'];
+  }
+
+  return {
+    slug: dbPost.slug,
+    title: dbPost.title,
+    excerpt: dbPost.excerpt,
+    category: (dbPost.category as any) || 'Guides',
+    readTime: dbPost.read_time,
+    publishDate: dbPost.publish_date,
+    author: {
+      name: dbPost.author_name,
+      role: dbPost.author_role,
+      avatar: dbPost.author_avatar,
+    },
+    coverImage: dbPost.cover_image,
+    gradient: dbPost.gradient,
+    tags,
+    featured: dbPost.featured === 1,
+    content: dbPost.content,
+    seoTitle: dbPost.seo_title,
+    seoDescription: dbPost.seo_description,
+  };
+}
+
 export function getAllBlogPosts(): BlogPost[] {
-  return BLOG_POSTS;
+  try {
+    const dbPosts = getPublishedDbBlogPosts().map(convertDbPostToBlogPost);
+    if (!dbPosts || dbPosts.length === 0) {
+      return BLOG_POSTS;
+    }
+    const dbSlugs = new Set(dbPosts.map((p) => p.slug));
+    const nonDuplicatedStatic = BLOG_POSTS.filter((p) => !dbSlugs.has(p.slug));
+    return [...dbPosts, ...nonDuplicatedStatic];
+  } catch {
+    return BLOG_POSTS;
+  }
 }
 
 export function getFeaturedBlogPost(): BlogPost {
-  return BLOG_POSTS.find((p) => p.featured) || BLOG_POSTS[0];
+  const posts = getAllBlogPosts();
+  return posts.find((p) => p.featured) || posts[0];
 }
 
 export function getBlogPostBySlug(slug: string): BlogPost | undefined {
+  try {
+    const dbPost = getDbBlogPostBySlug(slug);
+    if (dbPost && dbPost.status === 'PUBLISHED') {
+      return convertDbPostToBlogPost(dbPost);
+    }
+  } catch {}
   return BLOG_POSTS.find((p) => p.slug === slug);
 }
 
 export function getBlogPostsByCategory(category: string): BlogPost[] {
-  if (!category || category === 'All') return BLOG_POSTS;
-  return BLOG_POSTS.filter((p) => p.category === category);
+  const posts = getAllBlogPosts();
+  if (!category || category === 'All') return posts;
+  return posts.filter((p) => p.category === category);
 }
 
 export function getBlogCategories(): string[] {
   return ['All', 'Guides', 'YouTube Growth', 'AI Automation', 'Niches', 'Case Studies'];
 }
-

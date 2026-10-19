@@ -232,9 +232,31 @@ export function getDb(): Database.Database {
     safeAddColumn('video_scenes', 'lighting', 'TEXT');
     safeAddColumn('video_scenes', 'color_style', 'TEXT');
     safeAddColumn('video_scenes', 'continuity_notes', 'TEXT');
+    safeAddColumn('video_scenes', 'reference_image_url', 'TEXT');
+    safeAddColumn('video_scenes', 'character_prompt', 'TEXT');
+    safeAddColumn('content_projects', 'aspect_ratio', "TEXT NOT NULL DEFAULT '9:16'");
+    safeAddColumn('content_projects', 'generation_mode', "TEXT NOT NULL DEFAULT 'text-to-video'");
+    safeAddColumn('content_projects', 'character_id', 'TEXT');
+    safeAddColumn('content_projects', 'reference_image_url', 'TEXT');
     safeAddColumn('user_sessions', 'session_token', 'TEXT');
     safeAddColumn('user_sessions', 'user_agent', 'TEXT');
     safeAddColumn('user_sessions', 'ip_address', 'TEXT');
+
+    dbInstance.exec(`
+      CREATE TABLE IF NOT EXISTS project_characters (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        project_id TEXT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        reference_image_url TEXT,
+        gender TEXT,
+        voice_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_characters_user_project ON project_characters(user_id, project_id);
+    `);
 
     // Create oauth_connections table if missing
     dbInstance.exec(`
@@ -1728,6 +1750,374 @@ export function updatePersonalCreatorScene(
   const sql = `UPDATE personal_creator_scenes SET ${fields.join(', ')} WHERE id = ?`;
   const res = db.prepare(sql).run(...values);
   return res.changes > 0;
+}
+
+// -------------------------------------------------------------
+// Automated Daily SEO Blog System Database Helpers
+// -------------------------------------------------------------
+
+export interface DbBlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  read_time: string;
+  publish_date: string;
+  author_name: string;
+  author_role: string;
+  author_avatar: string;
+  cover_image: string;
+  gradient: string;
+  tags_json: string;
+  featured: number;
+  content: string;
+  seo_title?: string;
+  seo_description?: string;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
+  word_count: number;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbEditorialCalendarItem {
+  id: string;
+  day_index: number;
+  target_date?: string;
+  topic: string;
+  primary_keyword: string;
+  search_intent: string;
+  supporting_keywords_json: string;
+  target_audience: string;
+  proposed_title: string;
+  proposed_slug: string;
+  category: string;
+  research_sources_json: string;
+  status: 'SCHEDULED' | 'DRAFT_GENERATED' | 'APPROVED' | 'PUBLISHED' | 'SKIPPED';
+  post_id?: string;
+  published_at?: string;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getPublishedDbBlogPosts(): DbBlogPost[] {
+  const db = getDb();
+  try {
+    return db.prepare("SELECT * FROM blog_posts WHERE status = 'PUBLISHED' ORDER BY datetime(published_at) DESC, datetime(created_at) DESC").all() as DbBlogPost[];
+  } catch (err: any) {
+    console.warn('[getPublishedDbBlogPosts] Warning:', err.message);
+    return [];
+  }
+}
+
+export function getDbBlogPostBySlug(slug: string): DbBlogPost | undefined {
+  const db = getDb();
+  try {
+    return db.prepare('SELECT * FROM blog_posts WHERE slug = ?').get(slug) as DbBlogPost | undefined;
+  } catch (err: any) {
+    console.warn('[getDbBlogPostBySlug] Warning:', err.message);
+    return undefined;
+  }
+}
+
+export function saveDbBlogPost(post: Partial<DbBlogPost> & { slug: string; title: string; content: string }): DbBlogPost {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const existing = getDbBlogPostBySlug(post.slug);
+  const postId = existing ? existing.id : (post.id || uuidv4());
+
+  const wordCount = post.word_count || post.content.trim().split(/\s+/).length;
+  const readTime = post.read_time || `${Math.max(1, Math.ceil(wordCount / 220))} min read`;
+  const publishDate = post.publish_date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const category = post.category || 'Guides';
+  const authorName = post.author_name || 'Sanin Abbas';
+  const authorRole = post.author_role || 'Founder & AI Architect';
+  const authorAvatar = post.author_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+  const coverImage = post.cover_image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
+  const gradient = post.gradient || 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)';
+  const tagsJson = post.tags_json || JSON.stringify(['AI Video', 'YouTube Automation']);
+  const featured = post.featured ? 1 : 0;
+  const status = post.status || 'DRAFT';
+  const publishedAt = status === 'PUBLISHED' ? (post.published_at || now) : (existing?.published_at || null);
+  const excerpt = post.excerpt || post.content.replace(/^[#\s]+[^\n]+/m, '').trim().slice(0, 160) + '...';
+
+  if (existing) {
+    db.prepare(`
+      UPDATE blog_posts SET
+        title = ?,
+        excerpt = ?,
+        category = ?,
+        read_time = ?,
+        publish_date = ?,
+        author_name = ?,
+        author_role = ?,
+        author_avatar = ?,
+        cover_image = ?,
+        gradient = ?,
+        tags_json = ?,
+        featured = ?,
+        content = ?,
+        seo_title = ?,
+        seo_description = ?,
+        status = ?,
+        word_count = ?,
+        published_at = ?,
+        updated_at = ?
+      WHERE id = ?
+    `).run(
+      post.title,
+      excerpt,
+      category,
+      readTime,
+      publishDate,
+      authorName,
+      authorRole,
+      authorAvatar,
+      coverImage,
+      gradient,
+      tagsJson,
+      featured,
+      post.content,
+      post.seo_title || post.title,
+      post.seo_description || excerpt,
+      status,
+      wordCount,
+      publishedAt,
+      now,
+      postId
+    );
+  } else {
+    db.prepare(`
+      INSERT INTO blog_posts (
+        id, slug, title, excerpt, category, read_time, publish_date,
+        author_name, author_role, author_avatar, cover_image, gradient,
+        tags_json, featured, content, seo_title, seo_description,
+        status, word_count, published_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      postId,
+      post.slug,
+      post.title,
+      excerpt,
+      category,
+      readTime,
+      publishDate,
+      authorName,
+      authorRole,
+      authorAvatar,
+      coverImage,
+      gradient,
+      tagsJson,
+      featured,
+      post.content,
+      post.seo_title || post.title,
+      post.seo_description || excerpt,
+      status,
+      wordCount,
+      publishedAt,
+      now,
+      now
+    );
+  }
+
+  return getDbBlogPostBySlug(post.slug)!;
+}
+
+export function hasPublishedBlogOnDate(dateStr: string): boolean {
+  const db = getDb();
+  try {
+    // Matches YYYY-MM-DD prefix of published_at or created_at
+    const row = db.prepare(`
+      SELECT COUNT(*) as count FROM blog_posts 
+      WHERE status = 'PUBLISHED' 
+        AND (published_at LIKE ? OR publish_date LIKE ?)
+    `).get(`${dateStr}%`, `%${dateStr}%`) as { count: number } | undefined;
+    return !!row && row.count > 0;
+  } catch (err: any) {
+    console.warn('[hasPublishedBlogOnDate] Warning:', err.message);
+    return false;
+  }
+}
+
+export function getEditorialCalendar(): DbEditorialCalendarItem[] {
+  const db = getDb();
+  try {
+    return db.prepare('SELECT * FROM editorial_calendar ORDER BY day_index ASC').all() as DbEditorialCalendarItem[];
+  } catch (err: any) {
+    console.warn('[getEditorialCalendar] Warning:', err.message);
+    return [];
+  }
+}
+
+export function getEditorialItemByDay(dayIndex: number): DbEditorialCalendarItem | undefined {
+  const db = getDb();
+  try {
+    return db.prepare('SELECT * FROM editorial_calendar WHERE day_index = ?').get(dayIndex) as DbEditorialCalendarItem | undefined;
+  } catch (err: any) {
+    console.warn('[getEditorialItemByDay] Warning:', err.message);
+    return undefined;
+  }
+}
+
+export function getNextScheduledEditorialItem(): DbEditorialCalendarItem | undefined {
+  const db = getDb();
+  try {
+    return db.prepare("SELECT * FROM editorial_calendar WHERE status IN ('SCHEDULED', 'DRAFT_GENERATED', 'APPROVED') ORDER BY day_index ASC LIMIT 1").get() as DbEditorialCalendarItem | undefined;
+  } catch (err: any) {
+    console.warn('[getNextScheduledEditorialItem] Warning:', err.message);
+    return undefined;
+  }
+}
+
+export function seedEditorialCalendar(items: Omit<DbEditorialCalendarItem, 'id' | 'created_at' | 'updated_at'>[]): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO editorial_calendar (
+      id, day_index, target_date, topic, primary_keyword, search_intent,
+      supporting_keywords_json, target_audience, proposed_title, proposed_slug,
+      category, research_sources_json, status, post_id, published_at, error_message,
+      created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const tx = db.transaction((rows: typeof items) => {
+    for (const r of rows) {
+      const existing = getEditorialItemByDay(r.day_index);
+      const id = existing ? existing.id : uuidv4();
+      stmt.run(
+        id,
+        r.day_index,
+        r.target_date || null,
+        r.topic,
+        r.primary_keyword,
+        r.search_intent,
+        r.supporting_keywords_json || '[]',
+        r.target_audience,
+        r.proposed_title,
+        r.proposed_slug,
+        r.category || 'Guides',
+        r.research_sources_json || '[]',
+        r.status || 'SCHEDULED',
+        r.post_id || null,
+        r.published_at || null,
+        r.error_message || null,
+        now,
+        now
+      );
+    }
+  });
+
+  tx(items);
+}
+
+export function updateEditorialCalendarItem(
+  id: string,
+  updates: Partial<DbEditorialCalendarItem>
+): boolean {
+  const db = getDb();
+  const fields: string[] = [];
+  const values: any[] = [];
+  const now = new Date().toISOString();
+
+  const allowedKeys: (keyof DbEditorialCalendarItem)[] = [
+    'target_date', 'topic', 'primary_keyword', 'search_intent',
+    'supporting_keywords_json', 'target_audience', 'proposed_title',
+    'proposed_slug', 'category', 'research_sources_json', 'status',
+    'post_id', 'published_at', 'error_message'
+  ];
+
+  for (const k of allowedKeys) {
+    if (updates[k] !== undefined) {
+      fields.push(`${k} = ?`);
+      values.push(updates[k]);
+    }
+  }
+
+  if (fields.length === 0) return false;
+
+  fields.push('updated_at = ?');
+  values.push(now);
+  values.push(id);
+
+  const res = db.prepare(`UPDATE editorial_calendar SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  return res.changes > 0;
+}
+
+// ============================================================
+// CHARACTER & VISUAL CONSISTENCY REGISTRY
+// ============================================================
+
+export interface DbProjectCharacter {
+  id: string;
+  user_id: string;
+  project_id?: string | null;
+  name: string;
+  description: string;
+  reference_image_url?: string | null;
+  gender?: string | null;
+  voice_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function saveProjectCharacter(character: Omit<DbProjectCharacter, 'created_at' | 'updated_at'>): DbProjectCharacter {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO project_characters (
+      id, user_id, project_id, name, description,
+      reference_image_url, gender, voice_id, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      project_id = excluded.project_id,
+      name = excluded.name,
+      description = excluded.description,
+      reference_image_url = excluded.reference_image_url,
+      gender = excluded.gender,
+      voice_id = excluded.voice_id,
+      updated_at = excluded.updated_at
+  `).run(
+    character.id,
+    character.user_id,
+    character.project_id || null,
+    character.name,
+    character.description,
+    character.reference_image_url || null,
+    character.gender || null,
+    character.voice_id || null,
+    now,
+    now
+  );
+
+  return {
+    ...character,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+export function getProjectCharacters(userId: string, projectId?: string): DbProjectCharacter[] {
+  const db = getDb();
+  if (projectId) {
+    return db.prepare(`
+      SELECT * FROM project_characters
+      WHERE user_id = ? AND (project_id = ? OR project_id IS NULL)
+      ORDER BY updated_at DESC
+    `).all(userId, projectId) as DbProjectCharacter[];
+  }
+  return db.prepare(`
+    SELECT * FROM project_characters
+    WHERE user_id = ?
+    ORDER BY updated_at DESC
+  `).all(userId) as DbProjectCharacter[];
+}
+
+export function getCharacterById(characterId: string): DbProjectCharacter | null {
+  const db = getDb();
+  return (db.prepare('SELECT * FROM project_characters WHERE id = ?').get(characterId) as DbProjectCharacter) || null;
 }
 
 

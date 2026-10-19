@@ -175,9 +175,37 @@ export async function POST(request: Request) {
     }
 
     const resolvedAspectRatio = body.aspect_ratio || (parsedLength >= 2 ? '16:9' : '9:16');
+    const generationMode = body.generation_mode || (body.reference_image_url ? 'image-to-video' : 'text-to-video');
+    const presetStyle = body.preset || 'CINEMATIC_DOC';
+
+    // Handle character consistency reference if provided
+    let characterId = body.character_id || null;
+    if (body.character_ref && body.character_ref.name) {
+      try {
+        const { saveProjectCharacter } = await import('@/lib/db');
+        const charObj = saveProjectCharacter({
+          id: characterId || `char_${uuidv4().substring(0, 12)}`,
+          user_id: userId,
+          project_id: projectId,
+          name: body.character_ref.name,
+          description: body.character_ref.description || '',
+          reference_image_url: body.character_ref.reference_image_url || body.reference_image_url || null,
+          gender: body.character_ref.gender || null,
+          voice_id: body.character_ref.voice_id || voice || null,
+        });
+        characterId = charObj.id;
+      } catch (charErr: any) {
+        console.warn('[Projects API] Character save warning:', charErr.message);
+      }
+    }
+
     const projectMetadata = JSON.stringify({
       aspectRatio: resolvedAspectRatio,
       visualMediaMode: resolvedVisualMediaMode,
+      generationMode,
+      characterId,
+      preset: presetStyle,
+      referenceImageUrl: body.reference_image_url || null,
     });
 
     db.prepare(
@@ -192,7 +220,7 @@ export async function POST(request: Request) {
       channel_id,
       cleanTopic,
       parsedLength,
-      preset,
+      presetStyle,
       language || channel.language,
       platform || channel.publishing_platform,
       visibility || channel.default_visibility || 'PRIVATE',

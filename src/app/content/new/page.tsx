@@ -70,8 +70,17 @@ function CreateVideoWizardContent() {
   // Advanced Options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [visualStyle, setVisualStyle] = useState('Cinematic High-Contrast');
-  const [visualMediaMode, setVisualMediaMode] = useState<'auto' | 'ai_clip' | 'motion_still'>('auto');
-  const [videoLength, setVideoLength] = useState<number>(1);
+  const [visualMediaMode, setVisualMediaMode] = useState<'auto' | 'ai_clip' | 'motion_still'>('ai_clip');
+  const [videoLength, setVideoLength] = useState<number>(0.5);
+
+  // Real AI Video Engine & Trending Presets State
+  const [selectedPreset, setSelectedPreset] = useState<string>('REALISTIC_HUMAN');
+  const [generationMode, setGenerationMode] = useState<'text-to-video' | 'image-to-video'>('text-to-video');
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string>('');
+  const [enableCharacter, setEnableCharacter] = useState<boolean>(false);
+  const [characterName, setCharacterName] = useState<string>('');
+  const [characterDescription, setCharacterDescription] = useState<string>('');
+  const [characterImageUrl, setCharacterImageUrl] = useState<string>('');
 
   // Focus trap ref
   const modalCardRef = useRef<HTMLDivElement | null>(null);
@@ -507,6 +516,14 @@ function CreateVideoWizardContent() {
           voice: activeVoice,
           visual_style: visualStyle,
           visual_media_mode: visualMediaMode,
+          preset: selectedPreset,
+          generation_mode: generationMode,
+          reference_image_url: generationMode === 'image-to-video' && referenceImageUrl.trim() ? referenceImageUrl.trim() : undefined,
+          character_ref: enableCharacter && characterName.trim() ? {
+            name: characterName.trim(),
+            description: characterDescription.trim(),
+            reference_image_url: characterImageUrl.trim() || undefined,
+          } : undefined,
         }),
       });
 
@@ -585,7 +602,189 @@ function CreateVideoWizardContent() {
             </div>
           </div>
 
-          {/* STEP 2: CHOOSE VOICE */}
+          {/* STEP 2: REAL AI VIDEO STYLE PRESETS */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 700, color: '#f4f4f5' }}>
+                AI Video Style Preset
+              </label>
+              <span style={{ fontSize: '11px', color: '#6366f1', background: 'rgba(99, 102, 241, 0.1)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                10 Trending Motion Presets
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px' }}>
+              {[
+                { id: 'REALISTIC_HUMAN', icon: '👤', label: 'Presenter', desc: 'Realistic talking human' },
+                { id: 'TALKING_FOOD', icon: '🥕', label: 'Talking Food', desc: 'Funny animated veggies' },
+                { id: 'VIRAL_COMEDY', icon: '😂', label: 'Viral Comedy', desc: 'Short-form comedic timing' },
+                { id: 'CINEMATIC_DOC', icon: '🏛️', label: 'Documentary', desc: 'BBC / Netflix style' },
+                { id: 'AI_ANIMALS', icon: '🦁', label: 'Animal Story', desc: 'Wildlife & nature drama' },
+                { id: 'REALISTIC_COOKING', icon: '🍳', label: 'Cooking ASMR', desc: 'Satisfying food sizzle' },
+                { id: 'MOTIVATIONAL', icon: '🚀', label: 'Motivational', desc: 'Inspiring visual metaphors' },
+                { id: 'FACELESS_EXPLAINER', icon: '📊', label: 'Faceless', desc: 'Clean 3D motion graphics' },
+                { id: 'PRODUCT_STORY', icon: '📱', label: 'Product Hero', desc: 'Luxury commercial reveal' },
+                { id: 'HORROR_MYSTERY', icon: '🕯️', label: 'Suspense', desc: 'Atmospheric dark tension' },
+              ].map((p) => {
+                const isSelected = selectedPreset === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPreset(p.id)}
+                    style={{
+                      background: isSelected ? 'rgba(99, 102, 241, 0.15)' : '#09090b',
+                      border: isSelected ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '8px',
+                      padding: '10px 8px',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <div style={{ fontSize: '18px' }}>{p.icon}</div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: isSelected ? '#fff' : '#d4d4d8' }}>
+                      {p.label}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#71717a', lineHeight: 1.2 }}>
+                      {p.desc}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* STEP 3: GENERATION MODE & CHARACTER CONTINUITY */}
+          <div style={{ background: '#09090b', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#f4f4f5' }}>
+                Generation Engine Mode
+              </label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setGenerationMode('text-to-video')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: generationMode === 'text-to-video' ? '#6366f1' : 'rgba(255,255,255,0.06)',
+                    color: '#fff',
+                  }}
+                >
+                  ✍️ Text-to-Video
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGenerationMode('image-to-video')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: generationMode === 'image-to-video' ? '#6366f1' : 'rgba(255,255,255,0.06)',
+                    color: '#fff',
+                  }}
+                >
+                  🖼️ Image-to-Video
+                </button>
+              </div>
+            </div>
+
+            {generationMode === 'image-to-video' && (
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#a1a1aa', marginBottom: '4px' }}>
+                  Reference Image URL (Image will be animated with AI motion):
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://example.com/character-or-scene.jpg"
+                  value={referenceImageUrl}
+                  onChange={(e) => setReferenceImageUrl(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: '13px',
+                    background: '#121215',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Character Consistency Toggle */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#e4e4e7' }}>
+                <input
+                  type="checkbox"
+                  checked={enableCharacter}
+                  onChange={(e) => setEnableCharacter(e.target.checked)}
+                  style={{ accentColor: '#6366f1', width: '16px', height: '16px' }}
+                />
+                <span>Preserve Consistent Character Across Scenes</span>
+              </label>
+
+              {enableCharacter && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#a1a1aa', marginBottom: '4px' }}>
+                      Character Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Alex, Senior Scientist"
+                      value={characterName}
+                      onChange={(e) => setCharacterName(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        fontSize: '12px',
+                        background: '#121215',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#a1a1aa', marginBottom: '4px' }}>
+                      Appearance & Clothing
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 30s, glasses, navy blazer, brown hair"
+                      value={characterDescription}
+                      onChange={(e) => setCharacterDescription(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        fontSize: '12px',
+                        background: '#121215',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* STEP 4: CHOOSE VOICE */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 700, color: '#f4f4f5', margin: 0 }}>
@@ -997,8 +1196,28 @@ function CreateVideoWizardContent() {
             )}
           </div>
 
+          {/* ZERO-WASTE CREDIT & COST ESTIMATE */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(99, 102, 241, 0.08)',
+            border: '1px solid rgba(99, 102, 241, 0.2)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            fontSize: '12px',
+          }}>
+            <span style={{ color: '#e4e4e7', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🛡️</span>
+              <span>Cost: <strong>25 Credits</strong> • Zero-Waste Guarantee</span>
+            </span>
+            <span style={{ color: '#10b981', fontWeight: 600 }}>
+              100% Refunded on Failure
+            </span>
+          </div>
+
           {/* PRIMARY CTA & MANDATORY EXPLANATION */}
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginTop: '0px' }}>
             <button
               type="submit"
               disabled={creating || !topic.trim()}
