@@ -18,6 +18,8 @@ const SSRF_ALLOWED_HOSTS = new Set([
   'api.stripe.com',
   'api.polar.sh',
   'sandbox-api.polar.sh',
+  'api.dev.runwayml.com',
+  'api.lumalabs.ai',
 ]);
 
 function validateSSRF(urlStr: string): boolean {
@@ -126,6 +128,27 @@ export async function POST(request: Request) {
           throw new Error('No Sora / OpenAI API key configured.');
         }
         testUrl = 'https://api.openai.com/v1/models';
+        testHeaders['Authorization'] = `Bearer ${apiKey}`;
+        break;
+      }
+
+      case 'runway': {
+        const apiKey = creds.apiKey || IntegrationService.getDecryptedKey('runway');
+        if (!apiKey) {
+          throw new Error('No Runway API key configured.');
+        }
+        testUrl = 'https://api.dev.runwayml.com/v1/tasks';
+        testHeaders['Authorization'] = `Bearer ${apiKey}`;
+        testHeaders['X-Runway-Version'] = '2024-11-06';
+        break;
+      }
+
+      case 'luma': {
+        const apiKey = creds.apiKey || IntegrationService.getDecryptedKey('luma');
+        if (!apiKey) {
+          throw new Error('No Luma API key configured.');
+        }
+        testUrl = 'https://api.lumalabs.ai/dream-machine/v1/generations';
         testHeaders['Authorization'] = `Bearer ${apiKey}`;
         break;
       }

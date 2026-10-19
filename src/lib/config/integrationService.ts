@@ -143,6 +143,36 @@ export const KNOWN_INTEGRATIONS: Record<string, IntegrationDefinition> = {
       { key: 'apiKey', label: 'OpenAI Sora Key', placeholder: 'sk-proj-...', type: 'password', required: true, envFallbackKey: 'OPENAI_API_KEY' },
     ],
   },
+  runway: {
+    provider: 'runway',
+    category: 'ai_video',
+    displayName: 'Runway Developer API (Gen-4.5 / Gen-4)',
+    description: 'Ultra-realistic cinematic text-to-video and image-to-video generation',
+    defaultSettings: {
+      defaultModel: 'gen4_turbo',
+      duration: 5,
+      ratio: '9:16',
+    },
+    supportedModels: ['gen4_turbo', 'gen4_5'],
+    credentialFields: [
+      { key: 'apiKey', label: 'Runway API Secret Key', placeholder: 'runway_...', type: 'password', required: true, envFallbackKey: 'RUNWAY_API_KEY' },
+    ],
+  },
+  luma: {
+    provider: 'luma',
+    category: 'ai_video',
+    displayName: 'Luma Dream Machine (Ray 2)',
+    description: 'Realistic camera motion choreography and physical world simulation',
+    defaultSettings: {
+      defaultModel: 'ray-2',
+      duration: '5s',
+      aspect_ratio: '9:16',
+    },
+    supportedModels: ['ray-2', 'ray-1-6'],
+    credentialFields: [
+      { key: 'apiKey', label: 'Luma API Key', placeholder: 'luma-...', type: 'password', required: true, envFallbackKey: 'LUMA_API_KEY' },
+    ],
+  },
 
   // Stock Video Footage
   pexels: {
@@ -426,6 +456,14 @@ export class IntegrationService {
     if (norm === 'elevenlabs') {
       const e = this.getDecryptedCredentials('elevenlabs');
       return e.apiKey || process.env.ELEVENLABS_API_KEY || null;
+    }
+    if (norm === 'runway') {
+      const r = this.getDecryptedCredentials('runway');
+      return r.apiKey || process.env.RUNWAY_API_KEY || null;
+    }
+    if (norm === 'luma') {
+      const l = this.getDecryptedCredentials('luma');
+      return l.apiKey || process.env.LUMA_API_KEY || null;
     }
 
     return null;
