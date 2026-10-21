@@ -149,7 +149,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   const [inspectorTab, setInspectorTab] = useState<'details' | 'logs'>('details');
   const logsEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Dynamic Auto-Fit: measures available width & height and scales/centers the spacious 1580px graph
+  // Dynamic Auto-Fit: measures available width & height and scales/centers the spacious graph
   const handleAutoFit = () => {
     if (!containerRef.current) return;
     const containerWidth = containerRef.current.clientWidth;
@@ -157,57 +157,60 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
 
     if (!containerWidth || containerWidth <= 0) return;
 
-    // Responsive behavior on mobile screens (<860px)
-    if (containerWidth < 860) {
-      setZoomLevel(0.80);
-      setPanOffset({ x: 16, y: 16 });
-      return;
-    }
-
-    // Content bounds: 1740px wide, 460px high
-    const contentWidth = 1740;
-    const contentHeight = 460;
+    // Content bounds: 1430px wide, 434px high
+    const contentWidth = 1430;
+    const contentHeight = 434;
 
     const horizontalMargin = 32;
-    const verticalMargin = 24;
+    const verticalMargin = 32;
 
     const scaleX = (containerWidth - horizontalMargin) / contentWidth;
     const scaleY = containerHeight > 100 ? (containerHeight - verticalMargin) / contentHeight : scaleX;
 
-    // Fit smoothly with min 0.72 so on any desktop it scales cleanly to fill the viewport
-    let fitScale = Math.min(scaleX, scaleY > 0.5 ? scaleY : scaleX);
-    fitScale = Math.max(0.72, Math.min(1.15, fitScale));
+    // Fit cleanly across any viewport from mobile to 4K monitor
+    let fitScale = Math.min(scaleX, scaleY > 0.4 ? scaleY : scaleX);
+    fitScale = Math.max(0.30, Math.min(1.20, fitScale));
     fitScale = Number(fitScale.toFixed(2));
 
     setZoomLevel(fitScale);
 
-    // Center the graph horizontally & vertically if container has room
+    // Center the graph horizontally & vertically inside container
     const scaledWidth = contentWidth * fitScale;
-    const offsetX = containerWidth > scaledWidth ? Math.round((containerWidth - scaledWidth) / 2) : 20;
     const scaledHeight = contentHeight * fitScale;
+    const offsetX = containerWidth > scaledWidth ? Math.round((containerWidth - scaledWidth) / 2) : 16;
     const offsetY = containerHeight > scaledHeight ? Math.round((containerHeight - scaledHeight) / 2) : 16;
 
     setPanOffset({ x: offsetX, y: offsetY });
   };
 
-  // Auto-detect viewport and fit on mount and window resize
+  // Auto-detect viewport and fit on mount and window/container resize
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 860) {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setViewMode('steps');
     }
 
-    const timer = setTimeout(() => {
-      handleAutoFit();
-    }, 60);
+    const timer1 = setTimeout(handleAutoFit, 50);
+    const timer2 = setTimeout(handleAutoFit, 250);
 
     const handleResize = () => {
       handleAutoFit();
     };
 
     window.addEventListener('resize', handleResize);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        handleAutoFit();
+      });
+      resizeObserver.observe(containerRef.current);
+    }
+
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       window.removeEventListener('resize', handleResize);
+      if (resizeObserver) resizeObserver.disconnect();
     };
   }, []);
 
@@ -222,7 +225,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isInspectorOpen]);
 
-  // Initial node definitions with spacious, non-overlapping canvas positions (1740px wide)
+  // Initial node definitions with spacious, non-overlapping canvas positions (1430px wide)
   const getInitialNodes = (): WorkflowNodeData[] => [
     {
       id: 'trigger',
@@ -231,8 +234,8 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       icon: '⚡',
       subtext: 'Channel Trigger • Webhook / Schedule',
       x: 24,
-      y: 165,
-      width: 230,
+      y: 160,
+      width: 220,
       height: 96,
       status: 'COMPLETED',
       itemCount: '1 prompt',
@@ -255,9 +258,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'agent',
       icon: '🤖',
       subtext: 'Tools Agent • Autonomous Orchestration',
-      x: 350,
-      y: 150,
-      width: 250,
+      x: 304,
+      y: 145,
+      width: 236,
       height: 112,
       status: 'COMPLETED',
       itemCount: '5 scenes',
@@ -282,9 +285,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'model',
       icon: '🧠',
       subtext: 'Chat Model • 671B MoE Parameters',
-      x: 260,
-      y: 335,
-      width: 190,
+      x: 235,
+      y: 330,
+      width: 175,
       height: 80,
       status: 'COMPLETED',
       itemCount: '82 t/s',
@@ -306,9 +309,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'model',
       icon: '🗄️',
       subtext: 'Persistent Style Rules & Tone',
-      x: 470,
-      y: 335,
-      width: 190,
+      x: 430,
+      y: 330,
+      width: 175,
       height: 80,
       status: 'COMPLETED',
       itemCount: 'Active',
@@ -329,10 +332,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '🎙️',
       subtext: 'ElevenLabs / EdgeTTS Studio Audio',
-      x: 730,
+      x: 590,
       y: 15,
-      width: 230,
-      height: 84,
+      width: 220,
+      height: 82,
       status: 'COMPLETED',
       itemCount: '1 master audio',
       inputs: [{ label: 'Narration Script', type: 'text' }],
@@ -354,10 +357,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '🎬',
       subtext: 'Cloudflare Flux 1 + Pexels 8K Clips',
-      x: 730,
-      y: 120,
-      width: 230,
-      height: 84,
+      x: 590,
+      y: 115,
+      width: 220,
+      height: 82,
       status: 'COMPLETED',
       itemCount: '5 clips',
       inputs: [{ label: 'Visual Prompts', type: 'array' }],
@@ -378,10 +381,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '📝',
       subtext: 'Karaoke-Style Timed SRT & VTT',
-      x: 730,
-      y: 225,
-      width: 230,
-      height: 84,
+      x: 590,
+      y: 215,
+      width: 220,
+      height: 82,
       status: 'COMPLETED',
       itemCount: 'SRT / VTT',
       inputs: [{ label: 'Audio Timings', type: 'timecodes' }],
@@ -402,10 +405,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'tool',
       icon: '🖼️',
       subtext: 'High-CTR 1280x720 Graphic Gen',
-      x: 730,
-      y: 330,
-      width: 230,
-      height: 84,
+      x: 590,
+      y: 315,
+      width: 220,
+      height: 82,
       status: 'COMPLETED',
       itemCount: '1 thumbnail',
       inputs: [{ label: 'Metadata & Title', type: 'text' }],
@@ -426,9 +429,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'compositor',
       icon: '🎞️',
       subtext: '1080p H.264 CFR Video Muxer',
-      x: 1080,
-      y: 150,
-      width: 250,
+      x: 870,
+      y: 145,
+      width: 236,
       height: 112,
       status: 'COMPLETED',
       itemCount: '1080p MP4',
@@ -455,9 +458,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       category: 'publisher',
       icon: '🚀',
       subtext: 'Data API v3 • Google OAuth 2.0',
-      x: 1450,
-      y: 150,
-      width: 250,
+      x: 1166,
+      y: 145,
+      width: 236,
       height: 112,
       status: 'COMPLETED',
       itemCount: 'Ready',
@@ -697,6 +700,8 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
 
   // Canvas Mouse & Touch Drag-to-Pan Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Only primary (left) button can initiate canvas drag
+    if (e.button !== 0) return;
     const target = e.target as HTMLElement;
     if (
       target.closest('.workflow-interactive-node') ||
@@ -717,6 +722,11 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    // CRITICAL FIX: If left mouse button is not currently pressed down, cancel dragging immediately!
+    if (e.buttons !== 1) {
+      if (isDragging) setIsDragging(false);
+      return;
+    }
     if (!isDragging) return;
     const dx = e.clientX - dragStartRef.current.startX;
     const dy = e.clientY - dragStartRef.current.startY;
@@ -729,6 +739,15 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   const handleMouseUp = () => {
     if (isDragging) setIsDragging(false);
   };
+
+  // Global window mouseup listener to guarantee canvas drag is never stuck
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
@@ -1089,23 +1108,27 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                 position: 'absolute',
                 left: 0,
                 top: 0,
-                width: '1740px',
-                height: '460px',
+                width: '1430px',
+                height: '434px',
                 transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
                 transformOrigin: 'top left',
                 transition: isDragging ? 'none' : 'transform 0.12s ease-out',
-                pointerEvents: 'auto',
+                pointerEvents: isDragging ? 'none' : 'auto',
               }}
             >
           {/* SVG LAYER: Connecting Animated Bezier Cables & Traveling Data Packets */}
           <svg
+            width="1430"
+            height="434"
+            viewBox="0 0 1430 434"
             style={{
               position: 'absolute',
               inset: 0,
-              width: '100%',
-              height: '100%',
+              width: '1430px',
+              height: '434px',
               pointerEvents: 'none',
               zIndex: 5,
+              overflow: 'visible',
             }}
           >
             <defs>
@@ -1118,14 +1141,14 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                 <stop offset="0%" stopColor="#34d399" />
                 <stop offset="100%" stopColor="#38bdf8" />
               </linearGradient>
-              <filter id="cableGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
+              <filter id="cableGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
                 <feMerge>
                   <feMergeNode in="coloredBlur" />
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
-              <filter id="particleGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <filter id="particleGlow" x="-60%" y="-60%" width="220%" height="220%">
                 <feGaussianBlur stdDeviation="2.5" result="blur" />
                 <feMerge>
                   <feMergeNode in="blur" />
@@ -1203,9 +1226,9 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                       fill="none"
                       stroke={isActive ? 'url(#activeCableGrad)' : 'url(#streamPulseGrad)'}
                       strokeWidth={isActive ? 3.2 : 2.4}
-                      strokeDasharray="8 14"
+                      strokeDasharray="10 14"
                       style={{
-                        animation: 'cablePulse 1.4s linear infinite',
+                        animation: 'cablePulse 1.2s linear infinite',
                       }}
                     />
                   )}
@@ -1217,15 +1240,16 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                         path={d}
                         dur={isActive ? '1.8s' : '3.0s'}
                         repeatCount="indefinite"
+                        calcMode="linear"
                       />
                     </circle>
                   )}
 
                   {/* Wire Label Pill */}
                   {c.label && !c.isModelLink && (() => {
-                    const pillWidth = Math.max(56, c.label.length * 7.5 + 16);
+                    const pillWidth = Math.max(54, c.label.length * 7.2 + 14);
                     const labelX = c.fromNode === 'thumbnail' ? fromPos.x + 95 : midX;
-                    const labelY = c.fromNode === 'thumbnail' ? fromPos.y - 25 : midY;
+                    const labelY = c.fromNode === 'thumbnail' ? fromPos.y - 15 : midY;
 
                     return (
                       <g transform={`translate(${labelX}, ${labelY})`}>
@@ -1245,7 +1269,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                           y="4"
                           textAnchor="middle"
                           fill={isActive ? '#38bdf8' : isCompleted ? '#34d399' : '#94a3b8'}
-                          fontSize="10"
+                          fontSize="9.5"
                           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
                           fontWeight="700"
                           letterSpacing="0.02em"
@@ -1405,67 +1429,104 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
                   </div>
                 )}
 
-                {/* Node Card Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                {/* Node Card Top Row: Icon + Category Badge + Compact Status Pill */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div
                       style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '9px',
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '7px',
                         background: theme.iconBg,
                         border: `1px solid ${theme.border}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '18px',
+                        fontSize: '14px',
                         flexShrink: 0,
-                        boxShadow: `0 0 10px ${theme.glow}`,
+                        boxShadow: `0 0 8px ${theme.glow}`,
                       }}
                     >
                       {node.icon}
                     </div>
-                    <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {node.name}
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: theme.accent,
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {node.category}
                     </span>
                   </div>
 
                   {/* Status Indicator Pill */}
                   <span
                     style={{
-                      fontSize: '10px',
+                      fontSize: '9px',
                       fontWeight: 700,
-                      padding: '3px 8px',
-                      borderRadius: '12px',
+                      padding: '2px 7px',
+                      borderRadius: '10px',
                       background: statusBadgeBg,
                       border: `1px solid ${statusBadgeBorder}`,
                       color: statusBadgeText,
                       fontFamily: 'monospace',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '5px',
+                      gap: '4px',
                       flexShrink: 0,
                     }}
                   >
                     <span
                       style={{
-                        width: '6px',
-                        height: '6px',
+                        width: '5px',
+                        height: '5px',
                         borderRadius: '50%',
                         background: dotColor,
                         display: 'inline-block',
-                        boxShadow: `0 0 6px ${dotColor}`,
+                        boxShadow: `0 0 5px ${dotColor}`,
                         animation: node.status === 'RUNNING' ? 'liveDotPulse 1.2s ease-in-out infinite' : undefined,
                       }}
                     />
-                    {node.status === 'COMPLETED' && '✓'}
-                    {node.status === 'FAILED' && '✕'}
+                    {node.status === 'COMPLETED' && '✓ '}
+                    {node.status === 'FAILED' && '✕ '}
                     <span>{node.status}</span>
                   </span>
                 </div>
 
+                {/* Node Title: Dedicated full-width line, never squished or prematurely truncated */}
+                <div
+                  style={{
+                    fontSize: isModelOrMemory ? '12px' : '13px',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    letterSpacing: '-0.01em',
+                    lineHeight: '1.25',
+                    marginBottom: '3px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={node.name}
+                >
+                  {node.name}
+                </div>
+
                 {/* Node Subtext */}
-                <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.35, marginTop: '2px' }}>
+                <div
+                  style={{
+                    fontSize: '10.5px',
+                    color: '#94a3b8',
+                    lineHeight: 1.3,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={node.subtext}
+                >
                   {node.subtext}
                 </div>
 
@@ -2340,10 +2401,10 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       <style jsx global>{`
         @keyframes cablePulse {
           0% {
-            stroke-dashoffset: 44;
+            stroke-dashoffset: 0;
           }
           100% {
-            stroke-dashoffset: 0;
+            stroke-dashoffset: -48;
           }
         }
         @keyframes liveDotPulse {
