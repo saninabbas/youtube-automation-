@@ -721,6 +721,28 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
     };
   };
 
+  // Zoom handler with automatic re-centering so nodes NEVER fly off-screen
+  const applyZoomDelta = (delta: number) => {
+    setZoomLevel((prevZoom) => {
+      const nextZoom = Math.max(0.40, Math.min(1.35, Number((prevZoom + delta).toFixed(2))));
+      if (nextZoom === prevZoom) return prevZoom;
+
+      if (containerRef.current) {
+        const cW = containerRef.current.clientWidth;
+        const cH = containerRef.current.clientHeight;
+        const sW = 1430 * nextZoom;
+        const sH = 434 * nextZoom;
+
+        const offsetX = cW > sW ? Math.round((cW - sW) / 2) : Math.max(cW - sW - 20, Math.min(20, panOffset.x));
+        const offsetY = cH > sH ? Math.round((cH - sH) / 2) : Math.max(cH - sH - 20, Math.min(20, panOffset.y));
+
+        setPanOffset({ x: offsetX, y: offsetY });
+      }
+
+      return nextZoom;
+    });
+  };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     // CRITICAL FIX: If left mouse button is not currently pressed down, cancel dragging immediately!
     if (e.buttons !== 1) {
@@ -728,12 +750,31 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
       return;
     }
     if (!isDragging) return;
+
     const dx = e.clientX - dragStartRef.current.startX;
     const dy = e.clientY - dragStartRef.current.startY;
-    setPanOffset({
-      x: Math.round(dragStartRef.current.initialPanX + dx),
-      y: Math.round(dragStartRef.current.initialPanY + dy),
-    });
+    const rawX = Math.round(dragStartRef.current.initialPanX + dx);
+    const rawY = Math.round(dragStartRef.current.initialPanY + dy);
+
+    // Hard bounds clamping so the canvas nodes NEVER leave the visible screen!
+    if (containerRef.current) {
+      const cW = containerRef.current.clientWidth;
+      const cH = containerRef.current.clientHeight;
+      const sW = 1430 * zoomLevel;
+      const sH = 434 * zoomLevel;
+
+      const minX = Math.min(20, cW - sW - 30);
+      const maxX = Math.max(20, cW - 160);
+      const minY = Math.min(16, cH - sH - 30);
+      const maxY = Math.max(16, cH - 120);
+
+      setPanOffset({
+        x: Math.max(minX, Math.min(maxX, rawX)),
+        y: Math.max(minY, Math.min(maxY, rawY)),
+      });
+    } else {
+      setPanOffset({ x: rawX, y: rawY });
+    }
   };
 
   const handleMouseUp = () => {
@@ -775,10 +816,27 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
     if (!isDragging || e.touches.length !== 1) return;
     const dx = e.touches[0].clientX - dragStartRef.current.startX;
     const dy = e.touches[0].clientY - dragStartRef.current.startY;
-    setPanOffset({
-      x: Math.round(dragStartRef.current.initialPanX + dx),
-      y: Math.round(dragStartRef.current.initialPanY + dy),
-    });
+    const rawX = Math.round(dragStartRef.current.initialPanX + dx);
+    const rawY = Math.round(dragStartRef.current.initialPanY + dy);
+
+    if (containerRef.current) {
+      const cW = containerRef.current.clientWidth;
+      const cH = containerRef.current.clientHeight;
+      const sW = 1430 * zoomLevel;
+      const sH = 434 * zoomLevel;
+
+      const minX = Math.min(20, cW - sW - 30);
+      const maxX = Math.max(20, cW - 160);
+      const minY = Math.min(16, cH - sH - 30);
+      const maxY = Math.max(16, cH - 120);
+
+      setPanOffset({
+        x: Math.max(minX, Math.min(maxX, rawX)),
+        y: Math.max(minY, Math.min(maxY, rawY)),
+      });
+    } else {
+      setPanOffset({ x: rawX, y: rawY });
+    }
   };
 
   const handleTouchEnd = () => {
@@ -786,16 +844,13 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 0.05 : -0.05;
-      setZoomLevel((z) => Math.max(0.3, Math.min(1.5, Number((z + delta).toFixed(2)))));
-    } else {
-      setPanOffset((prev) => ({
-        x: Math.round(prev.x - e.deltaX),
-        y: Math.round(prev.y - e.deltaY),
-      }));
-    }
+    // CRITICAL: Prevent mouse wheel scroll from panning canvas up/down into empty space!
+    // Instead, mouse wheel smoothly zooms in & out centered, exactly like Figma, Miro, & Google Maps!
+    e.preventDefault();
+    e.stopPropagation();
+
+    const delta = e.deltaY < 0 ? 0.05 : -0.05;
+    applyZoomDelta(delta);
   };
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || nodes[1];
@@ -1086,6 +1141,16 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
+        onDoubleClick={(e) => {
+          const target = e.target as HTMLElement;
+          if (
+            !target.closest('.workflow-interactive-node') &&
+            !target.closest('button') &&
+            !target.closest('.workflow-floating-controls')
+          ) {
+            handleAutoFit();
+          }
+        }}
         style={{
           position: 'relative',
           flex: 1,
@@ -1635,7 +1700,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
 
           <button
             type="button"
-            onClick={() => setZoomLevel((z) => Math.max(0.35, Number((z - 0.1).toFixed(2))))}
+            onClick={() => applyZoomDelta(-0.08)}
             title="Zoom out (−)"
             style={{
               width: '28px',
@@ -1672,7 +1737,7 @@ export const InteractiveWorkflowCanvas: React.FC<InteractiveWorkflowCanvasProps>
 
           <button
             type="button"
-            onClick={() => setZoomLevel((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))}
+            onClick={() => applyZoomDelta(0.08)}
             title="Zoom in (+)"
             style={{
               width: '28px',
